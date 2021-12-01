@@ -1,6 +1,8 @@
 //
 // Created by ASUS on 01/12/2021.
 //
+#ifndef __NT_H__
+#define __NT_H__
 #include <cstdint>
 #include <vector>
 #include <map>
@@ -131,14 +133,10 @@ public:
     {
         return divisor_function(n,1);
     }
+
+    integer smallest_divisor(integer n) const
+    {
+        return smalllest_d[n];
+    }
 };
-
-
-#include <iostream>
-int main()
-{
-    int n;
-    std::cin >> n;
-    factoriser F(1e6);
-    std::cout << F.totient(n);
-}
+#endif

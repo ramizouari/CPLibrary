@@ -4,10 +4,12 @@
 
 #ifndef ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
 #define ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
-
+#include <complex>
 using natural = std::uint64_t;
 using integer = std::int64_t;
 using real = long double;
+using IR=real;
+using IC= std::complex<IR>;
 
 template<typename R>
 R commutator(R a,R b)
@@ -24,6 +26,22 @@ R pow(R a, long long n)
         return a;
     auto s=pow(a,n/2);
     return n%2?s*s*a:s*s;
+}
+
+template<typename R>
+R gcd(R a,R b)
+{
+    if(a<b)
+        std::swap(a,b);
+    integer q,tmp;
+    while(b!=0)
+    {
+        q=a/b;
+        tmp=b;
+        b=a-b*q;
+        a=tmp;
+    }
+    return a;
 }
 
 template<typename R=integer>
