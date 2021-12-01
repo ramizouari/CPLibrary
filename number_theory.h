@@ -12,17 +12,6 @@
 using integer = std::int64_t;
 using couple =std::pair<integer,integer>;
 
-template<typename R>
-R pow(R a,long long n)
-{
-    if(n==0)
-        return 1;
-    else if(n==1)
-        return a;
-    auto s=pow(a,n/2);
-    return n%2?s*s*a:s*s;
-}
-
 class factoriser
 {
     int n;
@@ -136,7 +125,7 @@ public:
 
     integer smallest_divisor(integer n) const
     {
-        return smalllest_d[n];
+        return smallest_d[n];
     }
 };
 #endif

@@ -3,4 +3,4 @@ project(ACPC_Preparation)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(ACPC_Preparation number_theory.h polynomial.h abstract_algebra.h ring_extension.cpp fft.h)
+add_executable(ACPC_Preparation linear_algebra.h modular_arithmetic.h number_theory.h ring_extension.h polynomial.h fft.h main.cpp)
