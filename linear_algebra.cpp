@@ -4,27 +4,6 @@
 #include <vector>
 #include <array>
 
-using integer = std::int64_t;
-using real = long double;
-using natural = std::uint64_t;
-
-template<typename R>
-R commutator(R a,R b)
-{
-    return a*b-b*a;
-}
-
-template<typename R>
-R pow(R a,unsigned long long n)
-{
-    if(n==0)
-        return 1;
-    else if(n==1)
-        return a;
-    auto s=pow(a,n/2);
-    return n%2?s*s*a:s*s;
-}
-
 struct v_shape
 {
     int n;
@@ -85,6 +64,14 @@ public:
     {
         auto v=*this;
         return v-=o;
+    }
+
+    auto operator-() const
+    {
+        auto v=*this;
+        for(auto &s:v.u)
+            s=-s;
+        return v;
     }
 
     auto& operator/=(R k)
@@ -183,6 +170,14 @@ public:
     {
         auto v=*this;
         return v-=o;
+    }
+
+    auto operator-() const
+    {
+        auto v=*this;
+        for(auto &s:v.u)
+            s=-s;
+        return v;
     }
 
     auto& operator/=(R k)
@@ -289,6 +284,14 @@ public:
     {
         auto N=*this;
         return N-=O;
+    }
+
+    auto operator-() const
+    {
+        auto N=*this;
+        for(auto &row:N.M) for(auto &s:row)
+            s=-s;
+        return N;
     }
 
     auto operator*(const d_matrix &O) const
@@ -516,6 +519,14 @@ public:
     {
         auto N=*this;
         return N-=O;
+    }
+
+    auto operator-() const
+    {
+        auto N=*this;
+        for(auto &row:N.M) for(auto &s:row)
+                s=-s;
+        return N;
     }
 
     template<int p>
