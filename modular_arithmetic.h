@@ -281,4 +281,14 @@ integer discrete_log(cyclic<m> a,cyclic<m> r)
             return i*s-mapper[w];
     return -1;
 }
+
+std::vector<integer> inverse_table(int n,int prime)
+{
+    std::vector<integer> I(n + 1);
+    I[0] = I[1] = 1;
+    for (int i = 2; i <= n; i++)
+        I[i] = I[prime % i] *
+                (prime - prime / i) % prime;
+    return I;
+}
 #endif

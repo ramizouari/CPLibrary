@@ -389,16 +389,17 @@ public:
     {
         int n=row_dim(),m=col_dim();
         auto P=*this;
+        int s=0;
         for(int i=0;i<n;i++)
         {
-            int p=i;
+            int p=s;
             while(p<n && P.M[p][i]==0)
                 p++;
             if(p==n)
                 continue;
-            std::swap(P.M[p],P.M[i]);
-            R w=P.M[i][i];
-            for(int j=i+1;j<n;j++)
+            std::swap(P.M[p],P.M[s]);
+            R w=P.M[s][i];
+            for(int j=s+1;j<n;j++)
             {
                 R r=P.M[j][i]/w;
                 for (int k = i; k < m; k++)
@@ -412,10 +413,13 @@ public:
     {
         auto E=row_echelon_form();
         int r=0;
-        int s=std::min(row_dim(),col_dim());
-        for(int i=0;i<s;i++)
-            if(M[i][i]!=0)
+        int n=row_dim(),m=col_dim();
+        for(int i=0,j=0;i<n&&j<m;j++)
+            if(E.M[i][j]!=0)
+            {
                 r++;
+                i++;
+            }
         return r;
     }
 
@@ -435,7 +439,7 @@ public:
             while(p<n && P.M[p][i]==0)
                 p++;
             if(p==n)
-                continue;
+                return 0;
             if(p!=i)
             {
                 std::swap(P.M[p], P.M[i]);
@@ -697,21 +701,23 @@ public:
     auto row_echelon_form() const
     {
         auto P=*this;
+        int s=0;
         for(int i=0;i<n;i++)
         {
-            int p=i;
-            while(P.M[p][i]==0)
+            int p=s;
+            while(p<n && P.M[p][i]==0)
                 p++;
             if(p==n)
                 continue;
-            std::swap(P.M[p],P.M[i]);
-            R w=P.M[i][i];
-            for(int j=i+1;j<n;j++)
+            P.M[p].swap(P.M[s]);
+            R w=P.M[s][i];
+            for(int j=s+1;j<n;j++)
             {
                 R r=P.M[j][i]/w;
                 for (int k = i; k < m; k++)
                     P.M[j][k]-=r*P.M[i][k];
             }
+            s++;
         }
         return P;
     }
@@ -720,9 +726,12 @@ public:
     {
         auto E=row_echelon_form();
         int r=0;
-        for(int i=0;i<std::min(n,m);i++)
-            if(M[i][i]!=0)
+        for(int i=0,j=0;i<n&&j<m;j++)
+            if(E.M[i][j]!=0)
+            {
                 r++;
+                i++;
+            }
         return r;
     }
 
