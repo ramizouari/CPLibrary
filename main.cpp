@@ -10,8 +10,8 @@
 
 int main()
 {
-    ring_extension<real>::q=polynomial<real>({1,1,1});
-    ring_extension<real> p({0,1});
-    for(auto s:pow(p,1001))
+    s_matrix<real,3,3> M({{3,0,2},{0,0,0},{5,0,1}});
+    s_vector<real,3> v({21,0,7});
+    for(auto s:M.solve(v))
         std::cout << s << ' ';
 }

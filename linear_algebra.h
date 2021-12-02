@@ -392,7 +392,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(P.M[p][i]==0)
+            while(p<n && P.M[p][i]==0)
                 p++;
             if(p==n)
                 continue;
@@ -432,7 +432,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(P.M[p][i]==0)
+            while(p<n && P.M[p][i]==0)
                 p++;
             if(p==n)
                 continue;
@@ -463,7 +463,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(P.M[p][i]==0)
+            while(p<n && P.M[p][i]==0)
                 p++;
             if(p==n)
                 continue;
@@ -493,6 +493,45 @@ public:
             }
         }
         return Q;
+    }
+
+    d_vector<R> solve(d_vector<R> A)
+    {
+        int n=col_dim(),m=row_dim();
+        d_matrix P=*this;
+        for(int i=0;i<n;i++)
+        {
+            int p=i;
+            while(p<n && P.M[p][i]==0)
+                p++;
+            if(p==n)
+                continue;
+            std::swap(P.M[p], P.M[i]);
+            std::swap(A[p],A[i]);
+            R w=P.M[i][i];
+            for(int j=i+1;j<n;j++)
+            {
+                if(w==0)
+                    continue;
+                R r=P.M[j][i]/w;
+                for (int k = 0; k < m; k++)
+                    P.M[j][k] -= r*P.M[i][k];
+                A[j]-=r*A[i];
+            }
+        }
+        for(int i=n-1;i>=0;i--)
+        {
+            R w=P.M[i][i];
+            if(w==0)
+                continue;
+            A[i]/=w;
+            for(int k=i-1;k>=0;k--)
+            {
+                R r=P.M[k][i];
+                A[k] -= r*A[i];
+            }
+        }
+        return A;
     }
 };
 
@@ -700,7 +739,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(P.M[p][i]==0)
+            while(p<n &&P.M[p][i]==0)
                 p++;
             if(p==n)
                 continue;
@@ -730,7 +769,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(P.M[p][i]==0)
+            while(p<n &&P.M[p][i]==0)
                 p++;
             if(p==n)
                 continue;
@@ -761,6 +800,46 @@ public:
         }
         return Q;
     }
+
+    s_vector<R,m> solve(s_vector<R,n> A) const
+    {
+        static_assert(n==m);
+        s_matrix P=*this;
+        for(int i=0;i<n;i++)
+        {
+            int p=i;
+            while(p<n && P.M[p][i]==0)
+                p++;
+            if(p==n)
+                continue;
+            std::swap(P.M[p], P.M[i]);
+            std::swap(A[p],A[i]);
+            R w=P.M[i][i];
+            for(int j=i+1;j<n;j++)
+            {
+                if(w==0)
+                    continue;
+                R r=P.M[j][i]/w;
+                for (int k = 0; k < m; k++)
+                    P.M[j][k] -= r*P.M[i][k];
+                A[j]-=r*A[i];
+            }
+        }
+        for(int i=n-1;i>=0;i--)
+        {
+            R w=P.M[i][i];
+            if(w==0)
+                continue;
+            A[i]/=w;
+            for(int k=i-1;k>=0;k--)
+            {
+                R r=P.M[k][i];
+                A[k] -= r*A[i];
+            }
+        }
+        return A;
+    }
+
 };
 
 template<typename R,int n,int m>
