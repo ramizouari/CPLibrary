@@ -76,4 +76,11 @@ egcd_t<R> egcd(R a,R b)
     return {s1,t1,a};
 }
 
+template<typename R>
+std::pair<R,R> bezout(R a, R b)
+{
+    auto [u,v,_]=egcd(a,b);
+    return {u,v};
+}
+
 #endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H

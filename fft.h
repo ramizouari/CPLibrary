@@ -122,6 +122,24 @@ public:
 
 using inverse_fast_fourier=fast_fourier<true>;
 
+std::vector<IC> fast_multiply(std::vector<IC> x,std::vector<IC> y)
+{
+    int n=x.size(),m=y.size();
+    int r=n+m;
+    x.resize(r);
+    y.resize(r);
+    fast_fourier FFT(r);
+    inverse_fast_fourier IFFT(r);
+    auto u=FFT(x),v=FFT(y);
+    std::vector<IC> w(r);
+    for(int i=0;i<r;i++)
+        w[i]=u[i]*v[i];
+    auto z=IFFT(w);
+    for(auto &s:z)
+        s/=r;
+    z.resize(n+m-1);
+    return z;
+}
 
 template<int n,typename T>
 struct tensor_t
@@ -140,6 +158,7 @@ struct tensor_t
         return U;
     }
 };
+
 template<typename T>
 struct tensor_t<0,T>
 {
@@ -154,6 +173,7 @@ struct tensor_t<0,T>
         return U;
     }
 };
+
 template<int n,typename T>
 using tensor=typename tensor_t<n,T>::tensor;
 
@@ -244,24 +264,4 @@ struct multidimensional_fft<0,is_inverse>
         return O;
     }
 };
-
-std::vector<IC> fast_multiply(std::vector<IC> x,std::vector<IC> y)
-{
-    int n=x.size(),m=y.size();
-    int r=n+m;
-    x.resize(r);
-    y.resize(r);
-    fast_fourier FFT(r);
-    inverse_fast_fourier IFFT(r);
-    auto u=FFT(x),v=FFT(y);
-    std::vector<IC> w(r);
-    for(int i=0;i<r;i++)
-        w[i]=u[i]*v[i];
-    auto z=IFFT(w);
-    for(auto &s:z)
-        s/=r;
-    z.resize(n+m-1);
-    return z;
-}
-
 #endif //ACPC_PREPARATION_FFT_H
