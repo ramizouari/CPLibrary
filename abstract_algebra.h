@@ -33,7 +33,7 @@ R gcd(R a,R b)
 {
     if(a<b)
         std::swap(a,b);
-    integer q,tmp;
+    R q,tmp;
     while(b!=0)
     {
         q=a/b;
@@ -59,7 +59,7 @@ egcd_t<R> egcd(R a,R b)
         std::swap(e.a,e.b);
         return e;
     }
-    integer q,s1=1,s2=0,t1=0,t2=1,tmp;
+    R q,s1=1,s2=0,t1=0,t2=1,tmp;
     while(b!=0)
     {
         q=a/b;

@@ -85,6 +85,7 @@ struct fast_fourier
     using IC=std::complex<real>;
     inline static constexpr int sign=is_inverse?1:-1;
 public:
+    inline static bool use_normalized=true;
     fast_fourier(int _n):n(_n),w(std::exp(IC(0,2*sign*pi/n)))
     {
     }
@@ -111,7 +112,7 @@ public:
     }
     std::vector<IC> operator()(const std::vector<IC> &X) const
     {
-        return unnormalized(X);
+        return use_normalized? normalized(X):unnormalized(X);
     }
     std::vector<IC> normalized(const std::vector<IC>&X) const
     {
@@ -119,7 +120,6 @@ public:
     }
 };
 
-template<typename real>
 using inverse_fast_fourier=fast_fourier<true>;
 
 
@@ -252,7 +252,7 @@ std::vector<IC> fast_multiply(std::vector<IC> x,std::vector<IC> y)
     x.resize(r);
     y.resize(r);
     fast_fourier FFT(r);
-    fast_fourier<true> IFFT(r);
+    inverse_fast_fourier IFFT(r);
     auto u=FFT(x),v=FFT(y);
     std::vector<IC> w(r);
     for(int i=0;i<r;i++)

@@ -37,6 +37,7 @@ public:
         p.resize(r);
         for(int i=0;i<O.p.size();i++)
             p[i]+=O.p[i];
+        reduce();
         return *this;
     }
 
@@ -46,10 +47,11 @@ public:
         p.resize(r);
         for(int i=0;i<O.p.size();i++)
             p[i]-=O.p[i];
+        reduce();
         return *this;
     }
 
-    auto operator*(const polynomial &O) const
+    polynomial operator*(const polynomial &O) const
     {
         if(O.p.empty() || p.empty())
             return polynomial(0);
@@ -101,12 +103,14 @@ public:
 
     bool operator==(R a) const
     {
-        return degree()==0 && (p.front()==a);
+        if(a==0)
+            return p.empty();
+        else return degree() == 0 && p.front() == a;
     }
 
     bool operator!=(R a) const
     {
-        return degree()==-1 || p.front()!=a;
+        return !(*this==a);
     }
 
     auto& operator+=(R a)
@@ -131,6 +135,11 @@ public:
         return q-=a;
     }
 
+    bool operator<(const polynomial &O) const
+    {
+        return degree() < O.degree();
+    }
+
     auto& operator/=(R k)
     {
         for(auto &s:p)
@@ -144,20 +153,31 @@ public:
         return q/=k;
     }
 
-    auto operator/(const polynomial &O) const
+    std::pair<polynomial,polynomial> euclidean_division(const polynomial &O) const
     {
         if(degree() < O.degree())
-            return 0;
+            return {R(0),*this};
         polynomial q,r=*this;
         int n=degree(),m=O.degree();
         q.p.resize(n-m+1);
         for(int i=n;i>=m;i--)
         {
-            q.p[i-m]=p[i]/O.p[m];
-            for(int j=i-m;j<=r.degree();j++)
-                r.p[j+m]-=q.p[j]*O.p[m];
+            q.p[i-m]=r[i]/O.p[m];
+            for(int j=0;j<=m;j++)
+                r.p[i+j-m]-=q.p[i-m]*O.p[j];
         }
-        return q;
+        r.p.resize(m);
+        return {q,r};
+    }
+
+    polynomial operator/(const polynomial &O) const
+    {
+        return euclidean_division(O).first;
+    }
+
+    polynomial operator%(const polynomial &O) const
+    {
+        return euclidean_division(O).second;
     }
 
     auto& operator/=(polynomial &O)
@@ -183,6 +203,16 @@ public:
         for(int i=degree();i>=0;i--)
             r=(r+p[i])*a;
         return r;
+    }
+
+    auto begin()
+    {
+        return p.begin();
+    }
+
+    auto end()
+    {
+        return p.end();
     }
 };
 
@@ -243,7 +273,7 @@ public:
         for(const auto& [k,s]:O.p)
         {
             p[k] -= O.p[k];
-            if(p[k]==0)
+            if(p[k]==R(0))
                 p.erase(k);
         }
         return *this;
@@ -291,22 +321,12 @@ public:
 
     auto operator*=(R a)
     {
-        if(a==0)
+        if(a==R(0))
             p.clear();
         else for(auto& s:p)
                 s*=a;
         reduce();
         return *this;
-    }
-
-    bool operator==(R a) const
-    {
-        return degree()==0 && (p.front()==a);
-    }
-
-    bool operator!=(R a) const
-    {
-        return degree()==-1 || p.front()!=a;
     }
 
     auto& operator+=(R a)

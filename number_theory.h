@@ -80,6 +80,16 @@ public:
         return d_list[m];
     }
 
+    integer smallest_divisor(integer n) const
+    {
+        return smallest_d[n];
+    }
+
+    bool is_prime(int n) const
+    {
+        return n>1 && smallest_d[n]==n;
+    }
+
     integer totient(integer n)
     {
         integer R=1;
@@ -123,9 +133,5 @@ public:
         return divisor_function(n,1);
     }
 
-    integer smallest_divisor(integer n) const
-    {
-        return smallest_d[n];
-    }
 };
 #endif
