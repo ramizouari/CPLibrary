@@ -8,6 +8,7 @@
 #include "abstract_algebra.h"
 #include <random>
 #include <unordered_map>
+#include "number_theory.h"
 
 
 template<integer m>
@@ -290,5 +291,26 @@ std::vector<integer> inverse_table(int n,int prime)
         I[i] = I[prime % i] *
                 (prime - prime / i) % prime;
     return I;
+}
+
+integer primitive_root_of_unity(integer n,integer p,factoriser &F)
+{
+    d_cyclic::m=p;
+    auto phi=F.totient(p);
+    auto D=F.divisors_list(phi);
+    for(integer k=2;k<p-1;k++)
+    {
+        bool is_primitive=true;
+        for (auto d: D)
+            if(d< phi && pow<d_cyclic>(k,d)==1)
+            {
+                is_primitive=false;
+                break;
+            }
+        if(is_primitive)
+            return k;
+    }
+    throw std::exception("Nope");
+    return 0;
 }
 #endif

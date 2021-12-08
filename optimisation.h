@@ -9,15 +9,16 @@
 template<int n>
 s_vector<real,n> point_wise_divide(const s_vector<real,n> &x,const s_vector<real,n> &y)
 {
-    s_vector<real> z;
+    s_vector<real,n> z;
     for(int i=0;i<n;i++)
         z[i]=x[i]/y[i];
+    return z;
 }
 
 template<int n,int m>
-s_vector<real,m> get_column(const s_matrix<real,n,m> &A,int k)
+s_vector<real,n> get_column(const s_matrix<real,n,m> &A,int k)
 {
-    s_vector<real,m> C;
+    s_vector<real,n> C;
     for(int i=0;i<n;i++)
         C[i]=A[i][k];
     return C;
@@ -29,11 +30,11 @@ real max(const s_vector<real,n> &x)
     real r=x[0];
     for(auto s:x)
         r=std::max(r,s);
-    return s;
+    return r;
 }
 
 template<int n>
-real argmax(const s_vector<real,n> &x)
+int argmax(const s_vector<real,n> &x)
 {
     int k=0;
     for(int i=1;i<n;i++) if(x[i]>x[k])
@@ -42,20 +43,19 @@ real argmax(const s_vector<real,n> &x)
 }
 
 template<int n, int m>
-s_vector<real,n> simplex(
-        const s_vector<real,n>& _Z,
+s_vector<real,m> simplex(
+        const s_vector<real,m>& _Z,
         const s_matrix<real,n, m>& _A,
-        s_vector<real,m> b)
+        s_vector<real,n> b)
 {
     s_vector<real, n + m > Z;
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < m; i++)
         Z[i] = _Z[i];
     s_matrix<real,n, n + m>A;
     for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
             A[i][j] = _A[i][j];
     for (int i = m; i < n + m; i++)
         A[i - m][i] = 1;
-    s_vector<real,n>U;
     while (max(Z) > 0)
     {
         auto q = argmax(Z);
@@ -68,17 +68,20 @@ s_vector<real,n> simplex(
             break;
         for (int i = 0; i < n; i++) if (i != p)
             {
-                b[i] -= (A[i][q] / A[p][q]) * b[p];
-                A[i] -= (A[i][q] / A[p][q]) * A[p];
+                auto k=A[i][q];
+                b[i] -= (k / A[p][q]) * b[p];
+                for(int j=0;j<n+m;j++)
+                    A[i][j] -= (k / A[p][q]) * A[p][j];
                 A[i][q] = 0;
 
             }
-        Z -= (Z[q] / A[p][q]) * A[p];
+        auto k=Z[q];
+        for(int j=0;j<n+m;j++)
+            Z[j] -= (k / A[p][q]) * A[p][j];
         Z[q] = 0;
     }
-    s_matrix<real,n, n> P;
     s_vector<real,n + m> h;
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < n; i++)
         h[i] = b[i];
     s_matrix<real,n + m, n + m> Q;
     for (int i = 0; i < n; i++)
@@ -92,9 +95,9 @@ s_vector<real,n> simplex(
             for (int j = 0; j < n; j++)
                 A[j][i] = 0;
         }
-    s_vector<real,n> d;
+    s_vector<real,m> d;
     auto g = Q.solve(h);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < m; i++)
         d[i] = g[i];
     return d;
 }
@@ -102,15 +105,16 @@ s_vector<real,n> simplex(
 
 d_vector<real> point_wise_divide(const d_vector<real> &x,const d_vector<real> &y)
 {
-    int n=x.dimension();
+    int n=x.dim();
     d_vector<real> z(v_shape{n});
     for(int i=0;i<n;i++)
         z[i]=x[i]/y[i];
+    return z;
 }
 
 d_vector<real> get_column(const d_matrix<real> &A,int k)
 {
-    int n=A.row_dimension(),m=col_dimension();
+    int n=A.row_dim(),m=A.col_dim();
     d_vector<real> C(v_shape{m});
     for(int i=0;i<n;i++)
         C[i]=A[i][k];
@@ -122,12 +126,12 @@ real max(const d_vector<real> &x)
     real r=x[0];
     for(auto s:x)
         r=std::max(r,s);
-    return s;
+    return r;
 }
 
 int argmax(const d_vector<real> &x)
 {
-    int k=0,n=x.dimension();
+    int k=0,n=x.dim();
     for(int i=1;i<n;i++) if(x[i]>x[k])
         k=i;
     return k;
@@ -138,16 +142,15 @@ d_vector<real> simplex(
         const d_matrix<real>& _A,
         d_vector<real> b)
 {
-    int n=_Z.dimension(),m=b.dimension();
+    int n=b.dim(),m=_Z.dim();
     d_vector<real> Z(v_shape{n+m});
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < m; i++)
         Z[i] = _Z[i];
-    d_matrix<real>A(m_shape{n,n+m});
+    d_matrix<real>A(0,m_shape{n,n+m});
     for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
             A[i][j] = _A[i][j];
     for (int i = m; i < n + m; i++)
         A[i - m][i] = 1;
-    d_vector<real>U(v_shape{n});
     while (max(Z) > 0)
     {
         auto q = argmax(Z);
@@ -160,19 +163,20 @@ d_vector<real> simplex(
             break;
         for (int i = 0; i < n; i++) if (i != p)
             {
-                b[i] -= (A[i][q] / A[p][q]) * b[p];
-                A[i] -= (A[i][q] / A[p][q]) * A[p];
+                auto k=A[i][q];
+                b[i] -= (k / A[p][q]) * b[p];
+                for(int j=0;j<n+m;j++)
+                    A[i][j] -= (k / A[p][q]) * A[p][j];
                 A[i][q] = 0;
 
             }
         Z -= (Z[q] / A[p][q]) * A[p];
         Z[q] = 0;
     }
-    d_matrix<real> P(m_shape{n,n});
-    d_vector<real> h(v_shape{n+m})
-    for (int i = 0; i < m; i++)
+    d_vector<real> h(v_shape{n+m});
+    for (int i = 0; i < n; i++)
         h[i] = b[i];
-    d_matrix<real> Q(m_shape{n+m,n+m});
+    d_matrix<real> Q(0,m_shape{n+m,n+m});
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n + m; j++)
             Q[i][j] = A[i][j];
@@ -184,9 +188,9 @@ d_vector<real> simplex(
             for (int j = 0; j < n; j++)
                 A[j][i] = 0;
         }
-    d_vector<real> d(v_shape{n});
+    d_vector<real> d(v_shape{m});
     auto g = Q.solve(h);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < m; i++)
         d[i] = g[i];
     return d;
 }

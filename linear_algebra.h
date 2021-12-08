@@ -90,12 +90,11 @@ public:
         return v/=k;
     }
 
-    auto begin()
-    {
+    auto begin() {
         return u.begin();
     }
 
-    auto cbegin() const
+    auto begin() const
     {
         return u.cbegin();
     }
@@ -105,7 +104,7 @@ public:
         return u.end();
     }
 
-    auto cend() const
+    auto end() const
     {
         return u.cend();
     }
@@ -207,7 +206,7 @@ public:
         return u.begin();
     }
 
-    auto cbegin() const
+    auto begin() const
     {
         return u.cbegin();
     }
@@ -217,7 +216,7 @@ public:
         return u.end();
     }
 
-    auto cend() const
+    auto end() const
     {
         return u.cend();
     }
@@ -370,7 +369,7 @@ public:
         return M.begin();
     }
 
-    auto cbegin() const
+    auto begin() const
     {
         return M.cbegin();
     }
@@ -380,7 +379,7 @@ public:
         return M.end();
     }
 
-    auto cend() const
+    auto end() const
     {
         return M.cend();
     }
@@ -563,11 +562,11 @@ public:
         return n;
     }
 
-    s_matrix(std::vector<std::array<R,n>> _M)
+    s_matrix(const std::vector<std::array<R,n>> &_M)
     {
         int counter=0;
-        for(const auto &row:_M)
-            M[counter++]=row;
+        for(int i=0;i<n;i++) for(int j=0;j<m;j++)
+            M[i][j]=_M[i][j];
     }
 
     inline static constexpr int col_dim()
@@ -909,7 +908,6 @@ polynomial<R> interpolation_characteristic_polynomial(d_matrix<R> M)
 template<typename R,int n>
 polynomial<R> interpolation_characteristic_polynomial(s_matrix<R,n,n> M)
 {
-    int n=M.row_dim();
     std::vector<R> X(n+1), Y(n+1);
     for (int i = 0; i <= n; i++)
     {

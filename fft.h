@@ -9,6 +9,8 @@
 #include "polynomial.h"
 #include "number_theory.h"
 #include <algorithm>
+#include <optional>
+#include "modular_arithmetic.h"
 
 template<typename R>
 std::vector<R> apply_powers(const std::vector<R> &A,R w)
@@ -264,4 +266,98 @@ struct multidimensional_fft<0,is_inverse>
         return O;
     }
 };
+
+
+
+template<bool is_inverse=false>
+struct fast_ntt
+{
+    int n,m;
+    d_cyclic w;
+    using IK=d_cyclic;
+    inline static std::optional<std::reference_wrapper<factoriser>> F_ref=std::optional<std::reference_wrapper<factoriser>>();
+public:
+    inline static bool use_normalized=true;
+    static void set_factoriser(factoriser &F)
+    {
+        F_ref=F;
+        fast_ntt<!is_inverse>::F_ref=F;
+    }
+    static factoriser& factoriser()
+    {
+        return F_ref.value();
+    }
+    fast_ntt(int _n,int _m):n(_n),m(_m)
+    {
+        auto &F=this->F_ref.value().get();
+        auto phi=F.totient(m);
+        if(phi%n)
+            throw std::exception("Fast NTT cannot be defined for this setting");
+        IK r=pow<IK>(primitive_root_of_unity(n,m,F),phi/n);
+        if constexpr (is_inverse)
+            w=r.inv();
+        else w=r;
+    }
+    fast_ntt(int _n,int _m,d_cyclic _w):n(_n),m(_m),w(_w)
+    {
+    }
+
+    std::vector<IK> unnormalized(const std::vector<IK> &X) const
+    {
+        auto &F=this->F_ref.value().get();
+        if(n==1)
+            return X;
+        auto p=F.smallest_divisor(n),q=n/p;
+        IK z=pow(w,q);
+        fast_ntt<is_inverse> NTT(q,m,pow(w,p));
+        std::vector<std::vector<IK>> U(p,std::vector<IK>(q));
+        for(int i=0;i<n;i++)
+            U[i%p][i/p]=X[i];
+        std::vector<std::vector<IK>> V(p);
+        for(int i=0;i<p;i++)
+            V[i]=NTT.unnormalized(U[i]);
+        std::vector<std::vector<IK>> Q(p,std::vector<IK>(q,0));
+        for(int i=0;i<p;i++) for(int j=0;j<p;j++)
+                Q[i]+=pow(z,i*j)* apply_powers(V[j],pow(w,j));
+        std::vector<IK> R(n);
+        for(int i=0;i<p;i++) for(int j=0;j<q;j++)
+                R[i*q+j]=Q[i][j];
+        return R;
+    }
+    std::vector<IK> operator()(const std::vector<IK> &X) const
+    {
+        return unnormalized(X);
+    }
+    std::vector<IK> normalized(const std::vector<IK>&X) const
+    {
+        return  unnormalized(X)/IK(n);
+    }
+};
+
+
+using inverse_fast_ntt=fast_ntt<true>;
+
+std::vector<d_cyclic> fast_multiply(std::vector<d_cyclic> x,std::vector<d_cyclic> y,
+                                    factoriser &F=fast_ntt<>::factoriser())
+{
+    fast_ntt<>::set_factoriser(F);
+    int n=x.size(),m=y.size();
+    auto d_list=F.divisors_list(F.totient(d_cyclic::m));
+    std::sort(d_list.begin(),d_list.end());
+    int r=*std::lower_bound(d_list.begin(),d_list.end(),n+m-1);
+    x.resize(r);
+    y.resize(r);
+    fast_ntt NTT(r,d_cyclic::m);
+    inverse_fast_ntt INTT(r,d_cyclic::m);
+    auto u=NTT(x),v=NTT(y);
+    auto t1=INTT(u),t2=INTT(v);
+    std::vector<d_cyclic> w(r);
+    for(int i=0;i<r;i++)
+        w[i]=u[i]*v[i];
+    auto z=INTT(w);
+    for(auto &s:z)
+        s/=d_cyclic(r);
+    z.resize(n+m-1);
+    return z;
+}
 #endif //ACPC_PREPARATION_FFT_H

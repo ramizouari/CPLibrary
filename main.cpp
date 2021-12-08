@@ -4,10 +4,15 @@
 #include "linear_algebra.h"
 #include <iostream>
 #include "abstract_algebra.h"
+#include "fft.h"
+#include "modular_arithmetic.h"
+#include "optimisation.h"
 
 int main()
 {
-    s_matrix<real,3,3> M({{0,1,1},{2,0,0},{0,0,0}});
-    s_vector<real,3> v({21,0,7});
-    std::cout << M.rank();
+    d_cyclic::m=1e9+9;
+    std::vector<d_cyclic> u={1,1,1,1,1,1,1,1,1,1,1};
+    factoriser F(2e5);
+    for(auto s: fast_multiply(u,u,F))
+        std::cout << (integer)s << ' ';
 }
