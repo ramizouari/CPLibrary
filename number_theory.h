@@ -9,6 +9,7 @@
 #include <numeric>
 #include <cmath>
 #include <stack>
+#include <algorithm>
 
 using integer = std::int64_t;
 using couple =std::pair<integer,integer>;
@@ -112,12 +113,16 @@ public:
         if(m<=n)
         {
             if (d_list[m].empty())
+            {
                 divisors_list_rec(m, d_list[m], p_factors[m]);
+                std::sort(d_list[m].begin(),d_list[m].end());
+            }
             return d_list[m];
         }
         else
         {
             divisors_list_rec(m,holder, prime_factors(m));
+            std::sort(holder.begin(),holder.end());
             return holder;
         }
     }

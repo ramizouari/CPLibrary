@@ -311,6 +311,5 @@ integer primitive_root_of_unity(integer n,integer p,factoriser &F)
             return k;
     }
     throw std::exception("Nope");
-    return 0;
 }
 #endif

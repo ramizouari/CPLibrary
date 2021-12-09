@@ -12,82 +12,19 @@
 #include <optional>
 #include "modular_arithmetic.h"
 
-template<typename R>
-std::vector<R> apply_powers(const std::vector<R> &A,R w)
-{
-    R x=1;
-    std::vector<R> B(A);
-    for(auto &b:B)
-    {
-        b*=x;
-        x*=w;
-    }
-    return B;
-}
-
-template<typename R>
-std::vector<R> operator*(R k,const std::vector<R>&T)
-{
-    std::vector<R> S(T);
-    for(auto &s:S)
-        s*=k;
-    return S;
-}
-
-template<typename R>
-std::vector<R> operator*(const std::vector<R>&T,R k)
-{
-    std::vector<R> S(T);
-    for(auto &s:S)
-        s*=k;
-    return S;
-}
-
-template<typename R>
-std::vector<R> operator/(const std::vector<R>&T,R k)
-{
-    std::vector<R> S(T);
-    for(auto &s:S)
-        s/=k;
-    return S;
-}
-
-template<typename R>
-std::vector<R> operator+(const std::vector<R> &A,const std::vector<R> &B)
-{
-    if(A.size()<B.size())
-        return B+A;
-    std::vector<R> C(A);
-    int m=B.size();
-    for(int i=0;i<m;i++)
-        C[i]+=B[i];
-    return C;
-}
-
-template<typename R>
-std::vector<R>& operator+=(std::vector<R> &A,const std::vector<R> &B)
-{
-    if(A.size()<B.size())
-        A.resize(B.size());
-    int m=B.size();
-    for(int i=0;i<m;i++)
-        A[i]+=B[i];
-    return A;
-}
-
-
 const real pi = acos(-1);
 
 template<bool is_inverse=false>
 struct fast_fourier
 {
-    inline static const factoriser F=factoriser(1e5);
     int n;
     std::complex<real> w;
     using IC=std::complex<real>;
     inline static constexpr int sign=is_inverse?1:-1;
+    inline static std::optional<std::reference_wrapper<factoriser>> F_ref=std::optional<std::reference_wrapper<factoriser>>();
+
 public:
-    inline static bool use_normalized=true;
+    inline static bool use_normalized=false;
     fast_fourier(int _n):n(_n),w(std::exp(IC(0,2*sign*pi/n)))
     {
     }
@@ -95,6 +32,7 @@ public:
     {
         if(n==1)
             return X;
+        auto &F=F_ref.value().get();
         auto p=F.smallest_divisor(n),q=n/p;
         fast_fourier<is_inverse> FFT(q);
         std::vector<std::vector<IC>> U(p,std::vector<IC>(q));
@@ -105,8 +43,17 @@ public:
             V[i]=FFT.unnormalized(U[i]);
         std::vector<std::vector<IC>> Q(p,std::vector<IC>(q,0));
         IC z=std::pow(w,q);
-        for(int i=0;i<p;i++) for(int j=0;j<p;j++)
-                Q[i]+=std::pow(z,i*j)* apply_powers(V[j],std::pow(w,j));
+        IC t=1;
+        for(int i=0;i<p;i++,t*=z)
+        {
+            IC h1=1,h2=1;
+            for (int j = 0; j < p; j++,h1*=t,h2*=w)
+            {
+                IC h3=1;
+                for (int k = 0; k < q; k++,h3*=h2)
+                    Q[i][k] += h1 * h3 * V[j][k];
+            }
+        }
         std::vector<IC> R(n);
         for(int i=0;i<p;i++) for(int j=0;j<q;j++)
                 R[i*q+j]=Q[i][j];
@@ -118,14 +65,28 @@ public:
     }
     std::vector<IC> normalized(const std::vector<IC>&X) const
     {
-        return  unnormalized(X)/std::sqrt<real>(n);
+        auto Y= unnormalized(X);
+        for(auto &y:Y)
+            y/=std::sqrt(n);
+        return Y;
+    }
+    static void set_factoriser(factoriser &F)
+    {
+        F_ref=F;
+        fast_fourier<!is_inverse>::F_ref=F;
+    }
+
+    static factoriser& factoriser()
+    {
+        return F_ref.value();
     }
 };
 
 using inverse_fast_fourier=fast_fourier<true>;
 
-std::vector<IC> fast_multiply(std::vector<IC> x,std::vector<IC> y)
+std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y,factoriser &F=fast_fourier<>::factoriser())
 {
+    fast_fourier<>::set_factoriser(F);
     int n=x.size(),m=y.size();
     int r=n+m;
     x.resize(r);
@@ -143,6 +104,11 @@ std::vector<IC> fast_multiply(std::vector<IC> x,std::vector<IC> y)
     return z;
 }
 
+polynomial<IC> fast_multiplication(const polynomial<IC>& x,const polynomial<IC>& y,factoriser &F=fast_fourier<>::factoriser())
+{
+    return fast_multiplication(static_cast<const std::vector<IC>&>(x),
+                         static_cast<const std::vector<IC>&>(y),F);
+}
 template<int n,typename T>
 struct tensor_t
 {
@@ -278,15 +244,18 @@ struct fast_ntt
     inline static std::optional<std::reference_wrapper<factoriser>> F_ref=std::optional<std::reference_wrapper<factoriser>>();
 public:
     inline static bool use_normalized=true;
+
     static void set_factoriser(factoriser &F)
     {
         F_ref=F;
         fast_ntt<!is_inverse>::F_ref=F;
     }
+
     static factoriser& factoriser()
     {
         return F_ref.value();
     }
+
     fast_ntt(int _n,int _m):n(_n),m(_m)
     {
         auto &F=this->F_ref.value().get();
@@ -298,6 +267,7 @@ public:
             w=r.inv();
         else w=r;
     }
+
     fast_ntt(int _n,int _m,d_cyclic _w):n(_n),m(_m),w(_w)
     {
     }
@@ -307,7 +277,7 @@ public:
         auto &F=this->F_ref.value().get();
         if(n==1)
             return X;
-        auto p=F.smallest_divisor(n),q=n/p;
+        integer p=F.smallest_divisor(n),q=n/p;
         IK z=pow(w,q);
         fast_ntt<is_inverse> NTT(q,m,pow(w,p));
         std::vector<std::vector<IK>> U(p,std::vector<IK>(q));
@@ -317,47 +287,69 @@ public:
         for(int i=0;i<p;i++)
             V[i]=NTT.unnormalized(U[i]);
         std::vector<std::vector<IK>> Q(p,std::vector<IK>(q,0));
-        for(int i=0;i<p;i++) for(int j=0;j<p;j++)
-                Q[i]+=pow(z,i*j)* apply_powers(V[j],pow(w,j));
+        IK t=1;
+        for(int i=0;i<p;i++,t*=z)
+        {
+            IK h1=1,h2=1;
+            for (int j = 0; j < p; j++,h1*=t,h2*=w)
+            {
+                IK h3=1;
+                for (int k = 0; k < q; k++,h3*=h2)
+                    Q[i][k] += h1 * h3 * V[j][k];
+            }
+        }
         std::vector<IK> R(n);
         for(int i=0;i<p;i++) for(int j=0;j<q;j++)
                 R[i*q+j]=Q[i][j];
         return R;
     }
+
     std::vector<IK> operator()(const std::vector<IK> &X) const
     {
         return unnormalized(X);
     }
+
     std::vector<IK> normalized(const std::vector<IK>&X) const
     {
         return  unnormalized(X)/IK(n);
+    }
+
+    fast_ntt<!is_inverse> inv() const
+    {
+        return fast_ntt<!is_inverse>(n,m,w.inv());
     }
 };
 
 
 using inverse_fast_ntt=fast_ntt<true>;
 
-std::vector<d_cyclic> fast_multiply(std::vector<d_cyclic> x,std::vector<d_cyclic> y,
+std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,
                                     factoriser &F=fast_ntt<>::factoriser())
 {
     fast_ntt<>::set_factoriser(F);
     int n=x.size(),m=y.size();
     auto d_list=F.divisors_list(F.totient(d_cyclic::m));
-    std::sort(d_list.begin(),d_list.end());
     int r=*std::lower_bound(d_list.begin(),d_list.end(),n+m-1);
     x.resize(r);
     y.resize(r);
     fast_ntt NTT(r,d_cyclic::m);
-    inverse_fast_ntt INTT(r,d_cyclic::m);
+    inverse_fast_ntt INTT=NTT.inv();
     auto u=NTT(x),v=NTT(y);
-    auto t1=INTT(u),t2=INTT(v);
     std::vector<d_cyclic> w(r);
     for(int i=0;i<r;i++)
         w[i]=u[i]*v[i];
     auto z=INTT(w);
+    auto h=d_cyclic(r).inv();
     for(auto &s:z)
-        s/=d_cyclic(r);
+        s*=h;
     z.resize(n+m-1);
     return z;
+}
+
+polynomial<d_cyclic> fast_multiplication(const polynomial<d_cyclic>& x,const polynomial<d_cyclic>& y,
+                                    factoriser &F=fast_ntt<>::factoriser())
+{
+    return fast_multiplication(static_cast<const std::vector<d_cyclic>&>(x),
+                         static_cast<const std::vector<d_cyclic>&>(y),F);
 }
 #endif //ACPC_PREPARATION_FFT_H

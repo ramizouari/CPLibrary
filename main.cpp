@@ -5,14 +5,17 @@
 #include <iostream>
 #include "abstract_algebra.h"
 #include "fft.h"
-#include "modular_arithmetic.h"
-#include "optimisation.h"
-
+#include "ring_extension.h"
+#include <chrono>
+constexpr integer m=1e9+7;
+using IK=cyclic<m>;
+using IQ=rational_extension<integer>;
 int main()
 {
-    d_cyclic::m=1e9+9;
-    std::vector<d_cyclic> u={1,1,1,1,1,1,1,1,1,1,1};
-    factoriser F(2e5);
-    for(auto s: fast_multiply(u,u,F))
-        std::cout << (integer)s << ' ';
+    polynomial<IQ> p=newton_interpolation<IQ>({1,2,3,4,5,6},{3,9,30,101,358,1443});
+    integer n;
+    std::cin >> n;
+    rational_t<integer> A=p(IQ(n));
+    auto [u,v]=A;
+    std::cout << u << ' ' << v;
 }

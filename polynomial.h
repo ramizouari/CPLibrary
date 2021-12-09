@@ -14,7 +14,7 @@ class polynomial
 public:
     void reduce()
     {
-        while(!p.empty() && p.back()==0)
+        while(!p.empty() && p.back()==R(0))
             p.pop_back();
     }
     polynomial(R k=0):p(1,k)
@@ -120,7 +120,7 @@ public:
 
     auto& operator-=(R a)
     {
-        return *this+=polynomial({a});
+        return *this-=polynomial({a});
     }
 
     auto operator+(R a) const
@@ -201,7 +201,7 @@ public:
     {
         H r=0;
         for(int i=degree();i>=0;i--)
-            r=(r+p[i])*a;
+            r=r*a+p[i];
         return r;
     }
 
@@ -214,6 +214,16 @@ public:
     {
         return p.end();
     }
+
+    explicit operator std::vector<R>&()
+    {
+        return p;
+    }
+
+    explicit operator const std::vector<R>&() const
+    {
+        return p;
+    }
 };
 
 template<typename R>
@@ -224,7 +234,7 @@ polynomial<R> operator*(R a,const polynomial<R> &p)
 }
 
 template<typename R>
-const polynomial<R> X=polynomial<R>({0,1});
+const polynomial<R> X=polynomial<R>(std::vector<R>{0,1});
 
 template<typename R>
 class sparse_polynomial
@@ -331,12 +341,12 @@ public:
 
     auto& operator+=(R a)
     {
-        return *this+=polynomial({a});
+        return *this+=sparse_polynomial({a});
     }
 
     auto& operator-=(R a)
     {
-        return *this+=polynomial({a});
+        return *this+=sparse_polynomial({a});
     }
 
     auto operator+(R a) const
@@ -406,11 +416,50 @@ polynomial<R> newton_interpolation(const std::vector<R> &x,const std::vector<R> 
         d[i][i]=y[i];
     for(int r=1;r<=n;r++) for(int i=0;i+r<=n;i++)
         d[i][i+r]=(d[i+1][i+r]-d[i][i+r-1])/(x[i+r]-x[i]);
-    polynomial<R> p,u=1;
+    polynomial<R> p,u=R(1);
     for(int i=0;i<=n;i++) {
         p +=d[0][i]*u;
         u*=(X<R>-x[i]);
     }
     return p;
+}
+
+template<typename R>
+polynomial<R> karatsuba_multiplication(const polynomial<R> &p,const polynomial<R> &q)
+{
+    constexpr int L=75;
+    if(std::min(p.degree(),q.degree())<=L)
+        return p*q;
+    polynomial<R> a1,b1,a2,b2;
+    int n=p.degree(),m=q.degree(),r=std::max(n,m)+1;
+    std::vector<R> &u1=static_cast<std::vector<R>&>(a1),&u2=static_cast<std::vector<R>&>(a2),
+    &v1=static_cast<std::vector<R>&>(b1),&v2=static_cast<std::vector<R>&>(b2);
+    u1.resize(std::min(n+1,r/2));
+    u2.resize(std::min(m+1,r/2));
+    v1.resize(std::max(n+1-r/2,0));
+    v2.resize(std::max(m+1-r/2,0));
+    for(int i=0;i<u1.size();i++)
+        u1[i]=p[i];
+    for(int i=0;i<u2.size();i++)
+        u2[i]=q[i];
+    for(int i=0;i<v1.size();i++)
+        v1[i]=p[i+r/2];
+    for(int i=0;i<v2.size();i++)
+        v2[i]=q[i+r/2];
+    polynomial<R> r1= karatsuba_multiplication(a1,a2),
+        r3= karatsuba_multiplication(b1,b2),
+        t=karatsuba_multiplication(a1+b1,a2+b2),
+        r2=t-r1-r3;
+    polynomial<R> h;
+    int s=r-r%2;
+    auto &c=static_cast<std::vector<R>&>(h);
+    c.resize(n+m+1);
+    for(int i=0;i<=r1.degree();i++)
+        c[i]+=r1[i];
+    for(int i=0;i<=r2.degree();i++)
+        c[i+r/2]+=r2[i];
+    for(int i=0;i<=r3.degree();i++)
+        c[i+s]+=r3[i];
+    return h;
 }
 #endif

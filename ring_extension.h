@@ -7,6 +7,13 @@
 #include "polynomial.h"
 
 template<typename R>
+struct rational_t
+{
+    R p;
+    R q;
+};
+
+template<typename R>
 class rational_extension
 {
     R p,q;
@@ -21,6 +28,17 @@ public:
     {
         reduce();
     }
+
+    bool operator==(const rational_extension &O) const
+    {
+        return p*O.q==O.p*q;
+    }
+
+    bool operator!=(const rational_extension &O) const
+    {
+        return p*O.q!=O.p*q;
+    }
+
     bool operator==(R a) const
     {
         return p==a*q;
@@ -34,6 +52,7 @@ public:
         p=p*o.q+o.p*q;
         q*=o.q;
         reduce();
+        return *this;
     }
 
     auto& operator-=(const rational_extension &o)
@@ -41,6 +60,7 @@ public:
         p=p*o.q-o.p*q;
         q*=o.q;
         reduce();
+        return *this;
     }
 
     auto& operator*=(const rational_extension &o)
@@ -48,6 +68,7 @@ public:
         p*=o.p;
         q*=o.q;
         reduce();
+        return *this;
     }
 
     auto operator+(const rational_extension &o) const
@@ -68,9 +89,29 @@ public:
         return r*=o;
     }
 
+    auto inv() const
+    {
+        return rational_extension(q,p);
+    }
+    auto& operator/=(const rational_extension &O)
+    {
+        return *this*=O.inv();
+    }
+
+    auto operator/(const rational_extension &O) const
+    {
+        auto r=*this;
+        return r/=O;
+    }
+
     auto operator-() const
     {
         return rational_extension(-p,q);
+    }
+
+    operator rational_t<R>() const
+    {
+        return rational_t<R>{p,q};
     }
 };
 
