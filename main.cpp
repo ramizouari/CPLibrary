@@ -7,15 +7,31 @@
 #include "fft.h"
 #include "ring_extension.h"
 #include <chrono>
-constexpr integer m=1e9+7;
-using IK=cyclic<m>;
-using IQ=rational_extension<integer>;
+#include "optimisation.h"
+using E=d_vector<real>;
+
+namespace global
+{
+    d_matrix<real> M({{5,1},{1,2}});
+    d_vector<real> b({3,5});
+}
+
+real f(E a)
+{
+    using namespace global;
+    static L2_inner_product<E> B;
+    return B.inner_product(a,M*a+b);
+}
+
 int main()
 {
-    polynomial<IQ> p=newton_interpolation<IQ>({1,2,3,4,5,6},{3,9,30,101,358,1443});
-    integer n;
-    std::cin >> n;
-    rational_t<integer> A=p(IQ(n));
-    auto [u,v]=A;
-    std::cout << u << ' ' << v;
+    derivator<E,real,E> D;
+    barzilai_borwein_gradient_descent<E> GD(E({0,0}),D,.1);
+    auto u=GD.argmin(f);
+    for(auto s:u)
+        std::cout << s << ' ';
+    using namespace global;
+    std::cout << '\n';
+    for(auto s:(-.5L*M.inv())*b)
+        std::cout << s << ' ';
 }

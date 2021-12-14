@@ -3,6 +3,7 @@
 //
 #ifndef __DATA_STRUCTURES_H__
 #define __DATA_STRUCTURES_H__
+#include <vector>
 
 unsigned int bit_log(unsigned int n)
 {
@@ -223,6 +224,11 @@ struct fenwick_tree {
         return F(F.inv(sum(a)),b);
     }
 
+    int sum(int a,int b)
+    {
+        return query(a,b);
+    }
+
     void add(int x, T delta) {
         for (int i = x; i < n; i = i | (i + 1))
             bit[i] = F(bit[i], delta);
@@ -240,7 +246,7 @@ struct fenwick_matrix {
     int n, m;
     std::vector<std::vector<T>> bit;
 
-    fenwick_matrix(int _n,int _m):n(_n),m(_m),bit(n,std::vector<int>(T)){}
+    fenwick_matrix(int _n,int _m):n(_n),m(_m),bit(n,std::vector<T>(m,O::neutral)){}
     int sum(int x, int y) {
         if(x<0||y<0)
             return O::neutral;
@@ -260,8 +266,7 @@ struct fenwick_matrix {
 
     int query(int a,int b,int c,int d)
     {
-        //To Do
-        //........................................
+        return F(F.inv(sum(a,c),sum(b,d)));
     }
 
     void add(int x, int y, int delta) {

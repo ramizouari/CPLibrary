@@ -17,11 +17,11 @@ R commutator(R a,R b)
     return a*b-b*a;
 }
 
-template<typename R>
-R pow(R a, long long n)
+template<typename R,typename ...StructureMetaData>
+R pow(R a, long long n,StructureMetaData ... meta_info)
 {
     if(n==0)
-        return 1;
+        return R(1,meta_info...);
     else if(n==1)
         return a;
     auto s=pow(a,n/2);

@@ -116,7 +116,7 @@ struct tensor_t
     std::vector<tensor_t<n-1,T>> U;
     T operator[](const std::array<T,n> &I) const
     {
-        std::array<T,n-1> subI;
+        std::array<T,n-1> subI={};
         for(int i=1;i<n;i++)
             subI[i-1]=I[i];
         return U[subI];
@@ -152,7 +152,7 @@ T get(const tensor<n,T> &A,std::array<int,n> I)
         return A;
     else
     {
-        std::array<int, n - 1> subI;
+        std::array<int, n - 1> subI={};
         for(int i=1;i<n;i++)
             subI[i-1]=I[i];
         return get<T,n-1>(A[I[0]],subI);
@@ -171,7 +171,7 @@ tensor<n,T> reshape(const std::vector<T> &A,std::array<int,n> shape)
             for(int j=0;j<m;j++)
                 B[i][j]=A[i*m+j];
         tensor<n,T> R(shape[0]);
-        std::array<int,n-1> subshape;
+        std::array<int,n-1> subshape={};
         for(int i=1;i<n;i++)
             subshape[i-1]=shape[i];
         for(int i=0;i<shape[0];i++)
@@ -192,7 +192,7 @@ struct multidimensional_fft
     tensor<n,IC> operator()(const tensor<n,IC>&T) const
     {
         tensor<n,IC> V(shape[0]);
-        std::array<int,n-1> subshape;
+        std::array<int,n-1> subshape={};
         for(int i=1;i<n;i++)
             subshape[i-1]=shape[i];
         multidimensional_fft<n-1,is_inverse> subFFT(subshape);
@@ -323,13 +323,12 @@ public:
 
 using inverse_fast_ntt=fast_ntt<true>;
 
-std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,
+std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,int r_guess,
                                     factoriser &F=fast_ntt<>::factoriser())
 {
     fast_ntt<>::set_factoriser(F);
-    int n=x.size(),m=y.size();
     auto d_list=F.divisors_list(F.totient(d_cyclic::m));
-    int r=*std::lower_bound(d_list.begin(),d_list.end(),n+m-1);
+    int r=*std::lower_bound(d_list.begin(),d_list.end(),r_guess);
     x.resize(r);
     y.resize(r);
     fast_ntt NTT(r,d_cyclic::m);
@@ -342,8 +341,13 @@ std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_
     auto h=d_cyclic(r).inv();
     for(auto &s:z)
         s*=h;
-    z.resize(n+m-1);
+    z.resize(r_guess);
     return z;
+}
+
+std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,factoriser &F=fast_ntt<>::factoriser())
+{
+    return fast_multiplication(x,y,x.size()+y.size()-1,F);
 }
 
 polynomial<d_cyclic> fast_multiplication(const polynomial<d_cyclic>& x,const polynomial<d_cyclic>& y,
@@ -351,5 +355,38 @@ polynomial<d_cyclic> fast_multiplication(const polynomial<d_cyclic>& x,const pol
 {
     return fast_multiplication(static_cast<const std::vector<d_cyclic>&>(x),
                          static_cast<const std::vector<d_cyclic>&>(y),F);
+}
+
+std::vector<integer> fast_multiplication(const std::vector<integer>& x,const std::vector<integer>& y,
+                                         factoriser &F=fast_ntt<>::factoriser())
+{
+    constexpr integer L=1e9;
+    int n=x.size(),m=y.size();
+    integer r=std::bit_ceil<unsigned int>(n+m-1);
+    integer k=((L+r-1)/r)*r;
+    while(!F.is_prime(k+1))
+        k+=r;
+    d_cyclic::m=k+1;
+    std::vector<d_cyclic> u(x.size()),v(y.size());
+    for(int i=0;i<x.size();i++)
+        u[i]=x[i];
+    for(int i=0;i<y.size();i++)
+        v[i]=y[i];
+    auto w= fast_multiplication(u,v,r,F);
+    std::vector<integer> z(x.size()+y.size()-1);
+    for(int i=0;i<z.size();i++)
+    {
+        z[i] = (integer) w[i];
+        if(z[i]>d_cyclic::m/2)
+            z[i]-=d_cyclic::m;
+    }
+    return z;
+}
+
+polynomial<integer> fast_multiplication(const polynomial<integer>& x,const polynomial<integer>& y,
+                                    factoriser &F=fast_ntt<>::factoriser())
+{
+    return fast_multiplication(static_cast<const std::vector<integer>&>(x),
+                         static_cast<const std::vector<integer>&>(y),F);
 }
 #endif //ACPC_PREPARATION_FFT_H

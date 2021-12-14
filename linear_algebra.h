@@ -242,7 +242,7 @@ public:
     inline static int n=0,m=0;
     d_matrix(R k=0,m_shape shape ={n,m}):M(shape.n,std::vector<R>(shape.m))
     {
-        for(int i=0;i<std::min(n,m);i++)
+        for(int i=0;i<std::min(shape.n,shape.m);i++)
             M[i][i]=k;
     }
     d_matrix(std::vector<std::vector<R>> _M):M(std::move(_M)){}
@@ -340,6 +340,7 @@ public:
     {
         for(auto &row:M) for(auto &u:row)
             u*=k;
+        return *this;
     }
 
     d_vector<R>operator*(const d_vector<R> &u) const

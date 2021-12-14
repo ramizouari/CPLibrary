@@ -142,9 +142,20 @@ public:
         return m;
     }
 
-    bool is_prime(int n) const
+    bool is_prime(int m) const
     {
-        return n>1 && smallest_d[n]==n;
+        if(m<n)
+            return m>1 && smallest_d[m]==m;
+        else
+        {
+            integer L=std::ceil(std::sqrt(m));
+            for(auto p:p_list)
+                if(m%p==0)
+                    return false;
+                else if(p>L)
+                    break;
+            return true;
+        }
     }
 
     integer totient(integer n)

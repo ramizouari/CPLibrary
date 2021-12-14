@@ -5,6 +5,9 @@
 #ifndef __OPTIMISATION__
 #define __OPTIMISATION__
 #include "linear_algebra.h"
+#include "abstract_algebra.h"
+#include "topology.h"
+#include <functional>
 
 template<int n>
 s_vector<real,n> point_wise_divide(const s_vector<real,n> &x,const s_vector<real,n> &y)
@@ -170,7 +173,9 @@ d_vector<real> simplex(
                 A[i][q] = 0;
 
             }
-        Z -= (Z[q] / A[p][q]) * A[p];
+        auto k=Z[q];
+        for(int j=0;j<n+m;j++)
+            Z[j] -= (k / A[p][q]) * A[p][j];
         Z[q] = 0;
     }
     d_vector<real> h(v_shape{n+m});
@@ -194,4 +199,121 @@ d_vector<real> simplex(
         d[i] = g[i];
     return d;
 }
+
+template<typename E,typename F,typename R>
+class derivator
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+    template<typename ... StructureMetaData>
+    R jacobian(const std::function<F(E)>&f,E a,StructureMetaData ...meta_info) const
+    {
+        R J(0,meta_info...);
+        for(int i=0;i<J.col_dim();i++)
+        {
+            a[i]-=eps;
+            auto z2=f(a);
+            a[i]+=2*eps;
+            auto z1=f(a);
+            auto du=(z2-z1)/(2*eps);
+            for(int j=0;j<J.row_dim();j++)
+                J[i][j]=du[j];
+            a[i]-=eps;
+        }
+    }
+};
+
+template<typename E>
+class derivator<E,real,E>
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+
+    E gradient(const std::function<real(E)>&f,E a) const
+    {
+        E grad(a);
+        for(int i=0;i<grad.dim();i++)
+        {
+            a[i]+=eps;
+            auto z2=f(a);
+            a[i]-=2*eps;
+            auto z1=f(a);
+            a[i]+=eps;
+            grad[i]=(z2-z1)/(2*eps);
+        }
+        return grad;
+    }
+};
+
+template<>
+class derivator<real,real,real>
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+    real derivative(const std::function<real(real)>&f,real a) const
+    {
+        return (f(a+eps)-f(a-eps))/(2*eps);
+    }
+
+    real gradient(const std::function<real(real)>&f,real a) const
+    {
+        return derivative(f,a);
+    }
+};
+
+template<typename E,typename Norm=L2_inner_product<E>>
+class gradient_descent
+{
+    inline static constexpr Norm N=Norm();
+protected:
+    E x0;
+    real p=.1;
+    real eps=1e-8;
+    derivator<E,real,E>& D;
+public:
+    gradient_descent(const E& _x0,derivator<E,real,E> &d):x0(_x0),D(d) {}
+    void set_seed(const E& _x0) { x0 = _x0; }
+    E argmin(const std::function<real(E)>& f) const
+    {
+        E x = x0;
+        for (; N.norm(D.gradient(f, x)) > eps; x -= p * D.gradient(f, x));
+        return x;
+    }
+};
+
+template<typename E,typename InnerProduct=L2_inner_product<E>>
+class barzilai_borwein_gradient_descent
+{
+    E s;
+    E x0;
+    real p=.1;
+    real eps=1e-8;
+    derivator<E,real,E>& D;
+    inline static constexpr InnerProduct B = InnerProduct();
+public:
+    barzilai_borwein_gradient_descent(const E& _x0, derivator<E, real,E>& d, real _p):x0(_x0),D(d),p(_p){}
+
+    E argmin(const std::function<real(E)>& f)
+    {
+        this->p = 0.1;
+        s = this->x0;
+        E x = s- this->p*this->D.gradient(f, s);
+        for (; B.norm(this->D.gradient(f, x)) > this->eps; x -= this->p * this->D.gradient(f, x))
+        {
+            update_rate(f, x);
+            s = x;
+        }
+        return x;
+    }
+
+    virtual void update_rate(const std::function<real(E)>& f, const E& x)
+    {
+        auto L = this->D.gradient(f, x) - this->D.gradient(f, s);
+        this->p = B.inner_product(L,x - s) / B.inner_product(L,L);
+    }
+};
+
 #endif
