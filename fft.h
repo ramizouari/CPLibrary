@@ -13,7 +13,10 @@
 #include "modular_arithmetic.h"
 
 const real pi = acos(-1);
-
+/*
+ * Fast Fourier Transform over Complex numbers
+ * Suitable for smooth numbers
+ * */
 template<bool is_inverse=false>
 struct fast_fourier
 {
@@ -28,7 +31,7 @@ public:
     fast_fourier(int _n):n(_n),w(std::exp(IC(0,2*sign*pi/n)))
     {
     }
-    std::vector<IC> unnormalized(const std::vector<IC> &X) const
+    virtual std::vector<IC> unnormalized(const std::vector<IC> &X) const
     {
         if(n==1)
             return X;
@@ -41,7 +44,7 @@ public:
         std::vector<std::vector<IC>> V(p);
         for(int i=0;i<p;i++)
             V[i]=FFT.unnormalized(U[i]);
-        std::vector<std::vector<IC>> Q(p,std::vector<IC>(q,0));
+        std::vector<IC> R(n);
         IC z=std::pow(w,q);
         IC t=1;
         for(int i=0;i<p;i++,t*=z)
@@ -51,12 +54,9 @@ public:
             {
                 IC h3=1;
                 for (int k = 0; k < q; k++,h3*=h2)
-                    Q[i][k] += h1 * h3 * V[j][k];
+                    R[i*q+k] += h1 * h3 * V[j][k];
             }
         }
-        std::vector<IC> R(n);
-        for(int i=0;i<p;i++) for(int j=0;j<q;j++)
-                R[i*q+j]=Q[i][j];
         return R;
     }
     std::vector<IC> operator()(const std::vector<IC> &X) const
@@ -82,17 +82,75 @@ public:
     }
 };
 
-using inverse_fast_fourier=fast_fourier<true>;
+/*
+ * Fast Fourier Transform over Complex numbers
+ * Works only on power of two (optimized for this case)
+ * */
 
-std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y,factoriser &F=fast_fourier<>::factoriser())
+template<bool is_inverse=false>
+struct fast_fourier_base_2:public fast_fourier<is_inverse>
+{
+public:
+    using fast_fourier<is_inverse>::fast_fourier;
+    std::vector<IC> unnormalized(const std::vector<IC> &X) const
+    {
+        auto &n=this->n;
+        auto &w=this->w;
+        if(n==1)
+            return X;
+        constexpr int p=2;
+        auto q=n/p;
+        fast_fourier_base_2<is_inverse> FFT(q);
+        std::vector<IC> U1(q),U2(q);
+        for(int i=0;i<n;i+=2)
+        {
+            U1[i/p] = X[i];
+            U2[i/p]=X[i+1];
+        }
+        std::vector<IC> V1=FFT.unnormalized(U1),V2=FFT.unnormalized(U2);
+        IC s=1;
+        for(int i=0;i<q;i++,s*=w)
+            V2[i]*=s;
+        std::vector<IC> R(n);
+        for(int i=0;i<n/p;i++)
+            R[i]=V1[i]+V2[i];
+        for(int i=0;i<n/p;i++)
+            R[i+n/p]=V1[i]-V2[i];
+        return R;
+    }
+};
+
+using inverse_fast_fourier=fast_fourier<true>;
+using inverse_fast_fourier_base_2=fast_fourier_base_2<true>;
+
+std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y,factoriser &F)
 {
     fast_fourier<>::set_factoriser(F);
     int n=x.size(),m=y.size();
-    int r=n+m;
-    x.resize(r);
-    y.resize(r);
+    int r=n+m-1;
     fast_fourier FFT(r);
     inverse_fast_fourier IFFT(r);
+    x.resize(r);
+    y.resize(r);
+    auto u=FFT(x),v=FFT(y);
+    std::vector<IC> w(r);
+    for(int i=0;i<r;i++)
+        w[i]=u[i]*v[i];
+    auto z=IFFT(w);
+    for(auto &s:z)
+        s/=r;
+    z.resize(n+m-1);
+    return z;
+}
+
+std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y)
+{
+    int n=x.size(),m=y.size();
+    int r= std::bit_ceil<unsigned int>(n+m-1);
+    x.resize(r);
+    y.resize(r);
+    fast_fourier_base_2<> FFT(r);
+    inverse_fast_fourier_base_2 IFFT(r);
     auto u=FFT(x),v=FFT(y);
     std::vector<IC> w(r);
     for(int i=0;i<r;i++)
@@ -180,6 +238,9 @@ tensor<n,T> reshape(const std::vector<T> &A,std::array<int,n> shape)
     }
 }
 
+/*
+ * Multidimensional Fast Fourier Transform
+ * */
 
 template<int n,bool is_inverse=false>
 struct multidimensional_fft
@@ -233,7 +294,10 @@ struct multidimensional_fft<0,is_inverse>
     }
 };
 
-
+/*
+ * Fast Number Theoretic Transform (Fourier Transform over cyclic fields)
+ * Suitable with fields IF of cardinality p such that totient(p) is a smooth number
+ * */
 
 template<bool is_inverse=false>
 struct fast_ntt
@@ -321,6 +385,46 @@ public:
 };
 
 
+/*
+ * Fast Number Theoretic Transform (Fast Fourier Transform over cyclic fields)
+ * Works only on "certain" powers of 2
+ * Let p the cardinality of IF, let k the biggest integer such that 2^k | p-1:
+ * => This version of NTT works only on vectors of a size s = 2^r with 0<=r<=k
+ * */
+template<bool is_inverse=false>
+struct fast_ntt_base_2:public fast_ntt<is_inverse>
+{
+public:
+    using fast_ntt<is_inverse>::fast_ntt;
+    using IK=fast_ntt<is_inverse>::IK;
+    std::vector<d_cyclic> unnormalized(const std::vector<d_cyclic> &X) const
+    {
+        auto &n=this->n;
+        auto &w=this->w;
+        if(n==1)
+            return X;
+        constexpr int p=2;
+        auto q=n/p;
+        fast_ntt_base_2<is_inverse> FFT(q,d_cyclic::m,w*w);
+        std::vector<IK> U1(q),U2(q);
+        for(int i=0;i<n;i+=2)
+        {
+            U1[i/p] = X[i];
+            U2[i/p]=X[i+1];
+        }
+        std::vector<IK> V1=FFT.unnormalized(U1),V2=FFT.unnormalized(U2);
+        IC s=1;
+        for(int i=0;i<q;i++,s*=w)
+            V2[i]*=s;
+        std::vector<IK> R(n);
+        for(int i=0;i<n/p;i++)
+            R[i]=V1[i]+V2[i];
+        for(int i=0;i<n/p;i++)
+            R[i+n/p]=V1[i]-V2[i];
+        return R;
+    }
+};
+
 using inverse_fast_ntt=fast_ntt<true>;
 
 std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,int r_guess,
@@ -331,6 +435,7 @@ std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_
     int r=*std::lower_bound(d_list.begin(),d_list.end(),r_guess);
     x.resize(r);
     y.resize(r);
+
     fast_ntt NTT(r,d_cyclic::m);
     inverse_fast_ntt INTT=NTT.inv();
     auto u=NTT(x),v=NTT(y);

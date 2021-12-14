@@ -2,6 +2,7 @@
 #define __TOPOLOGY_H__
 #include "abstract_algebra.h"
 #include "linear_algebra.h"
+#include <functional>
 
 template<typename E>
 struct metric_t
@@ -19,19 +20,22 @@ struct norm_t :public metric_t<E>
     }
 };
 
-template<typename E>
+template<typename K,typename E>
 struct inner_product_t:public norm_t<E>
 {
     real norm(const E&u) const override
     {
-        return std::sqrt(inner_product(u,u));
+        return std::abs(std::sqrt(inner_product(u,u)));
     }
 
-    virtual real inner_product(const E&u,const E&v)const  =0;
+    virtual K inner_product(const E&u,const E&v)const  =0;
 };
 
+template<typename K,typename E>
+struct L2_inner_product;
+
 template<typename E>
-struct L2_inner_product :public inner_product_t<E>
+struct L2_inner_product<real,E>:public inner_product_t<real,E>
 {
     real inner_product(const E&u,const E&v) const
     {
@@ -39,6 +43,19 @@ struct L2_inner_product :public inner_product_t<E>
         real R=0;
         for(int i=0;i<m;i++)
             R+=u[i]*v[i];
+        return R;
+    }
+};
+
+template<typename E>
+struct L2_inner_product<IC,E>:public inner_product_t<IC,E>
+{
+    IC inner_product(const E&u,const E&v) const
+    {
+        auto m=std::min(u.dim(),v.dim());
+        IC R=0;
+        for(int i=0;i<m;i++)
+            R+=std::conj(u[i])*v[i];
         return R;
     }
 };
@@ -67,7 +84,7 @@ struct L_inf_norm :public norm_t<E>
     }
 };
 
-struct real_inner_product :public inner_product_t<real>
+struct real_inner_product :public inner_product_t<real,real>
 {
     real inner_product(const real &u,const real &v) const override
     {
@@ -75,10 +92,227 @@ struct real_inner_product :public inner_product_t<real>
     }
 };
 
+struct complex_inner_product :public inner_product_t<IC,IC>
+{
+    IC inner_product(const IC &u,const IC &v) const override
+    {
+        return std::conj(u)*v;
+    }
+};
+
 template<>
-struct L2_inner_product<real>:public real_inner_product{};
+struct L2_inner_product<real,real>:public real_inner_product{};
 template<>
 struct L_inf_norm<real>:public real_inner_product{};
 template<>
 struct L1_norm<real>:public real_inner_product{};
+
+template<>
+struct L2_inner_product<IC,IC>:public complex_inner_product{};
+
+template<typename E,typename F,typename R>
+class derivator
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+    template<typename ...StructureMetaData>
+    R jacobian(const std::function<F(E)>&f,E a,StructureMetaData ... meta_info) const
+    {
+        R J(0,meta_info...);
+        for(int i=0;i<J.col_dim();i++)
+        {
+            a[i]+=eps;
+            auto z2=f(a);
+            a[i]-=2*eps;
+            auto z1=f(a);
+            auto du=(z2-z1)/(2*eps);
+            for(int j=0;j<J.row_dim();j++)
+                J[j][i]=du[j];
+            a[i]+=eps;
+        }
+        return J;
+    }
+};
+
+template<typename E>
+class derivator<E,real,E>
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+
+    E gradient(const std::function<real(E)>&f,E a) const
+    {
+        E grad(a);
+        for(int i=0;i<grad.dim();i++)
+        {
+            a[i]+=eps;
+            auto z2=f(a);
+            a[i]-=2*eps;
+            auto z1=f(a);
+            a[i]+=eps;
+            grad[i]=(z2-z1)/(2*eps);
+        }
+        return grad;
+    }
+};
+
+template<>
+class derivator<real,real,real>
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+    real derivative(const std::function<real(real)>&f,real a) const
+    {
+        return (f(a+eps)-f(a-eps))/(2*eps);
+    }
+
+    real gradient(const std::function<real(real)>&f,real a) const
+    {
+        return derivative(f,a);
+    }
+};
+
+template<typename E>
+class derivator<E,IC,E>
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+
+    E gradient(const std::function<IC(E)>&f,E a) const
+    {
+        E grad(a);
+        for(int i=0;i<grad.dim();i++)
+        {
+            a[i]+=eps;
+            auto z2=f(a);
+            a[i]-=2*eps;
+            auto z1=f(a);
+            a[i]+=eps;
+            grad[i]=(z2-z1)/(2*eps);
+        }
+        return grad;
+    }
+};
+
+template<>
+class derivator<IC,IC ,IC>
+{
+    real eps;
+public:
+    derivator(real _eps=1e-7):eps(_eps){}
+    IC derivative(const std::function<IC(IC)>&f,IC a) const
+    {
+        return (f(a+eps)-f(a-eps))/(2*eps);
+    }
+
+    IC gradient(const std::function<IC(IC)>&f,IC a) const
+    {
+        return derivative(f,a);
+    }
+};
+
+template<typename K,typename R,typename M,typename Norm=L2_inner_product<K,R>>
+class newton_raphson;
+
+template<typename Norm>
+class newton_raphson<real,real,real,Norm>
+{
+    inline static constexpr Norm N=Norm();
+    derivator<real, real,real> &D;
+    real x0;
+    real eps=1e-5;
+public:
+    newton_raphson(real _x0, derivator<real, real, real>& d) :D(d),x0(_x0) {}
+    real root(const std::function<real(real)>& f) const
+    {
+        real x = x0;
+        while (N.norm(f(x)) > eps)
+            x = x - f(x) / D.derivative(f, x);
+        return x;
+    }
+};
+
+template<typename Norm>
+class newton_raphson<IC,IC,IC,Norm>
+{
+    inline static constexpr Norm N=Norm();
+    derivator<IC, IC,IC> &D;
+    IC x0;
+    real eps=1e-5;
+public:
+    newton_raphson(real _x0, derivator<IC, IC, IC>& d) :D(d),x0(_x0) {}
+    IC root(const std::function<IC(IC)>& f) const
+    {
+        IC x = x0;
+        while (N.norm(f(x)) > eps)
+            x = x - f(x) / D.derivative(f, x);
+        return x;
+    }
+};
+
+template<typename E,typename M,typename Norm>
+class newton_raphson<real,E,M,Norm>
+{
+    inline static constexpr Norm N=Norm();
+    derivator<E, E,M> &D;
+    E x0;
+    real eps=1e-5;
+public:
+    newton_raphson(E _x0, derivator<E, E, M>& d) :D(d),x0(_x0) {}
+    template<typename ...StructureMetaData>
+    E root(const std::function<E(E)>& f,StructureMetaData ... meta_info) const
+    {
+        E x = x0;
+        while (N.norm(f(x)) > eps) {
+            auto u=D.jacobian(f, x,meta_info...).solve(f(x));
+            x-=u;
+        }
+        return x;
+    }
+};
+
+
+template<typename E,typename M,typename Norm>
+class newton_raphson<IC,E,M,Norm>
+{
+    inline static constexpr Norm N=Norm();
+    derivator<E, E,M> &D;
+    E x0;
+    real eps=1e-5;
+public:
+    newton_raphson(E _x0, derivator<E, E, M>& d) :D(d),x0(_x0) {}
+    template<typename ...StructureMetaData>
+    E root(const std::function<E(E)>& f,StructureMetaData ... meta_info) const
+    {
+        E x = x0;
+        while (N.norm(f(x)) > eps) {
+            auto u=D.jacobian(f, x,meta_info...).solve(f(x));
+            x-=u;
+        }
+        return x;
+    }
+};
+
+template<typename Norm>
+class newton_raphson<IC,Norm,IC>
+{
+    inline static constexpr Norm N=Norm();
+    derivator<IC, IC,IC> &D;
+    IC x0;
+    real eps=1e-5;
+public:
+    newton_raphson(IC _x0, derivator<IC, IC, IC>& d) :D(d),x0(_x0) {}
+    IC root(const std::function<IC(IC)>& f) const
+    {
+        IC x = x0;
+        while (N.norm(f(x)) > eps)
+            x = x - f(x) / D.derivative(f, x);
+        return x;
+    }
+};
+
 #endif

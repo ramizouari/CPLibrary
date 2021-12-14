@@ -200,71 +200,7 @@ d_vector<real> simplex(
     return d;
 }
 
-template<typename E,typename F,typename R>
-class derivator
-{
-    real eps;
-public:
-    derivator(real _eps=1e-7):eps(_eps){}
-    template<typename ... StructureMetaData>
-    R jacobian(const std::function<F(E)>&f,E a,StructureMetaData ...meta_info) const
-    {
-        R J(0,meta_info...);
-        for(int i=0;i<J.col_dim();i++)
-        {
-            a[i]-=eps;
-            auto z2=f(a);
-            a[i]+=2*eps;
-            auto z1=f(a);
-            auto du=(z2-z1)/(2*eps);
-            for(int j=0;j<J.row_dim();j++)
-                J[i][j]=du[j];
-            a[i]-=eps;
-        }
-    }
-};
-
-template<typename E>
-class derivator<E,real,E>
-{
-    real eps;
-public:
-    derivator(real _eps=1e-7):eps(_eps){}
-
-    E gradient(const std::function<real(E)>&f,E a) const
-    {
-        E grad(a);
-        for(int i=0;i<grad.dim();i++)
-        {
-            a[i]+=eps;
-            auto z2=f(a);
-            a[i]-=2*eps;
-            auto z1=f(a);
-            a[i]+=eps;
-            grad[i]=(z2-z1)/(2*eps);
-        }
-        return grad;
-    }
-};
-
-template<>
-class derivator<real,real,real>
-{
-    real eps;
-public:
-    derivator(real _eps=1e-7):eps(_eps){}
-    real derivative(const std::function<real(real)>&f,real a) const
-    {
-        return (f(a+eps)-f(a-eps))/(2*eps);
-    }
-
-    real gradient(const std::function<real(real)>&f,real a) const
-    {
-        return derivative(f,a);
-    }
-};
-
-template<typename E,typename Norm=L2_inner_product<E>>
+template<typename E,typename Norm=L2_inner_product<real,E>>
 class gradient_descent
 {
     inline static constexpr Norm N=Norm();
@@ -284,7 +220,7 @@ public:
     }
 };
 
-template<typename E,typename InnerProduct=L2_inner_product<E>>
+template<typename E,typename InnerProduct=L2_inner_product<real,E>>
 class barzilai_borwein_gradient_descent
 {
     E s;
@@ -315,5 +251,4 @@ public:
         this->p = B.inner_product(L,x - s) / B.inner_product(L,L);
     }
 };
-
 #endif

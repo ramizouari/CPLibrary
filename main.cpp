@@ -8,30 +8,26 @@
 #include "ring_extension.h"
 #include <chrono>
 #include "optimisation.h"
-using E=d_vector<real>;
 
-namespace global
-{
-    d_matrix<real> M({{5,1},{1,2}});
-    d_vector<real> b({3,5});
-}
-
-real f(E a)
-{
-    using namespace global;
-    static L2_inner_product<E> B;
-    return B.inner_product(a,M*a+b);
-}
 
 int main()
 {
-    derivator<E,real,E> D;
-    barzilai_borwein_gradient_descent<E> GD(E({0,0}),D,.1);
-    auto u=GD.argmin(f);
-    for(auto s:u)
-        std::cout << s << ' ';
-    using namespace global;
-    std::cout << '\n';
-    for(auto s:(-.5L*M.inv())*b)
-        std::cout << s << ' ';
+    factoriser F(3e6);
+    fast_fourier<>::set_factoriser(F);
+    std::vector<IC> u1(pow(5,9),1),u2(1<<21,1);
+    auto t1=std::chrono::high_resolution_clock::now();
+    fast_fourier<> FFT(u1.size());
+    IC r=0;
+    auto w=FFT(u1);
+    auto t2=std::chrono::high_resolution_clock::now();
+    std::cout << "FFT 1: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << "ms\n";
+    fast_fourier_base_2<> FFT2(u2.size());
+    auto v=FFT2(u2);
+    auto t3=std::chrono::high_resolution_clock::now();
+    for(auto s:w)
+        r+=s;
+    for(auto s:v)
+        r+=s;
+    std::cout << r << '\n';
+    std::cout << "FFT 2: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3-t2).count() << "ms";
 }

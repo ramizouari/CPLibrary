@@ -7,6 +7,13 @@
 #include <array>
 #include "polynomial.h"
 
+/*
+ * Dynamic Vector:
+ * It is the union of R^k for all k
+ * - Addition between 2 vectors are defined with respect to the first vector's shape
+ * - for all k, the set of all vectors of shape k is a vector space
+ * */
+
 struct v_shape
 {
     int n;
@@ -17,6 +24,8 @@ class d_vector
 {
     std::vector<R> u;
 public:
+    using base_field=R;
+    using base_ring=R;
     inline static int n=0;
     d_vector():u(n){}
     d_vector(std::vector<R> _u):u(std::move(_u)){}
@@ -117,11 +126,18 @@ auto operator*(const R&k,const d_vector<R>& u)
     return v*=k;
 }
 
+/*
+ * Static Vector:
+ * It is a member of an R-vector space E where dim(E)= n
+ * */
+
 template<typename R,int n>
 class s_vector
 {
     std::array<R,n> u;
 public:
+    using base_field=R;
+    using base_ring=R;
     inline static constexpr int dim()
     {
         return n;
@@ -239,13 +255,15 @@ class d_matrix
 {
     std::vector<std::vector<R>> M;
 public:
+    using base_field=R;
+    using base_ring=R;
     inline static int n=0,m=0;
     d_matrix(R k=0,m_shape shape ={n,m}):M(shape.n,std::vector<R>(shape.m))
     {
         for(int i=0;i<std::min(shape.n,shape.m);i++)
             M[i][i]=k;
     }
-    d_matrix(std::vector<std::vector<R>> _M):M(std::move(_M)){}
+    d_matrix(std::vector<std::vector<R>> &&_M):M(std::move(_M)){}
     auto row_dim() const
     {
         return M.size();
@@ -506,7 +524,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n && P.M[p][i]==0)
+            while(p<n && P.M[p][i]==R(0))
                 p++;
             if(p==n)
                 continue;
@@ -515,7 +533,7 @@ public:
             R w=P.M[i][i];
             for(int j=i+1;j<n;j++)
             {
-                if(w==0)
+                if(w==R(0))
                     continue;
                 R r=P.M[j][i]/w;
                 for (int k = 0; k < m; k++)
@@ -526,7 +544,7 @@ public:
         for(int i=n-1;i>=0;i--)
         {
             R w=P.M[i][i];
-            if(w==0)
+            if(w==R(0))
                 continue;
             A[i]/=w;
             for(int k=i-1;k>=0;k--)
@@ -539,6 +557,16 @@ public:
     }
 };
 
+/*
+ * It is the union of L(R^a,R^b) over all a and b where L(E,F) is the set of matrices acting on E with values over F
+ * - Addition between 2 matrices are defined with respect to the first matrix's shape
+ * - Multiplication between 2 matrices is defined if the shapes are compatible
+ * - Multiplication between a matrix and a vector is defined if the shapes are compatible
+ * - for all (a,b), the set of all vectors of shape (a,b) is an R-vector space
+ * - for all a, the set of all matrices of shape (a,a) is an associative algebra over R
+ * */
+
+
 template<typename R>
 d_matrix<R> operator*(const R&a,const d_matrix<R> &M)
 {
@@ -546,11 +574,20 @@ d_matrix<R> operator*(const R&a,const d_matrix<R> &M)
     return N*=a;
 }
 
+/*
+ * It is an element of the vector space L(R^n,R^m)
+ * - Multiplication between 2 matrices is defined if the shapes are compatible
+ * - Multiplication between a matrix and a vector is defined if the shapes are compatible
+ * - It is an associative algebra if n=m
+ * */
+
 template<typename R,int n,int m>
 class s_matrix
 {
     std::array<std::array<R,m>,n> M;
 public:
+    using base_field=R;
+    using base_ring=R;
     s_matrix(R k=0)
     {
         for(int i=0;i<n;i++) for(int j=0;j<m;j++)
@@ -817,7 +854,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n && P.M[p][i]==0)
+            while(p<n && P.M[p][i]==R(0))
                 p++;
             if(p==n)
                 continue;
@@ -826,7 +863,7 @@ public:
             R w=P.M[i][i];
             for(int j=i+1;j<n;j++)
             {
-                if(w==0)
+                if(w==R(0))
                     continue;
                 R r=P.M[j][i]/w;
                 for (int k = 0; k < m; k++)
@@ -837,7 +874,7 @@ public:
         for(int i=n-1;i>=0;i--)
         {
             R w=P.M[i][i];
-            if(w==0)
+            if(w==R(0))
                 continue;
             A[i]/=w;
             for(int k=i-1;k>=0;k--)
