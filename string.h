@@ -4,7 +4,7 @@
 #ifndef __NT_H__
 #define __NT_H__
 #include <vector>
-#include "cyclic.h"
+#include "modular_arithmetic.h"
 
 template<integer m>
 struct uniform_hash

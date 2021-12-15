@@ -5,6 +5,15 @@
 #define __RING__EXTENSION__
 #include "abstract_algebra.h"
 #include "polynomial.h"
+/*
+ * This header contains a list of usual ring extensions:
+ * 1. field of fractions for an integral ring R
+ * 2. nilpotent extension of a ring R: formally it is isomorphic to R[x]/x^k where k is the nilpotence index
+ * 3. idempotent extention of a ring R: formally it is isomorphic to R[x]/(x^k-x^(k-1)) where k is the idempotence index
+ * 4. ring extension of a ring R with a polynomial q: formally it is isomorphic to R[x]/q(x)
+ * 5. quadratic extension of a ring R with a polynomial x²-ax-b: formally it is isomorphic to R[x]/(x²-ax-b)
+ * */
+
 
 template<typename R>
 struct rational_t
@@ -408,6 +417,10 @@ public:
     }
 };
 
+/*
+ * Extension of the ring R to R[x]/q(x) where q is a given poylnomial
+ * */
+
 template<typename R>
 class ring_extension
 {
@@ -487,6 +500,32 @@ public:
         return (*this)*O.inv();
     }
 
+    auto& operator/=(R k)
+    {
+        for(auto &s:p)
+            s/=k;
+        return *this;
+    }
+
+    auto& operator*=(R k)
+    {
+        for(auto &s:p)
+            s*=k;
+        return *this;
+    }
+
+    auto operator/(R k) const
+    {
+        auto q=*this;
+        return q/=k;
+    }
+
+    auto operator*(R k) const
+    {
+        auto q=*this;
+        return q*=k;
+    }
+
     auto begin()
     {
         return p.begin();
@@ -507,6 +546,135 @@ public:
         return p[k];
     }
 };
+
+
+/*
+ * Extension of the ring R into R[x]/(x²-ax-b)
+ * */
+template<typename R,integer a,integer b>
+class quadratic_extension
+{
+    std::array<R,2> p;
+public:
+
+    quadratic_extension(R k=0,R s=0):p({k,s})
+    {
+    }
+    quadratic_extension(const std::array<R,2> &_p):p(_p)
+    {
+    }
+
+    auto conj() const
+    {
+        return quadratic_extension(R(a)-p[0],-p[1]);
+    }
+
+    auto& operator+=(const quadratic_extension &O)
+    {
+        p+=O.p;
+        return *this;
+    }
+
+    auto& operator-=(const quadratic_extension &O)
+    {
+        p-=O.p();
+        return *this;
+    }
+
+    auto operator*(const quadratic_extension &O) const
+    {
+        quadratic_extension q;
+        auto s=p[1]*O.p[1];
+        q.p[0]=p[0]*O.p[0]+R(b)*s;
+        q.p[1]=p[0]*O.p[1]+p[1]*O.p[0]+R(a)*s;
+        return q;
+    }
+
+    auto& operator*=(const quadratic_extension &O)
+    {
+        p=((*this)*O).p;
+        return *this;
+    }
+
+    auto operator+(const quadratic_extension &O) const
+    {
+        auto q=*this;
+        return q+=O;
+    }
+
+    auto operator-(const quadratic_extension &O) const
+    {
+        auto q=*this;
+        return q-=O;
+    }
+
+    auto inv() const
+    {
+        return conj()/(p[0]*p[0]+R(a)*p[0]*p[1]-R(b)*p[1]*p[1]);
+    }
+
+    auto& operator/=(const quadratic_extension &O)
+    {
+        return (*this)*=O.inv();
+    }
+
+    auto operator/(const quadratic_extension &O) const
+    {
+        return (*this)*O.inv();
+    }
+
+    auto& operator/=(R k)
+    {
+        p[0]/=k;
+        p[1]/=k;
+        return *this;
+    }
+
+    auto& operator*=(R k)
+    {
+        p[0]*=k;
+        p[1]*=k;
+        return *this;
+    }
+
+    auto operator/(R k) const
+    {
+        auto q=*this;
+        return q/=k;
+    }
+
+    auto operator*(R k) const
+    {
+        auto q=*this;
+        return q*=k;
+    }
+
+    auto begin()
+    {
+        return p.begin();
+    }
+
+    auto end()
+    {
+        return p.end();
+    }
+
+    auto& operator[](int k)
+    {
+        return p[k];
+    }
+
+    const auto& operator[](int k) const
+    {
+        return p[k];
+    }
+};
+
+
+/*
+ * Dynamic ring extension
+ * For a ring R, It is the union of R[x]/q(x) over all polynomials q
+ * */
 
 template<typename R>
 struct extension_polynomial_t
