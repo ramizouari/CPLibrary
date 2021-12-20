@@ -76,7 +76,7 @@ public:
         fast_fourier<!is_inverse>::F_ref=F;
     }
 
-    static factoriser& factoriser()
+    static factoriser& get_factoriser()
     {
         return F_ref.value();
     }
@@ -162,11 +162,46 @@ std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y)
     return z;
 }
 
-polynomial<IC> fast_multiplication(const polynomial<IC>& x,const polynomial<IC>& y,factoriser &F=fast_fourier<>::factoriser())
+polynomial<IC> fast_multiplication(const polynomial<IC>& x,const polynomial<IC>& y,factoriser &F=fast_fourier<>::get_factoriser())
 {
     return fast_multiplication(static_cast<const std::vector<IC>&>(x),
                          static_cast<const std::vector<IC>&>(y),F);
 }
+
+
+template<typename R>
+struct fast_hadamard
+{
+    int m;
+public:
+    fast_hadamard(int _m):m(_m){}
+    std::vector<R> unnormalized(const std::vector<R>& X) const
+    {
+        auto n = 1 << m;
+        if (m == 0)
+            return X;
+        fast_hadamard FHT(m-1);
+        std::vector<R> U1(n>>1), U2(n>>1);
+        for (int i = 0; i < (n>>1); i++)
+        {
+            U1[i] = X[i];
+            U2[i] = X[i + (n>>1)];
+        }
+        std::vector<R> V1 = FHT.unnormalized(U1), V2 = FHT.unnormalized(U2);
+        std::vector<R> S(n);
+        for (int i = 0; i < (n>>1); i++)
+            S[i] = V1[i] + V2[i];
+        for (int i = 0; i < (n>>1); i++)
+            S[i + (n>>1)] = V1[i] - V2[i];
+        return S;
+    }
+
+    auto operator()(const std::vector<R>& X) const
+    {
+        return unnormalized(X);
+    }
+};
+
 template<int n,typename T>
 struct tensor_t
 {
@@ -315,7 +350,7 @@ public:
         fast_ntt<!is_inverse>::F_ref=F;
     }
 
-    static factoriser& factoriser()
+    static factoriser& get_factoriser()
     {
         return F_ref.value();
     }
@@ -428,7 +463,7 @@ public:
 using inverse_fast_ntt=fast_ntt<true>;
 
 std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,int r_guess,
-                                    factoriser &F=fast_ntt<>::factoriser())
+                                    factoriser &F=fast_ntt<>::get_factoriser())
 {
     fast_ntt<>::set_factoriser(F);
     auto d_list=F.divisors_list(F.totient(d_cyclic::m));
@@ -450,20 +485,20 @@ std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_
     return z;
 }
 
-std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,factoriser &F=fast_ntt<>::factoriser())
+std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,factoriser &F=fast_ntt<>::get_factoriser())
 {
     return fast_multiplication(x,y,x.size()+y.size()-1,F);
 }
 
 polynomial<d_cyclic> fast_multiplication(const polynomial<d_cyclic>& x,const polynomial<d_cyclic>& y,
-                                    factoriser &F=fast_ntt<>::factoriser())
+                                    factoriser &F=fast_ntt<>::get_factoriser())
 {
     return fast_multiplication(static_cast<const std::vector<d_cyclic>&>(x),
                          static_cast<const std::vector<d_cyclic>&>(y),F);
 }
 
 std::vector<integer> fast_multiplication(const std::vector<integer>& x,const std::vector<integer>& y,
-                                         factoriser &F=fast_ntt<>::factoriser())
+                                         factoriser &F=fast_ntt<>::get_factoriser())
 {
     constexpr integer L=1e9;
     int n=x.size(),m=y.size();
@@ -489,7 +524,7 @@ std::vector<integer> fast_multiplication(const std::vector<integer>& x,const std
 }
 
 polynomial<integer> fast_multiplication(const polynomial<integer>& x,const polynomial<integer>& y,
-                                    factoriser &F=fast_ntt<>::factoriser())
+                                    factoriser &F=fast_ntt<>::get_factoriser())
 {
     return fast_multiplication(static_cast<const std::vector<integer>&>(x),
                          static_cast<const std::vector<integer>&>(y),F);

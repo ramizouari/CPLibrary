@@ -66,7 +66,7 @@ struct field_multiplies_t<IC>:public multiplies_t<IC>
 {
     IC inv(const IC& a)const
     {
-        return 1./a;
+        return IC(1)/a;
     }
 };
 

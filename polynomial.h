@@ -12,15 +12,27 @@ class polynomial
     std::vector<R> p;
 
 public:
+    bool operator==(R a) const
+    {
+        if (a == R(0))
+            return p.empty();
+        else return degree() == 0 && p.front() == a;
+    }
     void reduce()
     {
         while(!p.empty() && p.back()==R(0))
             p.pop_back();
     }
-    polynomial(R k=0):p(1,k)
+    polynomial(R k):p(1,k)
     {
         reduce();
     }
+
+    polynomial(int k = 0) :p(1, k)
+    {
+        reduce();
+    }
+
     polynomial(std::vector<R> _p):p(std::move(_p))
     {
         reduce();
@@ -99,13 +111,6 @@ public:
             s*=a;
         reduce();
         return *this;
-    }
-
-    bool operator==(R a) const
-    {
-        if(a==0)
-            return p.empty();
-        else return degree() == 0 && p.front() == a;
     }
 
     bool operator!=(R a) const
@@ -196,10 +201,18 @@ public:
         return p[k];
     }
 
+    polynomial derivative() const
+    {
+        if (p.empty())
+            return {};
+        polynomial D;
+        D.p.resize(degree());
+    }
+
     template<typename H>
     H operator()(H a)
     {
-        H r=0;
+        H r(0);
         for(int i=degree();i>=0;i--)
             r=r*a+p[i];
         return r;

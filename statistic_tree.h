@@ -279,6 +279,13 @@ void destroy(statistic_node<T,V,S>*node)
     delete node;
 }
 
+/*
+* Order Statistic:
+* It is a Self Balanced Binary Search Tree augmented with an order:
+* - The order of an element can be calculated in O(log(n))
+* - An element can be selected given its order in O(log(n))
+*/
+
 struct order_stats
 {
     int size;
@@ -353,6 +360,114 @@ T select(statistic_node<T,V,order_stats> *tree,int o)
     else if(s<o)
         return select(tree->right,o-s-1);
     else return select(tree->left,o);
+}
+
+/*
+* Sum Statistic:
+* It is an Ordered Statistic Tree augmented with a sum acting on data:
+* The sum is defined over an associative binary operation having a neutral element
+* It supports range sum (L,R) for keys belonging to an interval [L,R[ 
+*/
+template<typename V, typename O>
+struct sum_stats
+{
+    inline static constexpr O F = O();
+    int size;
+    V sum;
+    sum_stats() {}
+    template<typename T>
+    sum_stats(T v, V data) :size(1), sum(data) {}
+    template<typename T>
+    static void update(statistic_node<T, V, sum_stats>* node);
+    template<typename T>
+    static int tree_size(statistic_node<T, V, sum_stats>* node);
+    template<typename T>
+    static V tree_sum(statistic_node<T, V, sum_stats>* node);
+};
+
+template<typename V, typename O>
+template<typename T>
+void sum_stats<V, O>::update(statistic_node<T, V, sum_stats<V, O>>* node) {
+    node->statistic.size = (node->left ? node->left->statistic.size : 0) + 1 + (node->right ? node->right->statistic.size : 0);
+    node->statistic.sum = F(tree_sum(node->left), F(node->data, tree_sum(node->right)));
+}
+
+template<typename V, typename O>
+template<typename T>
+int sum_stats<V, O>::tree_size(statistic_node<T, V, sum_stats<V, O>>* node)
+{
+    return node ? node->statistic.size : 0;
+}
+
+template<typename V, typename O>
+template<typename T>
+V sum_stats<V, O>::tree_sum(statistic_node<T, V, sum_stats>* node)
+{
+    return node ? node->statistic.sum : O::neutral;
+}
+
+template<typename T, typename V, typename O>
+int order(statistic_node<T, V, sum_stats<V, O>>* tree, T v)
+{
+    using statistic_type = sum_stats<V, O>;
+    if (!tree)
+        return 0;
+    if (v < tree->v)
+        return order(tree->left, v);
+    else if (tree->v == v)
+    {
+        if (tree->right && tree->right->v == v)
+            return statistic_type::tree_size(tree->left) + 1 + order(tree->right, v);
+        else return statistic_type::tree_size(tree->left);
+    }
+    else return statistic_type::tree_size(tree->left) + 1 + order(tree->right, v);
+}
+
+template<typename T, typename V, typename O>
+T select(statistic_node<T, V, sum_stats<V, O>>* tree, int o)
+{
+    using statistic_type = sum_stats<V, O>;
+    int s = statistic_type::tree_size(tree->left);
+    if (s == o)
+        return tree->v;
+    else if (s < o)
+        return select(tree->right, o - s - 1);
+    else return select(tree->left, o);
+}
+
+template<typename T, typename V, typename O>
+V prefix_sum(statistic_node<T, V, sum_stats<V, O>>* tree, T U)
+{
+    using S = sum_stats<V, O>;
+    if (!tree)
+        return O::neutral;
+    else if (tree->v >= U)
+        return prefix_sum(tree->left, U);
+    else return S::F(S::tree_sum(tree->left), S::F(tree->data, prefix_sum(tree->right, U)));
+}
+
+template<typename T, typename V, typename O>
+V suffix_sum(statistic_node<T, V, sum_stats<V, O>>* tree, T L)
+{
+    using S = sum_stats<V, O>;
+    if (!tree)
+        return O::neutral;
+    else if (tree->v < L)
+        return suffix_sum(tree->right, L);
+    else return S::F(suffix_sum(tree->left, L), S::F(tree->data, S::tree_sum(tree->right)));
+}
+
+template<typename T, typename V, typename O>
+V sum(statistic_node<T, V, sum_stats<V, O>>* tree, T L, T R)
+{
+    using S = sum_stats<V, O>;
+    if (!tree)
+        return O::neutral;
+    if (tree->v < L)
+        return sum(tree->right, L, R);
+    else if (tree->v >= R)
+        return sum(tree->left, L, R);
+    else return S::F(suffix_sum(tree->left, L), S::F(tree->data, prefix_sum(tree->right, R)));
 }
 
 #endif

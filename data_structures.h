@@ -207,7 +207,7 @@ template<typename T,typename O>
 struct fenwick_tree {
     int n;
     std::vector<T> bit;
-    inline static constexpr O F = F();
+    inline static constexpr O F = O();
 
     fenwick_tree(int _n):n(_n),bit(n,O::neutral){}
     T sum(int x) {

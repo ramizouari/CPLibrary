@@ -566,18 +566,20 @@ public:
 
     auto conj() const
     {
-        return quadratic_extension(R(a)-p[0],-p[1]);
+        return quadratic_extension(p[0]+a*p[1],-p[1]);
     }
 
     auto& operator+=(const quadratic_extension &O)
     {
-        p+=O.p;
+        p[0]+=O.p[0];
+        p[1]+=O.p[1];
         return *this;
     }
 
     auto& operator-=(const quadratic_extension &O)
     {
-        p-=O.p();
+        p[0]-=O.p[0];
+        p[1]-=O.p[1];
         return *this;
     }
 
@@ -613,14 +615,20 @@ public:
         return conj()/(p[0]*p[0]+R(a)*p[0]*p[1]-R(b)*p[1]*p[1]);
     }
 
+    /*
+     * Guaranteed to work in an integral domain even if the element O is not inversible,
+     * but there still exists Q such that P=Q*O => P/O=Q
+     * */
+
     auto& operator/=(const quadratic_extension &O)
     {
-        return (*this)*=O.inv();
+        *this*=O.conj();
+        return *this/=p[0]*p[0]+R(a)*p[0]*p[1]-R(b)*p[1]*p[1];
     }
 
     auto operator/(const quadratic_extension &O) const
     {
-        return (*this)*O.inv();
+        return ((*this)*O.conj())/(O.p[0]*O.p[0]+R(a)*O.p[0]*O.p[1]-R(b)*O.p[1]*O.p[1]);
     }
 
     auto& operator/=(R k)
@@ -635,6 +643,30 @@ public:
         p[0]*=k;
         p[1]*=k;
         return *this;
+    }
+
+    auto& operator-=(R k)
+    {
+        p[0]-=k;
+        return *this;
+    }
+
+    auto& operator+=(R k)
+    {
+        p[0]+=k;
+        return *this;
+    }
+
+    auto operator+(R k) const
+    {
+        auto q=*this;
+        return q+=k;
+    }
+
+    auto operator-(R k) const
+    {
+        auto q=*this;
+        return q-=k;
     }
 
     auto operator/(R k) const
@@ -669,6 +701,27 @@ public:
         return p[k];
     }
 };
+
+template<typename R,integer a,integer b>
+auto operator+(R k,const quadratic_extension<R,a,b> &O)
+{
+    quadratic_extension<R,a,b> q=O;
+    return q+=k;
+}
+
+template<typename R,integer a,integer b>
+auto operator*(R k,const quadratic_extension<R,a,b> &O)
+{
+    quadratic_extension<R,a,b> q=O;
+    return q*=k;
+}
+
+template<typename R,integer a,integer b>
+auto operator-(R k,const quadratic_extension<R,a,b> &O)
+{
+    quadratic_extension<R,a,b> q=O;
+    return q-=k;
+}
 
 
 /*

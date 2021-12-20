@@ -10,6 +10,7 @@
 #include <cmath>
 #include <stack>
 #include <algorithm>
+#include "abstract_algebra.h"
 
 using integer = std::int64_t;
 using couple =std::pair<integer,integer>;

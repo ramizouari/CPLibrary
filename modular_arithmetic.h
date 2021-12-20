@@ -16,6 +16,7 @@ class cyclic
 {
     integer n;
 public:
+    inline static bool assume_prime=true;
     cyclic(int o=0):n((o+m)%m){}
     bool operator==(int O) const
     {
@@ -87,13 +88,16 @@ public:
         return (*this)*O.inv();
     }
 
-    auto inv() const
-    {
-        return pow(*this,m-2);
-    }
-    auto pinv() const
+    cyclic pinv() const
     {
         return egcd(n,m).a;
+    }
+
+    auto inv() const
+    {
+        if(assume_prime)
+            return pow(*this,m-2);
+        else return pinv();
     }
 
     auto& operator++()
@@ -117,11 +121,18 @@ public:
     }
 };
 
+template<integer m>
+auto operator*(int k,cyclic<m> s)
+{
+    return s*k;
+}
+
 class d_cyclic
 {
     integer n;
 public:
     inline static integer m=1;
+    inline static bool assume_prime=true;
     d_cyclic(int o=0):n((o+m)%m){}
     bool operator==(int O) const
     {
@@ -162,7 +173,9 @@ public:
 
     auto inv() const
     {
-        return pow(*this,m-2);
+        if(assume_prime)
+            return pow(*this,m-2);
+        else return pinv();
     }
 
     auto& operator/=(const d_cyclic &O)
@@ -198,7 +211,7 @@ public:
         return (*this)*O.inv();
     }
 
-    auto pinv() const
+    d_cyclic pinv() const
     {
         return egcd(n,m).a;
     }
@@ -223,6 +236,11 @@ public:
         return n;
     }
 };
+
+auto operator*(int k,d_cyclic O)
+{
+    return O*=k;
+}
 
 template<>
 struct std::hash<d_cyclic>
