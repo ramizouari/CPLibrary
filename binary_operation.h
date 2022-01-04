@@ -9,18 +9,20 @@
 template<typename T>
 struct binary_operation
 {
-    virtual T operator()(const T&a,const T&b) const=0;
     template<typename H0,typename ...H>
     T operator()(const H0&a,const H&... b)
     {
-        return this->operator()(a,this->operator()(b...));
+        if constexpr (sizeof...(b) == 0)
+            return a;
+        else return reduce(a,this->operator()(b...));
     }
+    virtual T reduce(const T& a, const T& b) const = 0;
 };
 
 template<typename T>
 struct plus_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return a+b;
     }
@@ -35,7 +37,7 @@ struct plus_t:public binary_operation<T>
 template<typename T>
 struct multiplies_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return a*b;
     }
@@ -73,7 +75,7 @@ struct field_multiplies_t<IC>:public multiplies_t<IC>
 template<typename T>
 struct max_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return std::max(a,b);
     }
@@ -84,7 +86,7 @@ struct max_t:public binary_operation<T>
 template<typename T>
 struct min_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return std::min(a,b);
     }
@@ -95,7 +97,7 @@ struct min_t:public binary_operation<T>
 template<typename T>
 struct gcd_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return std::gcd(a,b);
     }
@@ -106,7 +108,7 @@ struct gcd_t:public binary_operation<T>
 template<typename T>
 struct lcm_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return std::lcm(a,b);
     }
@@ -117,7 +119,7 @@ struct lcm_t:public binary_operation<T>
 template<typename T>
 struct xor_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const
     {
         return a^b;
     }
@@ -133,7 +135,7 @@ struct xor_t:public binary_operation<T>
 template<typename T>
 struct and_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return a&b;
     }
@@ -144,7 +146,7 @@ struct and_t:public binary_operation<T>
 template<typename T>
 struct or_t:public binary_operation<T>
 {
-    T operator()(const T&a,const T&b) const
+    T reduce(const T&a,const T&b) const override
     {
         return a|b;
     }

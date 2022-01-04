@@ -9,14 +9,16 @@
 #include <random>
 #include <unordered_map>
 #include "number_theory.h"
+#include "ring_extension.h"
 
 
-template<integer m>
+template<integer mod>
 class cyclic
 {
     integer n;
 public:
     inline static bool assume_prime=true;
+    inline static constexpr integer m = mod;
     cyclic(int o=0):n((o+m)%m){}
     bool operator==(int O) const
     {
@@ -272,26 +274,12 @@ public:
     }
 };
 
-integer discrete_log(d_cyclic a,d_cyclic r)
+template<typename cyclic_ring>
+integer discrete_log(cyclic_ring a, cyclic_ring r)
 {
-    integer s=std::ceil(std::sqrt(d_cyclic::m));
-    d_cyclic u=pow(a,s),w=1;
-    std::unordered_map<d_cyclic,integer> mapper;
-    for(integer i=0;i<=s;i++,w*=a)
-        mapper[r*w]=i;
-    w=u;
-    for(integer i=1;i<=s;i++,w*=u)
-        if(mapper.count(w))
-            return i*s-mapper[w];
-    return -1;
-}
-
-template<integer m>
-integer discrete_log(cyclic<m> a,cyclic<m> r)
-{
-    static integer s=std::ceil(std::sqrt(m));
-    cyclic<m> u=pow(a,s),w=1;
-    std::unordered_map<d_cyclic,integer> mapper;
+    integer s=std::ceil(std::sqrt(cyclic_ring::m));
+    cyclic_ring u=pow(a,s),w=1;
+    std::unordered_map<cyclic_ring,integer> mapper;
     for(integer i=0;i<=s;i++,w*=a)
         mapper[r*w]=i;
     w=u;
@@ -311,7 +299,7 @@ std::vector<integer> inverse_table(int n,int prime)
     return I;
 }
 
-integer primitive_root_of_unity(integer n,integer p,factoriser &F)
+integer primitive_root_of_unity(integer p,factoriser &F)
 {
     d_cyclic::m=p;
     auto phi=F.totient(p);
@@ -328,6 +316,48 @@ integer primitive_root_of_unity(integer n,integer p,factoriser &F)
         if(is_primitive)
             return k;
     }
-    throw std::exception("Nope");
+    return 0;
+}
+
+template <integer p>
+integer primitive_root_of_unity(factoriser& F)
+{
+    static auto phi = F.totient(p);
+    static auto D = F.divisors_list(phi);
+    for (integer k = 2; k < p - 1; k++)
+    {
+        bool is_primitive = true;
+        for (auto d : D)
+            if (d < phi && pow<d_cyclic>(k, d) == 1)
+            {
+                is_primitive = false;
+                break;
+            }
+        if (is_primitive)
+            return k;
+    }
+    return 0;
+}
+
+template<typename cyclic_field>
+integer legendre_symbol(cyclic_field a)
+{
+    integer r= (integer)pow(a, (cyclic_field::m - 1) / 2);
+    if (r > cyclic_field::m / 2)
+        r -= cyclic_field::m;
+    return r;
+}
+
+template<typename cyclic_field>
+cyclic_field sqrt(cyclic_field n)
+{
+    if (cyclic_field::m == 2)
+        return n;
+    cyclic_field a = 2;
+    while (legendre_symbol(a*a-n) != -1)
+        ++a;
+    extension_polynomial_t q = { polynomial<cyclic_field>({n-a * a,0,1}) };
+    d_ring_extension<cyclic_field> phi(std::vector<cyclic_field>{ a,1 }, q);
+    return pow(phi, (cyclic_field::m+1)/2,q)[0];
 }
 #endif

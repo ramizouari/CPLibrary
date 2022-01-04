@@ -202,6 +202,16 @@ public:
         return divisor_function(n,1);
     }
 
+    integer count_primes() const
+    {
+        return p_list.size();
+    }
+
+    const auto& prime_list() const
+    {
+        return p_list;
+    }
+
 };
 
 integer chinese_remainder(const std::vector<std::pair<integer,integer>> &S)

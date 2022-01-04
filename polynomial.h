@@ -257,7 +257,7 @@ class sparse_polynomial
     {
         std::vector<int> to_del;
         for(auto [k,x]:p)
-            if(x==0)
+            if(x==R(0))
                 to_del.push_back(k);
         for(auto k:to_del)
             p.erase(k);
@@ -285,7 +285,7 @@ public:
         for(const auto& [k,s]:O.p)
         {
             p[k] += O.p[k];
-            if(p[k]==0)
+            if(p[k]==R(0))
                 p.erase(k);
         }
         return *this;
@@ -309,7 +309,7 @@ public:
         for(auto [i,u]:p) for(auto [j,v]:O.p)
         {
             q.p[i+j]+=u*v;
-            if(q.p[i+j]==0)
+            if(q.p[i+j]==R(0))
                 q.p.erase(i+j);
         }
         return q;
@@ -394,7 +394,7 @@ public:
 
     const auto& operator[](int k) const
     {
-        return p[k];
+        return p.at(k);
     }
 
     template<typename H>
@@ -407,6 +407,21 @@ public:
             r+=u*x;
             i=k;
         }
+    }
+
+    operator std::map<int, R>& ()
+    {
+        return p;
+    }
+
+    operator const std::map<int, R>& () const
+    {
+        return p;
+    }
+
+    auto size() const
+    {
+        return p.size();
     }
 };
 
@@ -475,4 +490,38 @@ polynomial<R> karatsuba_multiplication(const polynomial<R> &p,const polynomial<R
         c[i+s]+=r3[i];
     return h;
 }
+
+template<typename R>
+sparse_polynomial<R> karatsuba_multiplication(const sparse_polynomial<R>& p, const sparse_polynomial<R>& q)
+{
+    constexpr int recursion_limit = 30;
+    if (std::min(p.size(), q.size()) <= recursion_limit)
+        return p * q;
+    sparse_polynomial<R> a1, b1, a2, b2;
+    int n = p.degree(), m = q.degree(), r = std::max(n, m) + 1;
+    const auto &mapper1 = static_cast<const std::map<int, R>&>(p),&mapper2=static_cast<const std::map<int, R>&>(q);
+    auto it1 = mapper1.begin(),it2=mapper2.begin();
+    for (; it1!=mapper1.end()  && it1->first<  r / 2; ++it1)
+        a1[it1->first] = it1->second;
+    for (; it2 != mapper2.end() && it2->first < r / 2; ++it2)
+        a2[it2->first] = it2->second;
+    for (; it1 != mapper1.end(); ++it1)
+        b1[it1->first-r/2] = it1->second;
+    for (; it2 != mapper2.end(); ++it2)
+        b2[it2->first-r/2] = it2->second;
+    sparse_polynomial<R> r1 = karatsuba_multiplication(a1, a2),
+        r3 = karatsuba_multiplication(b1, b2),
+        t = karatsuba_multiplication(a1 + b1, a2 + b2),
+        r2 = t - r1 - r3;
+    sparse_polynomial<R> h;
+    int s = r - r % 2;
+    auto& c = static_cast<std::map<int,R>&>(h);
+    c = r1;
+    for (auto [k, w] : static_cast<std::map<int, R>&>(r2))
+        c[k + r / 2] += w;
+    for (auto [k, w] : static_cast<std::map<int, R>&>(r3))
+        c[k + s] += w;
+    return h;
+}
+
 #endif

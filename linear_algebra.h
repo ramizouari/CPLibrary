@@ -236,6 +236,21 @@ public:
     {
         return u.cend();
     }
+
+    template <size_t k>
+    auto& get()& {
+        return u[k];
+    }
+
+    template <size_t k>
+    const auto& get() const& {
+        return u[k];
+    }
+
+    template <size_t k>
+    auto&& get() const&& {
+        return u[k];
+    }
 };
 
 template<typename R,int n>
@@ -243,6 +258,17 @@ auto operator*(const R&k,const s_vector<R,n>& u)
 {
     auto v=u;
     return v*=k;
+}
+
+namespace std
+{
+    template<typename R,int n>
+    struct std::tuple_size<s_vector<R, n>> : std::integral_constant<size_t, n>{};
+    template<int k,typename R,int n>
+    struct tuple_element<k, s_vector<R, n>>
+    {
+        using type = R;
+    };
 }
 
 struct m_shape
@@ -383,6 +409,16 @@ public:
         return N/=k;
     }
 
+    auto& operator/=(const d_matrix& O)
+    {
+        return *this *= O.inv();
+    }
+
+    auto operator/(const d_matrix &O) const
+    {
+        return (*this) * O.inv();
+    }
+
     auto begin()
     {
         return M.begin();
@@ -485,7 +521,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n && P.M[p][i]==0)
+            while(p<n && P.M[p][i]==R(0))
                 p++;
             if(p==n)
                 continue;
@@ -715,6 +751,16 @@ public:
         return N/=k;
     }
 
+    auto& operator/=(const s_matrix &O)
+    {
+        return *this*=O.inv();
+    }
+
+    auto operator/(const s_matrix &O) const
+    {
+        return (*this) * O.inv();
+    }
+
     auto begin()
     {
         return M.begin();
@@ -815,7 +861,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n &&P.M[p][i]==0)
+            while(p<n &&P.M[p][i]==R(0))
                 p++;
             if(p==n)
                 continue;

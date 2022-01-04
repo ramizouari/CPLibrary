@@ -361,7 +361,7 @@ public:
         auto phi=F.totient(m);
         if(phi%n)
             throw std::exception("Fast NTT cannot be defined for this setting");
-        IK r=pow<IK>(primitive_root_of_unity(n,m,F),phi/n);
+        IK r=pow<IK>(primitive_root_of_unity(m,F),phi/n);
         if constexpr (is_inverse)
             w=r.inv();
         else w=r;
