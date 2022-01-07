@@ -40,7 +40,8 @@ int balance(statistic_node<T,V,S>* tree)
 }
 
 template<typename T,typename V,typename S>
-statistic_node<T,V,S>* upper_bound(statistic_node<T,V,S>* tree,T v)
+statistic_node<T,V,S>* upper_bound(statistic_node<T,V,S>* tree,const 
+    typename std::common_type<T>::type& v)
 {
     if(tree==nullptr)
         return nullptr;
@@ -56,7 +57,8 @@ statistic_node<T,V,S>* upper_bound(statistic_node<T,V,S>* tree,T v)
 }
 
 template<typename T,typename V,typename S>
-statistic_node<T,V,S>* reverse_upper_bound(statistic_node<T,V,S>* tree,T v)
+statistic_node<T,V,S>* reverse_upper_bound(statistic_node<T,V,S>* tree,
+    const typename std::common_type<T>::type & v)
 {
     if(tree==nullptr)
         return nullptr;
@@ -72,7 +74,8 @@ statistic_node<T,V,S>* reverse_upper_bound(statistic_node<T,V,S>* tree,T v)
 }
 
 template<typename T,typename V,typename S>
-statistic_node<T,V,S>* lower_bound(statistic_node<T,V,S>* tree,T v)
+statistic_node<T,V,S>* lower_bound(statistic_node<T,V,S>* tree,
+    const typename std::common_type<T>::type& v)
 {
     if(tree==nullptr)
         return nullptr;
@@ -88,7 +91,8 @@ statistic_node<T,V,S>* lower_bound(statistic_node<T,V,S>* tree,T v)
 }
 
 template<typename T,typename V,typename S>
-statistic_node<T,V,S>* reverse_lower_bound(statistic_node<T,V,S>* tree,T v)
+statistic_node<T,V,S>* reverse_lower_bound(statistic_node<T,V,S>* tree,
+    const typename std::common_type<T>::type &v)
 {
     if(tree==nullptr)
         return nullptr;
@@ -165,7 +169,8 @@ statistic_node<T,V,S>* rebalance(statistic_node<T,V,S>* x)
 }
 
 template<typename T,typename V,typename S>
-statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,T v,V data,bool or_assign=false)
+statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,const typename std::common_type<T>::type& v,
+    const typename std::common_type<V>::type& data,bool or_assign=false)
 {
     if(!tree)
     {
@@ -199,13 +204,15 @@ statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,T v,V data,bool or_ass
 }
 
 template<typename T, typename V, typename S>
-statistic_node<T, V, S>* insert_or_assign(statistic_node<T, V, S>* tree, T v, V data)
+statistic_node<T, V, S>* insert_or_assign(statistic_node<T, V, S>* tree,const
+    typename std::common_type<T>::type& v,const typename std::common_type<V>::type& data)
 {
     return insert(tree, v, data, true);
 }
 
 template<typename T,typename V,typename S>
-std::pair<statistic_node<T,V,S>*,statistic_node<T,V,S>*> extract(statistic_node<T,V,S>* tree,T v)
+std::pair<statistic_node<T,V,S>*,statistic_node<T,V,S>*> extract(statistic_node<T,V,S>* tree,const 
+    typename std::common_type<T>::type& v)
 {
     auto p=lower_bound(tree,v);
     if(!p)
@@ -259,7 +266,8 @@ std::pair<statistic_node<T,V,S>*,statistic_node<T,V,S>*> extract(statistic_node<
 
 
 template<typename T,typename V,typename S>
-statistic_node<T,V,S>* erase(statistic_node<T,V,S>* tree,T v)
+statistic_node<T,V,S>* erase(statistic_node<T,V,S>* tree,
+    const typename std::common_type<T>::type& v)
 {
     auto P=extract(tree,v);
     delete P.first;
@@ -267,14 +275,17 @@ statistic_node<T,V,S>* erase(statistic_node<T,V,S>* tree,T v)
 }
 
 template<typename T,typename S>
-statistic_node<T,std::tuple<>,S>* insert(statistic_node<T,std::tuple<>,S>* tree,T v)
+statistic_node<T,std::monostate,S>* insert(statistic_node<T,std::monostate,S>* tree,
+    const typename std::common_type<T>::type& v)
 {
-    return insert(tree,v,std::make_tuple());
+    return insert(tree,v,{});
 }
 
 
 template<typename T,typename V, typename S>
-statistic_node<T,V,S>* update(statistic_node<T,V,S>*tree, T v, V data)
+statistic_node<T,V,S>* update(statistic_node<T,V,S>*tree, 
+    const typename std::common_type<T>::type&  v,
+    const typename std::common_type<V>::type& data)
 {
     auto p=lower_bound(tree,v);
     p->data=data;
@@ -320,7 +331,7 @@ int tree_size(statistic_node<T, V, OrderStats> *node)
 }
 
 template<typename T,typename V,typename OrderStats>
-T order_inf(statistic_node<T,V, OrderStats> *tree,T v)
+T order_inf(statistic_node<T,V, OrderStats> *tree,const typename std::common_type<T>::type& v)
 {
     if(!tree)
         return -1;
@@ -343,7 +354,7 @@ T order_inf(statistic_node<T,V, OrderStats> *tree,T v)
 }
 
 template<typename T,typename V,typename OrderStats>
-T order_sup(statistic_node<T,V, OrderStats> *tree,T v)
+T order_sup(statistic_node<T,V, OrderStats> *tree,const typename std::common_type<T>::type& v)
 {
     if(!tree)
         return 0;
@@ -359,7 +370,7 @@ T order_sup(statistic_node<T,V, OrderStats> *tree,T v)
 }
 
 template<typename T, typename V, typename OrderStats>
-int order(statistic_node<T, V, OrderStats>* tree, T v)
+int order(statistic_node<T, V, OrderStats>* tree, const typename std::common_type<T>::type& v )
 {
     if (!tree)
         return 0;
@@ -418,9 +429,9 @@ V tree_sum(statistic_node<T, V, SumStats>* node)
     return node ? node->statistic.sum : SumStats::neutral;
 }
 
-
 template<typename T, typename V, typename SumStats>
-V prefix_sum(statistic_node<T, V, SumStats>* tree, T U)
+V prefix_sum(statistic_node<T, V, SumStats>* tree,const  
+    typename std::common_type<T>::type& U)
 {
     if (!tree)
         return SumStats::neutral;
@@ -430,7 +441,8 @@ V prefix_sum(statistic_node<T, V, SumStats>* tree, T U)
 }
 
 template<typename T, typename V, typename SumStats>
-V suffix_sum(statistic_node<T, V, SumStats>* tree, T L)
+V suffix_sum(statistic_node<T, V, SumStats>* tree, const 
+    typename std::common_type<T>::type& L)
 {
     if (!tree)
         return SumStats::neutral;
@@ -440,7 +452,8 @@ V suffix_sum(statistic_node<T, V, SumStats>* tree, T L)
 }
 
 template<typename T, typename V, typename SumStats>
-V sum(statistic_node<T, V, SumStats>* tree, T L, T R)
+V sum(statistic_node<T, V, SumStats>* tree, const 
+    typename std::common_type<T>::type& L, const typename std::common_type<T>::type& R)
 {
     if (!tree)
         return SumStats::neutral;
@@ -484,7 +497,8 @@ T tree_key_sum(statistic_node<T, V, KeySumStats>* node)
 }
 
 template<typename T, typename V, typename KeySumStats>
-V prefix_key_sum(statistic_node<T, V, KeySumStats>* tree, T U)
+T prefix_key_sum(statistic_node<T, V, KeySumStats>* tree, const 
+    typename std::common_type<T>::type &U)
 {
     if (!tree)
         return KeySumStats::key_neutral;
@@ -494,7 +508,8 @@ V prefix_key_sum(statistic_node<T, V, KeySumStats>* tree, T U)
 }
 
 template<typename T, typename V, typename KeySumStats>
-V suffix_key_sum(statistic_node<T, V, KeySumStats>* tree, T L)
+T suffix_key_sum(statistic_node<T, V, KeySumStats>* tree, const 
+    typename std::common_type<T>::type &L)
 {
     if (!tree)
         return KeySumStats::key_neutral;
@@ -504,7 +519,8 @@ V suffix_key_sum(statistic_node<T, V, KeySumStats>* tree, T L)
 }
 
 template<typename T, typename V, typename KeySumStats>
-T key_sum(statistic_node<T, V, KeySumStats>* tree, T L, T R)
+T key_sum(statistic_node<T, V, KeySumStats>* tree, const typename std::common_type<T>::type& L,
+    const typename std::common_type<T>::type& R)
 {
     if (!tree)
         return KeySumStats::key_neutral;
@@ -515,4 +531,16 @@ T key_sum(statistic_node<T, V, KeySumStats>* tree, T L, T R)
     else return KeySumStats::F(suffix_key_sum(tree->left, L), tree->v, prefix_key_sum(tree->right, R));
 }
 
+/*
+* The following two aliases gives the possibility to a much shorter and compact code
+* For example:
+* 1. sum_node<int,double,multiplies_t> is a shorthand for this atrocity:
+*   statistic_node<int,double,sum_stats<double,multiplies_t<double>>>
+*   this is a statistic_node whose key is of type int and values are doubles, the considered statistic is 
+*   an aggregation stats whose operation is multiplication
+*/
+template<typename T, typename V, template<typename S = T> typename O>
+using sum_node = statistic_node<T, V, sum_stats<V, O<V>>>;
+template<typename T, template<typename S = T> typename O, typename V=std::monostate>
+using key_sum_node = statistic_node<T, V, key_sum_stats<T, O<T>>>;
 #endif
