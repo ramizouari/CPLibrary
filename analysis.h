@@ -50,4 +50,15 @@ R log(R u, const Norm& N = Norm(), real eps = 1e-6, StructureMetaData ...meta_in
 	return r2;
 }
 
+template <typename F>
+F solve_linear_recurrence(std::vector<F> C,std::vector<F> _u, int n)
+{
+	int m = C.size();
+	d_matrix<F> A(0,m_shape{m,m});
+	for (int i = 0; i < m - 1; i++)
+		A[i][i + 1] = 1;
+	A[m - 1].swap(C);
+	d_vector<F> u(_u);
+	return (pow(A, n, m_shape{ m,m }) * u)[0];
+}
 #endif

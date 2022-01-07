@@ -10,7 +10,7 @@ template<typename T>
 struct binary_operation
 {
     template<typename H0,typename ...H>
-    T operator()(const H0&a,const H&... b)
+    T operator()(const H0&a,const H&... b) const
     {
         if constexpr (sizeof...(b) == 0)
             return a;
@@ -152,6 +152,42 @@ struct or_t:public binary_operation<T>
     }
 
     inline static T neutral=0;
+};
+
+template<typename T>
+struct logical_and_t :public binary_operation<T>
+{
+    T reduce(const T& a, const T& b) const override
+    {
+        return a && b;
+    }
+
+    inline static T neutral = T(true);
+};
+
+template<typename T>
+struct logical_or_t :public binary_operation<T>
+{
+    T reduce(const T& a, const T& b) const override
+    {
+        return a || b;
+    }
+
+    inline static T neutral = T(false);
+};
+
+template<typename T>
+struct logical_xor_t :public binary_operation<T>
+{
+    T reduce(const T& a, const T& b) const override
+    {
+        return !a && b || a && !b;
+    }
+    T inv(const T&a) const
+    {
+        return !a;
+    }
+    inline static T neutral = T(false);
 };
 
 #endif

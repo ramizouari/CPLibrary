@@ -119,9 +119,9 @@ struct zip_t :public std::tuple < A... >
 };
 
 template<typename ...A>
-zip_t<A&...> zip(A&... a)
+zip_t<A&&...> zip(A&&... a)
 {
-    zip_t<A&...> S(a...);
+    zip_t<A&&...> S(std::forward<A>(a)...);
     return S;
 }
 
@@ -129,6 +129,20 @@ template<typename ...A>
 zip_t<A...> zip_copy(const A&... a)
 {
     zip_t<A...> S(a...);
+    return S;
+}
+
+template<typename ...A>
+zip_t<A...> zip_move(const A&&... a)
+{
+    zip_t<A...> S(std::forward<A>(a)...);
+    return S;
+}
+
+template<typename ...A>
+zip_t<const A&...> zip_const(const A&... a)
+{
+    zip_t<const A&...> S(a...);
     return S;
 }
 #endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H

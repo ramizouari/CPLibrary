@@ -18,39 +18,6 @@ R commutator(R a,R b)
     return a*b-b*a;
 }
 
-
-template<typename M,typename Endomorphism,typename G=typename M::base_field>
-void apply_pointwise(const Endomorphism& f, M& u)
-{
-    if constexpr (std::is_same_v<G, M>)
-        u = f(u);
-    else for (auto& w : u)
-        apply_pointwise<std::remove_reference_t<decltype(w)>, Endomorphism,G>(f, w);
-}
-
-template<typename M, typename BinaryOperation, typename G = typename M::base_field>
-void apply_pointwise(const BinaryOperation& f, M& u, M a,M b)
-{
-    if constexpr (std::is_same_v<G, M>)
-        u = f(a,b);
-    else for (auto [p,s,t] : zip<M,M,M>(u,a,b))
-        apply_pointwise<std::remove_reference_t<decltype(p)>, BinaryOperation, G>(f, p,s,t);
-}
-
-template<typename M, typename Endomorphism, typename G = typename M::base_field>
-M pointwise_function(const Endomorphism& f, M u)
-{
-    apply_pointwise<M, Endomorphism,G>(f, u);
-    return u;
-}
-
-template<typename M, typename BinaryOperation, typename G = typename M::base_field>
-M pointwise_function(const BinaryOperation& f, M u,M a,M b)
-{
-    apply_pointwise<M, BinaryOperation, G>(f, u,a,b);
-    return u;
-}
-
 template<typename R,typename ...StructureMetaData>
 R pow(R a, long long n,StructureMetaData ... meta_info)
 {
@@ -116,5 +83,4 @@ std::pair<R,R> bezout(R a, R b)
     auto [u,v,_]=egcd(a,b);
     return {u,v};
 }
-
 #endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H

@@ -165,7 +165,7 @@ statistic_node<T,V,S>* rebalance(statistic_node<T,V,S>* x)
 }
 
 template<typename T,typename V,typename S>
-statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,T v,V data)
+statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,T v,V data,bool or_assign=false)
 {
     if(!tree)
     {
@@ -177,6 +177,12 @@ statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,T v,V data)
     {
         p=tree;
         while(p->right) p=p->right;
+    }
+    else if (or_assign && p->v == v)
+    {
+        p->data = data;
+        p->update();
+        return rebalance(p);
     }
     else if(p->left)
     {
@@ -190,6 +196,12 @@ statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,T v,V data)
     else p->right=u;
     p->update();
     return rebalance(p);
+}
+
+template<typename T, typename V, typename S>
+statistic_node<T, V, S>* insert_or_assign(statistic_node<T, V, S>* tree, T v, V data)
+{
+    return insert(tree, v, data, true);
 }
 
 template<typename T,typename V,typename S>
@@ -289,13 +301,11 @@ void destroy(statistic_node<T,V,S>*node)
 struct order_stats
 {
     int size;
-    order_stats(){}
+    order_stats() {}
     template<typename T,typename V>
     order_stats(T v,V data):size(1){}
     template<typename T,typename V>
     static void update(statistic_node<T,V,order_stats>*node);
-    template<typename T,typename V>
-    static int tree_size(statistic_node<T,V,order_stats>*node);
 };
 
 template<typename T, typename V>
@@ -303,16 +313,15 @@ void order_stats::update(statistic_node<T, V, order_stats> *node) {
     node->statistic.size=(node->left?node->left->statistic.size:0)+1+(node->right?node->right->statistic.size:0);
 }
 
-template<typename T, typename V>
-int order_stats::tree_size(statistic_node<T, V, order_stats> *node)
+template<typename T, typename V,typename OrderStats>
+int tree_size(statistic_node<T, V, OrderStats> *node)
 {
     return node?node->statistic.size:0;
 }
 
-template<typename T,typename V>
-T order_inf(statistic_node<T,V,order_stats> *tree,T v)
+template<typename T,typename V,typename OrderStats>
+T order_inf(statistic_node<T,V, OrderStats> *tree,T v)
 {
-    using statistic_type=order_stats;
     if(!tree)
         return -1;
     if(v<tree->v)
@@ -322,21 +331,20 @@ T order_inf(statistic_node<T,V,order_stats> *tree,T v)
         auto o=order_inf(tree->left,v);
         if(o!=-1)
             return o;
-        else return order_stats::tree_size(tree->left);
+        else return tree_size(tree->left);
     }
     else
     {
         auto o=order_inf(tree->right,v);
         if(o!=-1)
-            return statistic_type::tree_size(tree->left)+1+o;
+            return tree_size(tree->left)+1+o;
         else return -1;
     }
 }
 
-template<typename T,typename V>
-T order_sup(statistic_node<T,V,order_stats> *tree,T v)
+template<typename T,typename V,typename OrderStats>
+T order_sup(statistic_node<T,V, OrderStats> *tree,T v)
 {
-    using statistic_type=order_stats;
     if(!tree)
         return 0;
     if(v<tree->v)
@@ -344,17 +352,32 @@ T order_sup(statistic_node<T,V,order_stats> *tree,T v)
     else if(tree->v==v)
     {
         if(tree->right && tree->right->v==v)
-            return statistic_type::tree_size(tree->left)+1+order_sup(tree->right,v);
-        else return statistic_type::tree_size(tree->left);
+            return tree_size(tree->left)+1+order_sup(tree->right,v);
+        else return tree_size(tree->left);
     }
-    else return statistic_type::tree_size(tree->left)+1+order_sup(tree->right,v);
+    else return tree_size(tree->left)+1+order_sup(tree->right,v);
 }
 
-template<typename T,typename V>
-T select(statistic_node<T,V,order_stats> *tree,int o)
+template<typename T, typename V, typename OrderStats>
+int order(statistic_node<T, V, OrderStats>* tree, T v)
 {
-    using statistic_type=order_stats;
-    int s=order_stats::tree_size(tree->left);
+    if (!tree)
+        return 0;
+    if (v < tree->v)
+        return order(tree->left, v);
+    else if (tree->v == v)
+    {
+        if (tree->right && tree->right->v == v)
+            return tree_size(tree->left) + 1 + order(tree->right, v);
+        else return tree_size(tree->left);
+    }
+    else return tree_size(tree->left) + 1 + order(tree->right, v);
+}
+
+template<typename T,typename V,typename OrderStats>
+T select(statistic_node<T,V, OrderStats> *tree,int o)
+{
+    int s= tree_size(tree->left);
     if(s==o)
         return tree->v;
     else if(s<o)
@@ -379,95 +402,117 @@ struct sum_stats
     sum_stats(T v, V data) :size(1), sum(data) {}
     template<typename T>
     static void update(statistic_node<T, V, sum_stats>* node);
-    template<typename T>
-    static int tree_size(statistic_node<T, V, sum_stats>* node);
-    template<typename T>
-    static V tree_sum(statistic_node<T, V, sum_stats>* node);
+    inline static const V& neutral = O::neutral;
 };
 
 template<typename V, typename O>
 template<typename T>
 void sum_stats<V, O>::update(statistic_node<T, V, sum_stats<V, O>>* node) {
     node->statistic.size = (node->left ? node->left->statistic.size : 0) + 1 + (node->right ? node->right->statistic.size : 0);
-    node->statistic.sum = F(tree_sum(node->left), F(node->data, tree_sum(node->right)));
+    node->statistic.sum = F(tree_sum(node->left),node->data, tree_sum(node->right));
 }
 
-template<typename V, typename O>
-template<typename T>
-int sum_stats<V, O>::tree_size(statistic_node<T, V, sum_stats<V, O>>* node)
+template<typename T, typename V, typename SumStats>
+V tree_sum(statistic_node<T, V, SumStats>* node)
 {
-    return node ? node->statistic.size : 0;
+    return node ? node->statistic.sum : SumStats::neutral;
 }
 
-template<typename V, typename O>
-template<typename T>
-V sum_stats<V, O>::tree_sum(statistic_node<T, V, sum_stats>* node)
-{
-    return node ? node->statistic.sum : O::neutral;
-}
 
-template<typename T, typename V, typename O>
-int order(statistic_node<T, V, sum_stats<V, O>>* tree, T v)
+template<typename T, typename V, typename SumStats>
+V prefix_sum(statistic_node<T, V, SumStats>* tree, T U)
 {
-    using statistic_type = sum_stats<V, O>;
     if (!tree)
-        return 0;
-    if (v < tree->v)
-        return order(tree->left, v);
-    else if (tree->v == v)
-    {
-        if (tree->right && tree->right->v == v)
-            return statistic_type::tree_size(tree->left) + 1 + order(tree->right, v);
-        else return statistic_type::tree_size(tree->left);
-    }
-    else return statistic_type::tree_size(tree->left) + 1 + order(tree->right, v);
-}
-
-template<typename T, typename V, typename O>
-T select(statistic_node<T, V, sum_stats<V, O>>* tree, int o)
-{
-    using statistic_type = sum_stats<V, O>;
-    int s = statistic_type::tree_size(tree->left);
-    if (s == o)
-        return tree->v;
-    else if (s < o)
-        return select(tree->right, o - s - 1);
-    else return select(tree->left, o);
-}
-
-template<typename T, typename V, typename O>
-V prefix_sum(statistic_node<T, V, sum_stats<V, O>>* tree, T U)
-{
-    using S = sum_stats<V, O>;
-    if (!tree)
-        return O::neutral;
+        return SumStats::neutral;
     else if (tree->v >= U)
         return prefix_sum(tree->left, U);
-    else return S::F(S::tree_sum(tree->left), S::F(tree->data, prefix_sum(tree->right, U)));
+    else return SumStats::F(tree_sum(tree->left), tree->data, prefix_sum(tree->right, U));
 }
 
-template<typename T, typename V, typename O>
-V suffix_sum(statistic_node<T, V, sum_stats<V, O>>* tree, T L)
+template<typename T, typename V, typename SumStats>
+V suffix_sum(statistic_node<T, V, SumStats>* tree, T L)
 {
-    using S = sum_stats<V, O>;
     if (!tree)
-        return O::neutral;
+        return SumStats::neutral;
     else if (tree->v < L)
         return suffix_sum(tree->right, L);
-    else return S::F(suffix_sum(tree->left, L), S::F(tree->data, S::tree_sum(tree->right)));
+    else return SumStats::F(suffix_sum(tree->left, L), tree->data, tree_sum(tree->right));
 }
 
-template<typename T, typename V, typename O>
-V sum(statistic_node<T, V, sum_stats<V, O>>* tree, T L, T R)
+template<typename T, typename V, typename SumStats>
+V sum(statistic_node<T, V, SumStats>* tree, T L, T R)
 {
-    using S = sum_stats<V, O>;
     if (!tree)
-        return O::neutral;
+        return SumStats::neutral;
     if (tree->v < L)
         return sum(tree->right, L, R);
     else if (tree->v >= R)
         return sum(tree->left, L, R);
-    else return S::F(suffix_sum(tree->left, L), S::F(tree->data, prefix_sum(tree->right, R)));
+    else return SumStats::F(suffix_sum(tree->left, L), tree->data, prefix_sum(tree->right, R));
+}
+
+/*
+* Key-sum Statistic
+*/
+
+template<typename T, typename O>
+struct key_sum_stats
+{
+    inline static constexpr O F = O();
+    int size;
+    T key_sum;
+    key_sum_stats() {}
+    template<typename V>
+    key_sum_stats(T v, V data) :size(1), key_sum(v) {}
+    template<typename V>
+    static void update(statistic_node<T, V, key_sum_stats>* node);
+    inline static const T& key_neutral = O::neutral;
+};
+
+template<typename T, typename O>
+template<typename V>
+void key_sum_stats<T, O>::update(statistic_node<T, V, key_sum_stats<T, O>>* node) {
+    node->statistic.size = (node->left ? node->left->statistic.size : 0) + 1 + (node->right ? node->right->statistic.size : 0);
+    node->statistic.key_sum = F(tree_key_sum(node->left), node->v, tree_key_sum(node->right));
+}
+
+
+template<typename T, typename V, typename KeySumStats>
+T tree_key_sum(statistic_node<T, V, KeySumStats>* node)
+{
+    return node ? node->statistic.key_sum : KeySumStats::key_neutral;
+}
+
+template<typename T, typename V, typename KeySumStats>
+V prefix_key_sum(statistic_node<T, V, KeySumStats>* tree, T U)
+{
+    if (!tree)
+        return KeySumStats::key_neutral;
+    else if (tree->v >= U)
+        return prefix_key_sum(tree->left, U);
+    else return KeySumStats::F(tree_key_sum(tree->left), tree->v, prefix_key_sum(tree->right, U));
+}
+
+template<typename T, typename V, typename KeySumStats>
+V suffix_key_sum(statistic_node<T, V, KeySumStats>* tree, T L)
+{
+    if (!tree)
+        return KeySumStats::key_neutral;
+    else if (tree->v < L)
+        return suffix_key_sum(tree->right, L);
+    else return KeySumStats::F(suffix_key_sum(tree->left, L), tree->v, tree_key_sum(tree->right));
+}
+
+template<typename T, typename V, typename KeySumStats>
+T key_sum(statistic_node<T, V, KeySumStats>* tree, T L, T R)
+{
+    if (!tree)
+        return KeySumStats::key_neutral;
+    if (tree->v < L)
+        return key_sum(tree->right, L, R);
+    else if (tree->v >= R)
+        return key_sum(tree->left, L, R);
+    else return KeySumStats::F(suffix_key_sum(tree->left, L), tree->v, prefix_key_sum(tree->right, R));
 }
 
 #endif

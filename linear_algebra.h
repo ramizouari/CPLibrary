@@ -251,6 +251,11 @@ public:
     auto&& get() const&& {
         return u[k];
     }
+
+    template <size_t k>
+    auto&& get() && {
+        return u[k];
+    }
 };
 
 template<typename R,int n>
