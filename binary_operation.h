@@ -91,7 +91,7 @@ struct min_t:public binary_operation<T>
         return std::min(a,b);
     }
 
-    inline static T neutral=1e9;
+    inline static T neutral;
 };
 
 template<typename T>

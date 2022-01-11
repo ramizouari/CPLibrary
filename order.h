@@ -35,6 +35,10 @@ constexpr struct inf_plus_t :public inf_t
 
 constexpr struct inf_minus_t: public inf_t
 {
+    bool operator==(const inf_plus_t&) const
+    {
+        return false;
+    }
     std::strong_ordering operator<=>(const inf_plus_t&) const
     {
         return 0 <=> 1;

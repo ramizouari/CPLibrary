@@ -11,9 +11,8 @@
  * 2. nilpotent extension of a ring R: formally it is isomorphic to R[x]/x^k where k is the nilpotence index
  * 3. idempotent extention of a ring R: formally it is isomorphic to R[x]/(x^k-x^(k-1)) where k is the idempotence index
  * 4. ring extension of a ring R with a polynomial q: formally it is isomorphic to R[x]/q(x)
- * 5. quadratic extension of a ring R with a polynomial x²-ax-b: formally it is isomorphic to R[x]/(x²-ax-b)
- * */
-
+ * 5. quadratic extension of a ring R with a polynomial x²-ax-b: formally it is isomorphic to R[x]/(x²-ax-b) 
+ */
 
 template<typename R>
 struct rational_t
@@ -22,6 +21,16 @@ struct rational_t
     R q;
 };
 
+/*
+* This is the field of fractions over R.
+* @Requirements
+* - R is an integral domain. In particular, R should be an euclidean domain
+* - R is not a field
+* @Notes
+* We excluded the case R is a field, because
+* - Otherwise, Frac(R) will be isomorphic to R
+* - Euclidean division is frequently not implemented when R is a field
+*/
 template<typename R>
 class rational_extension
 {
@@ -33,6 +42,11 @@ class rational_extension
         q/=d;
     }
 public:
+    /*
+    * Initialize an element r
+    * @Requirements
+    * q is not zero
+    */
     rational_extension(R _p=0,R _q=1):p(_p),q(_q)
     {
         reduce();
@@ -163,6 +177,11 @@ namespace std
     };
 }
 
+/*
+* Extension of R into R[x]/x^n. with n the nilpotence index
+* @Requirements:
+* None
+*/
 template<typename R,int nilpotence>
 class nilpotent_extension
 {
@@ -254,6 +273,16 @@ public:
     {
         return p.end();
     }
+
+    auto begin() const
+    {
+        return p.begin();
+    }
+
+    auto end() const
+    {
+        return p.end();
+    }
 };
 
 struct nilpotence_t
@@ -261,6 +290,15 @@ struct nilpotence_t
     int n;
 };
 
+/*
+* This is simply the union of R[x]/x^n over all n
+* @Requirements:
+* None
+* @Notes:
+* If we don't specify the index manually. It will be equal as default to the public static member nilpotence
+* @Warning
+* the value of nilpotence should be initialized.
+*/
 template<typename R>
 class d_nilpotent_extension
 {
@@ -357,12 +395,27 @@ public:
         return p.end();
     }
 
+    auto begin() const
+    {
+        return p.begin();
+    }
+
+    auto end() const
+    {
+        return p.end();
+    }
+
     operator std::vector<R>&()
     {
         return p;
     }
 };
 
+/*
+* Extension of R into R[x]/(x^(n+1)-x^n). with n the idempotence index
+* @Requirements:
+* None
+*/
 template<typename R,int idempotence>
 class idempotent_extension
 {
@@ -445,6 +498,16 @@ public:
         return p.end();
     }
 
+    auto begin() const
+    {
+        return p.begin();
+    }
+
+    auto end() const
+    {
+        return p.end();
+    }
+
     auto& operator[](int k)
     {
         return p[k];
@@ -458,8 +521,13 @@ public:
 
 /*
  * Extension of the ring R to R[x]/q(x) where q is a given poylnomial
- * */
-
+ * @Requirements
+ * One of the following:
+ *  - R is a commutative ring and q is a monic polynomial
+ *  - R is a field and q is not zero
+ * @Warning
+ * the value of q should be initialized.
+ */
 template<typename R>
 class ring_extension
 {
@@ -518,12 +586,28 @@ public:
         return q-=O;
     }
 
+    /*
+     * Calculates the multiplicative inverse of an element p
+     * @Requirements
+     * 1. d=gcd(p,q) is a non-zero constant polynomial
+     * 2. One of the following:
+     *  2.1 R is a commutative ring and d is invertible 
+     *  2.2 R is an euclidean domain and d | a
+     * @Notes
+     * For (2.2),The divisibility relation is defined as:
+     * d | a iff d | s for all s in a
+     */
     auto inv() const
     {
         auto [a,b,d]= egcd(p,q);
         return a/d[0];
     }
 
+    /*
+     * Calculates a multiplicative pseudo-inverse of an element p
+     * @Requirements
+     * None
+     */
     auto pinv() const
     {
         return egcd(p,q).a;
@@ -575,6 +659,16 @@ public:
         return p.end();
     }
 
+    auto begin() const
+    {
+        return p.begin();
+    }
+
+    auto end() const
+    {
+        return p.end();
+    }
+
     auto& operator[](int k)
     {
         return p[k];
@@ -588,7 +682,9 @@ public:
 
 
 /*
- * Extension of the ring R into R[x]/(x²-ax-b)
+ * Extension of the commutative ring R into R[x]/(x²-ax-b)
+ * @Requirements:
+ * None
  * */
 template<typename R,integer a,integer b>
 class quadratic_extension
@@ -649,27 +745,63 @@ public:
         return q-=O;
     }
 
+
+    /*
+     * Calculate the multiplicative inverse of p
+     * @Requirements:
+     * One of the following:
+     * - p0²+a*p0*p1-b*p1² is inversible
+     * - R is an euclidean domain and p0²+a*p0*p1-b*p1² | conj(p)
+     * @Notes
+     * For (2.2),The divisibility relation is defined as:
+     * d | a iff d | s for all s in a
+     * */
     auto inv() const
     {
         return conj()/(p[0]*p[0]+R(a)*p[0]*p[1]-R(b)*p[1]*p[1]);
     }
 
     /*
-     * Guaranteed to work in an integral domain even if the element O is not inversible,
+     * Divides p by q
+     * @Requirements:
+     * One of the following:
+     * - p0²+a*p0*p1-b*p1² is inversible
+     * - R is an euclidean domain and p0²+a*p0*p1-b*p1² | p*conj(q)
+     * @Notes
+     * 1. Guaranteed to work in an integral domain even if the element O is not inversible,
      * but there still exists Q such that P=Q*O => P/O=Q
+     * 2. The divisibility relation is defined as: d | a iff d | s for all s in a
      * */
-
-    auto& operator/=(const quadratic_extension &O)
+    auto& operator/=(const quadratic_extension &q)
     {
-        *this*=O.conj();
+        *this*=q.conj();
         return *this/=p[0]*p[0]+R(a)*p[0]*p[1]-R(b)*p[1]*p[1];
     }
-
+    /*
+     * Divides p by q and store it to p itself
+     * @Requirements:
+     * One of the following:
+     * - p0²+a*p0*p1-b*p1² is inversible
+     * - R is an euclidean domain and p0²+a*p0*p1-b*p1² | p*conj(q)
+     * @Notes
+     * 1. Guaranteed to work in an integral domain even if the element O is not inversible,
+     * but there still exists Q such that P=Q*O => P/O=Q
+     * 2. The divisibility relation is defined as: d | a iff d | s for all s in a
+     * */
     auto operator/(const quadratic_extension &O) const
     {
         return ((*this)*O.conj())/(O.p[0]*O.p[0]+R(a)*O.p[0]*O.p[1]-R(b)*O.p[1]*O.p[1]);
     }
 
+    /*
+     * Divides p by k and store it to p itself
+     * @Requirements:
+     * One of the following:
+     * - k is inversible
+     * - R is an euclidean domain and k | p
+     * @Notes
+     * The divisibility relation is defined as: d | a iff d | s for all s in a
+     * */
     auto& operator/=(R k)
     {
         p[0]/=k;
@@ -726,6 +858,16 @@ public:
     }
 
     auto end()
+    {
+        return p.end();
+    }
+
+    auto begin() const
+    {
+        return p.begin();
+    }
+
+    auto end() const
     {
         return p.end();
     }
@@ -809,6 +951,17 @@ struct extension_polynomial_t
     polynomial<R> p;
 };
 
+/*
+ * It is simply the union of R[x]/q over all polynomials q
+ * @Requirements
+ * One of the following:
+ *  - R is a commutative ring and q is a monic polynomial
+ *  - R is a field and q is not zero
+ * @Notes
+ * If the polynomial is not specified, its value will be by default that of the public static member extension_polynomial
+ * @Warning
+ * the value of extension_polynomial should be initialized.
+ */
 template<typename R>
 class d_ring_extension
 {
@@ -898,6 +1051,16 @@ public:
     }
 
     auto end()
+    {
+        return p.end();
+    }
+
+    auto begin() const
+    {
+        return p.begin();
+    }
+
+    auto end() const
     {
         return p.end();
     }

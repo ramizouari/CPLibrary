@@ -4,12 +4,29 @@
 #include "linear_algebra.h"
 #include <functional>
 
+/*
+* This class is the class of all metrics over E
+* @Requirements
+* None
+*/
 template<typename E>
 struct metric_t
 {
     virtual real metric(const E&u,const E&v)const =0;
+    real distance(const E& u, const E& v) const
+    {
+        return metric(u, v);
+    }
 };
 
+
+/*
+* This class is the class of all norms over E
+* @Requirements
+* E is a vector space over a field
+* @Notes
+* Every specialisation of this class must define the norm consistently with the field K
+*/
 template<typename E>
 struct norm_t :public metric_t<E>
 {
@@ -20,17 +37,32 @@ struct norm_t :public metric_t<E>
     }
 };
 
+/*
+* This class is the class of all inner products over E
+* @Requirements
+* 1. K is IC or IR
+* 2. E is a vector space over E
+* @Notes
+* Every specialisation of this class must define the inner product consistently with the field K
+*/
+
 template<typename K,typename E>
 struct inner_product_t:public norm_t<E>
 {
     real norm(const E&u) const override
     {
-        return std::abs(std::sqrt(inner_product(u,u)));
+        return std::sqrt(std::abs(inner_product(u,u)));
     }
 
     virtual K inner_product(const E&u,const E&v)const  =0;
 };
 
+/*
+* This class defines the natural inner product over E
+* @Requirements
+* 1. K is IC or IR
+* 2. E is a vector space over E
+*/
 template<typename K,typename E>
 struct L2_inner_product;
 
@@ -66,8 +98,8 @@ struct L1_norm :public norm_t<E>
     real norm(const E&u) const
     {
         real R=0;
-        for(int i=0;i<u.dim();i++)
-            R+=std::abs(u[i]);
+        for(auto s:u)
+            R+=std::abs(s);
         return R;
     }
 };
@@ -78,8 +110,8 @@ struct L_inf_norm :public norm_t<E>
     real norm(const E&u) const
     {
         real R=0;
-        for(int i=0;i<u.dim();i++)
-            R=std::max(R,std::abs(u[i]));
+        for(auto s:u)
+            R=std::max(R,std::abs(s));
         return R;
     }
 };

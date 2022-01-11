@@ -18,6 +18,19 @@ R commutator(R a,R b)
     return a*b-b*a;
 }
 
+template<typename M,typename G=typename M::base_field>
+M conj(M a)
+{
+    if constexpr (std::is_same_v<G, IC>)
+    {
+        if constexpr (std::is_same_v<G, M>)
+            return std::conj(a);
+        else for (auto& s : a)
+            s = conj<std::remove_reference<decltype(s)>::type, G>(s);
+    }
+    return a;
+}
+
 template<typename R,typename ...StructureMetaData>
 R pow(R a, long long n,StructureMetaData ... meta_info)
 {

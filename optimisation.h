@@ -205,50 +205,95 @@ class gradient_descent
 {
     inline static constexpr Norm N=Norm();
 protected:
-    E x0;
-    real p=.1;
-    real eps=1e-8;
+    real p=.05;
+    real eps;
     derivator<E,real,E>& D;
 public:
-    gradient_descent(const E& _x0,derivator<E,real,E> &d):x0(_x0),D(d) {}
-    void set_seed(const E& _x0) { x0 = _x0; }
-    E argmin(const std::function<real(E)>& f) const
+    gradient_descent(derivator<E,real,E> &d,real _eps=1e-3):D(d),eps(_eps) {}
+    E argmin(const std::function<real(E)>& f,E x) const
     {
-        E x = x0;
         for (; N.norm(D.gradient(f, x)) > eps; x -= p * D.gradient(f, x));
         return x;
     }
+    E argmin(const std::function<real(E)>& f, E x,int L) const
+    {
+        for (; N.norm(D.gradient(f, x)) > eps && L--; x -= p * D.gradient(f, x));
+        return x;
+    }
+    E argmin(const std::function<std::pair<real,E>(E)>& f, E x) const
+    {
+        auto P = f(x);
+        while (N.norm(P.second) > eps)
+        {
+            x -= p * P.second;
+            P = f(x);
+        }
+        return x;
+    }
+
+    E argmin(const std::function<std::pair<real, E>(E)>& f, E x,int L) const
+    {
+        auto P = f(x);
+        while (N.norm(P.second) > eps && L--)
+        {
+            x -= p * P.second;
+            P = f(x);
+        }
+        return x;
+    }
+
 };
 
 template<typename E,typename InnerProduct=L2_inner_product<real,E>>
 class barzilai_borwein_gradient_descent
 {
-    E s;
-    E x0;
     real p=.1;
     real eps=1e-8;
     derivator<E,real,E>& D;
     inline static constexpr InnerProduct B = InnerProduct();
 public:
-    barzilai_borwein_gradient_descent(const E& _x0, derivator<E, real,E>& d, real _p):x0(_x0),D(d),p(_p){}
+    barzilai_borwein_gradient_descent(derivator<E, real,E>& d, real _p):D(d),p(_p){}
 
-    E argmin(const std::function<real(E)>& f)
+    E argmin(const std::function<real(E)>& f, E s,int L)
     {
         this->p = 0.1;
-        s = this->x0;
         E x = s- this->p*this->D.gradient(f, s);
-        for (; B.norm(this->D.gradient(f, x)) > this->eps; x -= this->p * this->D.gradient(f, x))
+        for (; B.norm(this->D.gradient(f, x)) > this->eps && L; x -= this->p * this->D.gradient(f, x))
         {
-            update_rate(f, x);
+            update_rate(f, x,s);
             s = x;
+            L--;
         }
         return x;
     }
 
-    virtual void update_rate(const std::function<real(E)>& f, const E& x)
+    E argmin(const std::function<std::pair<real, E>(E)>& f, E s, int L)
+    {
+        auto P = f(s);
+        E x = s - this->p * f(s).second;
+        auto Q = f(x);
+        while (B.norm(P.second) > eps && L--)
+        {
+            update_rate(x, s,Q.second,P.second);
+            s = x;
+            x -= this->p * Q.second;
+            P = std::move(Q);
+            Q = f(x);
+        }
+        return x;
+    }
+
+
+    virtual void update_rate(const std::function<real(E)>& f, const E& x,const E& s)
     {
         auto L = this->D.gradient(f, x) - this->D.gradient(f, s);
         this->p = B.inner_product(L,x - s) / B.inner_product(L,L);
+    }
+
+    virtual void update_rate(const E& x, const E& s,const E& dx,const E& ds)
+    {
+        auto L = dx - ds;
+        this->p = B.inner_product(L, x - s) / B.inner_product(L, L);
     }
 };
 #endif

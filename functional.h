@@ -17,7 +17,6 @@ concept MonoidOperation = requires(F  f, M a, M b)
 template<typename F,typename M>
 concept Endomorphism = std::is_same_v<decltype(std::declval<F>()(std::declval<M>())), M>;
 
-
 template<typename M, typename O, typename G = typename M::base_field>
 void apply_pointwise(const O& f, M& u) requires Endomorphism<O,G>
 {

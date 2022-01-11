@@ -295,6 +295,7 @@ public:
             M[i][i]=k;
     }
     d_matrix(std::vector<std::vector<R>> &&_M):M(std::move(_M)){}
+    d_matrix(std::vector<std::vector<R>> _M) :M(std::move(_M)) {}
     auto row_dim() const
     {
         return M.size();
@@ -325,6 +326,15 @@ public:
         d_matrix P(0,m_shape{m,n});
         for(int i=0;i<n;i++) for(int j=0;j<m;j++)
                 P.M[j][i]=M[i][j];
+        return P;
+    }
+
+    d_matrix H() const
+    {
+        int m = col_dim(), n = row_dim();
+        d_matrix P(0, m_shape{ m,n });
+        for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
+            P.M[j][i] = conj(M[i][j]);
         return P;
     }
 
@@ -373,7 +383,7 @@ public:
     {
         int n=row_dim(),m=col_dim(),p=O.col_dim();
         d_matrix N(0,m_shape{n,p});
-        for(int i=0;i<n;i++) for(int k=0;k<p;k++) for(int j=0;j<m;j++)
+        for(int i=0;i<n;i++) for(int k=0;k<m;k++) for(int j=0;j<p;j++)
             N.M[i][j]+=M[i][k]*O.M[k][j];
         return N;
     }
@@ -679,6 +689,14 @@ public:
         return P;
     }
 
+    s_matrix<R, m, n> H() const
+    {
+        s_matrix<R, m, n> P;
+        for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
+            P.M[j][i] = conj(M[i][j]);
+        return P;
+    }
+
     auto &operator+=(const s_matrix &O)
     {
         for(int i=0;i<n;i++) for(int j=0;j<m;j++)
@@ -771,7 +789,7 @@ public:
         return M.begin();
     }
 
-    auto cbegin() const
+    auto begin() const
     {
         return M.cbegin();
     }
@@ -781,7 +799,7 @@ public:
         return M.end();
     }
 
-    auto cend() const
+    auto end() const
     {
         return M.cend();
     }
@@ -1008,4 +1026,15 @@ polynomial<R> interpolation_characteristic_polynomial(s_matrix<R,n,n> M)
     return newton_interpolation(X, Y);
 }
 
+template<int n=-1>
+using IE = std::conditional_t<n >= 0, s_vector<real, n>, d_vector<real>>;
+
+template<int n = -1>
+using IH = std::conditional_t<n >= 0, s_vector<IC, n>, d_vector<IC>>;
+
+template<int n = -1,int m=n>
+using IM_IR = std::conditional_t<n >= 0 && m>=0, s_matrix<real, n,m>, d_matrix<real>>;
+
+template<int n = -1, int m = n>
+using IM_IC = std::conditional_t<n >= 0 && m >= 0, s_matrix<IC, n, m>, d_matrix<IC>>;
 #endif

@@ -7,6 +7,26 @@
 #include <tuple>
 #include "binary_operation.h"
 
+/*
+* * Ordered Statistic Tree:
+* It is an AVL-tree augmented with a statistic
+* The statistic is a function of:
+* 1. The key
+* 2. The value
+* 3. left and right subtree
+* @Requirements
+* 1. a class T
+* 2. (T,<=) is a totally ordered set
+* 3. S is a statistic type
+* 
+* * Statistic Type:
+* A statistic S is a class having some attributes serving as additional informations
+* Those informations can be aggregated via the static update method
+* @Requirements:
+* 1. class S
+* 2. S has a public static method called update which accepts Tree<T,V,S>.
+* 3. the update method "updates" adequately the statistics, and only the statistics
+*/
 
 template<typename T,typename V,typename S>
 struct statistic_node;
@@ -203,11 +223,25 @@ statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,const typename std::co
     return rebalance(p);
 }
 
+template<typename T, typename S>
+statistic_node<T, std::monostate, S>* insert(statistic_node<T, std::monostate, S>* tree,
+    const typename std::common_type<T>::type& v,bool or_assign=false)
+{
+    return insert(tree, v, {},or_assign);
+}
+
 template<typename T, typename V, typename S>
 statistic_node<T, V, S>* insert_or_assign(statistic_node<T, V, S>* tree,const
     typename std::common_type<T>::type& v,const typename std::common_type<V>::type& data)
 {
     return insert(tree, v, data, true);
+}
+
+template<typename T, typename S>
+statistic_node<T, std::monostate, S>* insert_or_assign(statistic_node<T, std::monostate, S>* tree, const
+    typename std::common_type<T>::type& v)
+{
+    return insert_or_assign(tree, v, {});
 }
 
 template<typename T,typename V,typename S>
@@ -274,14 +308,6 @@ statistic_node<T,V,S>* erase(statistic_node<T,V,S>* tree,
     return P.second;
 }
 
-template<typename T,typename S>
-statistic_node<T,std::monostate,S>* insert(statistic_node<T,std::monostate,S>* tree,
-    const typename std::common_type<T>::type& v)
-{
-    return insert(tree,v,{});
-}
-
-
 template<typename T,typename V, typename S>
 statistic_node<T,V,S>* update(statistic_node<T,V,S>*tree, 
     const typename std::common_type<T>::type&  v,
@@ -307,6 +333,8 @@ void destroy(statistic_node<T,V,S>*node)
 * It is a Self Balanced Binary Search Tree augmented with an order:
 * - The order of an element can be calculated in O(log(n))
 * - An element can be selected given its order in O(log(n))
+* @Requirements
+* None
 */
 
 struct order_stats
@@ -401,6 +429,13 @@ T select(statistic_node<T,V, OrderStats> *tree,int o)
 * It is an Ordered Statistic Tree augmented with a sum acting on data:
 * The sum is defined over an associative binary operation having a neutral element
 * It supports range sum (L,R) for keys belonging to an interval [L,R[ 
+* @Requirements
+* 1. a class V
+* 2. an associative binary operation O: VxV->V 
+* 3. O has a neutral element named 'neutral'. and it is defined as a public static attribute.
+* 4. O has an overload for the ternary case: VxVxV->V, and its definition is compatible with the binary case.
+* @Notes
+* Formally, (V,O) is a monoid
 */
 template<typename V, typename O>
 struct sum_stats
@@ -464,8 +499,18 @@ V sum(statistic_node<T, V, SumStats>* tree, const
     else return SumStats::F(suffix_sum(tree->left, L), tree->data, prefix_sum(tree->right, R));
 }
 
-/*
-* Key-sum Statistic
+/* * Key Sum Statistic:
+* It is an Ordered Statistic Tree augmented with a sum acting on keys:
+* The sum is defined over an associative binary operation having a neutral element
+* It supports range sum (L,R) for keys belonging to the interval [L,R[ 
+* @Requirements
+* 1. a class T
+* 2. an associative binary operation O: TxT->T 
+* 3. O has a neutral element named 'neutral'. and it is defined as a public static attribute.
+* 4. O has an overload for the ternary case: TxTxT->T, and its definition is compatible with the binary case.
+* @Notes
+* Formally, (T,O) is a monoid
+* The order of T does not need to be compatible with O
 */
 
 template<typename T, typename O>
@@ -532,15 +577,31 @@ T key_sum(statistic_node<T, V, KeySumStats>* tree, const typename std::common_ty
 }
 
 /*
-* The following two aliases gives the possibility to a much shorter and compact code
+* The following aliases gives the possibility to a much shorter and compact code
 * For example:
-* 1. sum_node<int,double,multiplies_t> is a shorthand for this atrocity:
+* 1. sum_node_t<int,double,multiplies_t> is a shorthand for this atrocity:
 *   statistic_node<int,double,sum_stats<double,multiplies_t<double>>>
 *   this is a statistic_node whose key is of type int and values are doubles, the considered statistic is 
 *   an aggregation stats whose operation is multiplication
+* The first two considers the case when the binary operator's class is a template
+* The last two considers the case when the binary operator's class is not a template
 */
 template<typename T, typename V, template<typename S = T> typename O>
-using sum_node = statistic_node<T, V, sum_stats<V, O<V>>>;
+using sum_node_t = statistic_node<T, V, sum_stats<V, O<V>>>;
+
 template<typename T, template<typename S = T> typename O, typename V=std::monostate>
-using key_sum_node = statistic_node<T, V, key_sum_stats<T, O<T>>>;
+using key_sum_node_t = statistic_node<T, V, key_sum_stats<T, O<T>>>;
+
+template<typename T, typename V, typename O>
+using sum_node = statistic_node<T, V, sum_stats<V, O>>;
+
+template<typename T, typename O, typename V = std::monostate>
+using key_sum_node = statistic_node<T, V, key_sum_stats<T, O>>;
+
+template<typename T, typename V = std::monostate>
+using order_node = statistic_node<T, V, order_stats>;
+
+/*
+* A
+*/
 #endif

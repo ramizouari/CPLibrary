@@ -6,6 +6,13 @@
 #include <vector>
 #include <map>
 
+/*
+* This is the class of polynomials over commutative ring R
+* @Requirements
+* R is a commutative ring
+* @Notes
+* Formally this class is simply R[x]
+*/
 template<typename R>
 class polynomial
 {
@@ -18,11 +25,13 @@ public:
             return p.empty();
         else return degree() == 0 && p.front() == a;
     }
+
     void reduce()
     {
         while(!p.empty() && p.back()==R(0))
             p.pop_back();
     }
+    template<typename NotInteger= std::enable_if_t<!std::is_same_v<R, int>>>
     polynomial(R k):p(1,k)
     {
         reduce();
@@ -41,6 +50,11 @@ public:
     int degree() const
     {
         return p.size()-1;
+    }
+
+    int dim() const
+    {
+        return p.size();
     }
 
     auto& operator+=(const polynomial &O)
@@ -105,7 +119,7 @@ public:
 
     auto operator*=(R a)
     {
-        if(a==0)
+        if(a==R(0))
             p.clear();
         else for(auto& s:p)
             s*=a;
@@ -140,10 +154,27 @@ public:
         return q-=a;
     }
 
+    /*
+    * creates a preorder between polynomials based on the degree
+    * @Requirements:
+    * None
+    * @Notes
+    * This function is essential for the euclidean algorithm to work
+    */
     bool operator<(const polynomial &O) const
     {
         return degree() < O.degree();
     }
+
+    /*
+    * Divides the polynomial by a constant
+    * @Requirements:
+    * One of the following
+    * - R is an integral ring (2)
+    * - k is invertible
+    * @Notes
+    * None
+    */
 
     auto& operator/=(R k)
     {
@@ -158,6 +189,17 @@ public:
         return q/=k;
     }
 
+    /*
+    * Applies euclidean division between two polynomials
+    * @Requirements:
+    * One of the following
+    * - R is a field (1)
+    * - R is an euclidean domain (2)
+    * - R is a commutative ring, and the dominant coefficient of O is inversible
+    * @Notes
+    * Even that condition (1) is a special case of (2), given that some properties of euclidean division are
+    * guaranteed only if R is a field, We will seperate the two cases
+    */
     std::pair<polynomial,polynomial> euclidean_division(const polynomial &O) const
     {
         if(degree() < O.degree())
@@ -171,15 +213,17 @@ public:
             for(int j=0;j<=m;j++)
                 r.p[i+j-m]-=q.p[i-m]*O.p[j];
         }
-        r.p.resize(m);
+        r.reduce();
         return {q,r};
     }
 
+    //Get the quotient of the euclidean division
     polynomial operator/(const polynomial &O) const
     {
         return euclidean_division(O).first;
     }
 
+    //Get the remainder of the euclidean division
     polynomial operator%(const polynomial &O) const
     {
         return euclidean_division(O).second;
@@ -209,6 +253,11 @@ public:
         D.p.resize(degree());
     }
 
+    /*
+    * Evaluates the polynomial over an associative R-algebra H
+    * @Requirements:
+    * H is an associative algebra over R
+    */
     template<typename H>
     H operator()(H a)
     {
@@ -224,6 +273,16 @@ public:
     }
 
     auto end()
+    {
+        return p.end();
+    }
+
+    auto begin() const
+    {
+        return p.begin();
+    }
+
+    auto end() const
     {
         return p.end();
     }
@@ -246,9 +305,26 @@ polynomial<R> operator*(R a,const polynomial<R> &p)
     return q*=a;
 }
 
+/*
+* This constant is the generator of all polynomials over R.
+* @Notes
+* Formally, it is simply the polynomial X:x->x
+*/
 template<typename R>
 const polynomial<R> X=polynomial<R>(std::vector<R>{0,1});
 
+
+/*
+* This is the class of sparse polynomials over commutative ring R
+* @Requirements
+* R is a commutative ring
+* @Recommendation
+* 1. The coefficients are sparse. Formally a k-sparse polynomial p of degree n is a polynomial where:
+* (card supp {p_1,..,p_n}) / n <= k
+* 2. It is recommended that k<=0.01
+* @Notes
+* Formally this class is simply R[x]
+*/
 template<typename R>
 class sparse_polynomial
 {
@@ -397,6 +473,11 @@ public:
         return p.at(k);
     }
 
+    /* *
+    * Evaluates the polynomial over an associative R-algebra H
+    * @Requirements:
+    * H is an associative algebra over R
+    */
     template<typename H>
     H operator()(H a)
     {
@@ -435,6 +516,14 @@ sparse_polynomial<R> operator*(R a,const sparse_polynomial<R> &p)
     return q*=a;
 }
 
+/* 
+* Applies Lagrange Interpolation over points (x,y)
+* @Requirements:
+* 1. x does not have a duplicate element
+* 2. One of the following
+*   2.1. R is a field
+*   2.2 (s-t) is inversible for all elements s,t in x 
+*/
 template<typename R>
 polynomial<R> newton_interpolation(const std::vector<R> &x,const std::vector<R> &y)
 {
@@ -452,6 +541,11 @@ polynomial<R> newton_interpolation(const std::vector<R> &x,const std::vector<R> 
     return p;
 }
 
+/*
+* Applies Karatsuba multiplication between the two polynomials
+* @Requirements:
+* None
+*/
 template<typename R>
 polynomial<R> karatsuba_multiplication(const polynomial<R> &p,const polynomial<R> &q)
 {

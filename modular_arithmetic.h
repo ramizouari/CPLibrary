@@ -112,6 +112,20 @@ public:
         return *this-=1;
     }
 
+    auto operator++(int)
+    {
+        cyclic r(n);
+        *this += 1;
+        return r;
+    }
+
+    auto operator--(int)
+    {
+        cyclic r(n);
+        *this -= 1;
+        return r;
+    }
+
     explicit operator integer&()
     {
         return n;
@@ -226,6 +240,20 @@ public:
     auto& operator--()
     {
         return *this-=1;
+    }
+
+    auto operator++(int)
+    {
+        d_cyclic r(n);
+        *this += 1;
+        return r;
+    }
+
+    auto operator--(int)
+    {
+        d_cyclic r(n);
+        *this -= 1;
+        return r;
     }
 
     explicit operator integer&()
