@@ -7,7 +7,8 @@
 #include "abstract_algebra.h"
 #include "optimisation.h"
 #include "linear_algebra.h"
-
+#include <algorithm>
+#include <queue>
 /*
 * Basic Machine Learning Support
 */
@@ -19,6 +20,17 @@ class ml_model
 	virtual real score(const d_matrix<real>& X, const d_vector<real>& y) const = 0;
 };
 
+/*
+* Linear Regression
+* @Input
+* n p-dimensional samples X
+* @Cost
+* Mean Square Error
+* @Training
+* Solve the normal Equation
+* @Output
+* n samples. each representing the predicted value
+*/
 class linear_regression :public ml_model
 {
 	d_vector<real> w;
@@ -43,6 +55,19 @@ public:
 	}
 };
 
+/*
+* Logistic Regression
+* @Input
+* n p-dimensional samples X
+* @DecisionFunction
+* n samples, each representing the probability of belonging to class 1 
+* @Cost
+* Cross Entropy loss function
+* @Training
+* Minimise Cost Function
+* @Output
+* n samples. each representing the correspending class 
+*/
 class logistic_regression :public ml_model
 {
 	d_vector<real> w;
@@ -122,15 +147,31 @@ auto xlogy(auto x, auto y)
 	return x * std::log(y);
 }
 
+
+/*
+* MultiLogistic Regression
+* @Input
+* n p-dimensional samples X
+* @DecisionFunction
+* n C-dimensional samples Y. for each sample, the k'th coordinate represents the probability that Y belongs
+* to the k'th class
+* @Cost
+* Cross Entropy loss function
+* @Training
+* Minimise Cost Functon
+* @Output
+* n samples. each representing the correspending class
+*/
 class multilogistic_regression :public ml_model
 {
 	d_matrix<real> W;
+	int C;
 public:
 	int limit = 2000;
 	ml_model& fit(const d_matrix<real>& X, const d_vector<real>& y) override
 	{
 		d_vector<real> w;
-		int C = 0;
+		C = 0;
 		for (auto s : y)
 			C = std::max(C, (int)s);
 		C++;
@@ -141,7 +182,7 @@ public:
 		barzilai_borwein_gradient_descent<d_vector<real>, L2_inner_product<real, d_vector<real>>>
 			GD(D, 1e-3);
 		int k = 0;
-		w = GD.argmin([&X, &y, &k,C](const d_vector<real>& u)->real
+		w = GD.argmin([&X, &y, &k,C=this->C](const d_vector<real>& u)->std::pair<real,d_vector<real>>
 			{
 				k++;
 				d_matrix<real> U(0, m_shape{ (int)X.col_dim(),C});
@@ -156,16 +197,22 @@ public:
 					for (auto& s : y_pred)
 						s /= r;
 				}
-				d_vector<real> y_pred = pointwise_function([](auto s)
-					{
-						return 1 / (1 + std::exp(-s));
-					}, X * u), residual = y - y_pred, df{ v_shape{(int)X.col_dim()*C} };
-					real err = 0;
-					for (auto [p, Q] : zip(y, Y_pred))
-						err -= std::log(Q[(int)p]);
-					err /= X.row_dim();
-
-					return err;
+				real err = 0;
+				d_vector<real> du(v_shape{ (int)u.dim() });
+				int i = 0;
+				for (auto [p, Q,x] : zip(y, Y_pred,X))
+				{
+					int k = (int)p;
+					err -= std::log(Q[k]);
+					for (int h = 0; h < X.col_dim(); h++) for (int r = 0; r < C; r++)
+						du[h * C + r] += x[h]*Q[r];
+					for (int h = 0; h < X.col_dim(); h++)
+						du[h * C + k] -= x[h];
+					i++;
+				}
+				du /= X.row_dim()*C;
+				err /= X.row_dim()*C;
+				return std::make_pair(err,du);
 			}, d_vector<real>{v_shape{ (int)X.col_dim()*C }}, limit);
 		W = d_matrix<real>(0,m_shape{ (int)X.col_dim(),C });
 		for (int i = 0; i < X.col_dim(); i++)
@@ -197,7 +244,6 @@ public:
 	{
 		auto Y = decision_function(X);
 		d_vector<real> y_pred(v_shape{(int)X.row_dim()});
-		int C = Y.col_dim();
 		for (auto [y,s] : zip(Y,y_pred))
 		{
 			int k = 0;
@@ -220,7 +266,7 @@ public:
 		for (auto [s, p] : zip(y, y_pred))
 			if (s == p)
 				a++;
-		return a / (real)y.dim();
+		return a / static_cast<real>(y.dim());
 	}
 
 	real error(const d_matrix<real>& X, const d_vector<real>& y) const
@@ -231,6 +277,125 @@ public:
 			err -= std::log(Q[(int)p]);
 		err /= X.row_dim();
 		return err;
+	}
+};
+
+/*
+* K-NearestNeighbours Classifier
+* @Input
+* n p-dimensional samples X
+* @DecisionFunction
+* n C-dimensional samples Y. for each sample, the k'th coordinate represents the probability that Y belongs
+* to the k'th class
+* @Cost
+* None
+* @Training
+* Memorize given samples
+* @Output
+* n samples. each representing the correspending class
+*/
+
+template<typename metric=L2_inner_product<real,d_vector<real>>>
+class k_nearest_neighbour_classifier : public ml_model
+{
+	d_matrix<real> X;
+	d_vector<real> y;
+	inline static constexpr metric d;
+public:
+	int k=5;
+	ml_model& fit(const d_matrix<real>& _X,const d_vector<real>& _y) override
+	{
+		X = _X;
+		y = _y;
+		return *this;
+	}
+
+	d_vector<real> predict(const d_matrix<real>& _X) const override
+	{
+		d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+		for (auto [_x,_s] : zip(_X,_y))
+		{
+			std::priority_queue<std::pair<real, real>> P;
+			for (auto [x, s] : zip(X, y))
+			{
+				P.emplace(d.distance(x, _x), s);
+				if (P.size() > k)
+					P.pop();
+			}
+			std::map<int, int> occurence;
+			int chosen_class = 0;
+			int max_votes = 0;
+			while (!P.empty())
+			{
+				auto [distance, s] = P.top();
+				P.pop();
+				occurence[s]++;
+				if (occurence[s] > max_votes)
+					chosen_class = s;
+			}
+			_s = chosen_class;
+		}
+		return _y;
+	}
+
+	real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+	{
+		auto y_pred = predict(X);
+		int a = 0;
+		for (auto [s, p] : zip(y, y_pred))
+			if (s == p)
+				a++;
+		return a / static_cast<real>(y.dim());
+	}
+};
+
+template<typename metric = L2_inner_product<real, d_vector<real>>>
+class k_nearest_neighbour_regression : public ml_model
+{
+	d_matrix<real> X;
+	d_vector<real> y;
+	inline static constexpr metric d;
+public:
+	int k = 5;
+	ml_model& fit(const d_matrix<real>& _X, const d_vector<real>& _y) override
+	{
+		X = _X;
+		y = _y;
+		return *this;
+	}
+
+	d_vector<real> predict(const d_matrix<real>& _X) const override
+	{
+		d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+		for (auto [_x, _s] : zip(_X, _y))
+		{
+			std::priority_queue<std::pair<real, real>> P;
+			for (auto [x, s] : zip(X, y))
+			{
+				P.emplace(d.distance(x, _x), s);
+				if (P.size() > k)
+					P.pop();
+			}
+			_s = 0;
+			while (!P.empty())
+			{
+				auto [distance, s] = P.top();
+				P.pop();
+				_s += s;
+			}
+			_s /= k;
+		}
+		return _y;
+	}
+
+	real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+	{
+		auto y_pred = predict(X);
+		int a = 0;
+		for (auto [s, p] : zip(y, y_pred))
+			if (s == p)
+				a++;
+		return a / static_cast<real>(y.dim());
 	}
 };
 #endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H

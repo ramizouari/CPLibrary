@@ -36,9 +36,9 @@ struct statistic_node
 {
     T v;
     V data;
-    statistic_node *left,*right,*parent;
     int h;
     S statistic;
+    statistic_node *left,*right,*parent;
     statistic_node(T _v,V _data,statistic_node* _parent=nullptr):v(_v),data(_data),left(nullptr),right(nullptr),parent(_parent),h(1),statistic(v,data){}
     void update()
     {
@@ -326,6 +326,86 @@ void destroy(statistic_node<T,V,S>*node)
     destroy(node->left);
     destroy(node->right);
     delete node;
+}
+
+template<typename T,typename V,typename S>
+statistic_node<T, V, S>* merge_with_root(statistic_node<T, V, S>* root, 
+    statistic_node<T, V, S> *left, statistic_node<T, V, S> *right)
+{
+    auto potential = height(left) - height(right);
+    if (potential <=0)
+    {
+        while (potential < -1)
+            potential = height(left) - height(right=right->left);
+        if (right && right->parent)
+        {
+            right->parent->left = root;
+            root->parent = right->parent;
+        }
+    }
+    else
+    {
+        while (potential > 1)
+            potential = height(left=left->right) - height(right);
+        if (left && left->parent)
+        {
+            left->parent->right = root;
+            root->parent = left->parent;
+        }
+    }
+    root->left = left;
+    root->right = right;
+    if (left)
+        left->parent = root;
+    if (right)
+        right->parent = root;
+    return rebalance(root);
+}
+
+template<typename T, typename V, typename S>
+statistic_node<T, V, S>* merge(statistic_node<T, V, S>* left, statistic_node<T, V, S>* right)
+{
+    if (!left)
+        return right;
+    statistic_node<T, V, S>* last = left;
+    while (last->right)
+        last = last->right;
+    auto [root,L] = extract(last, last->v);
+    return merge_with_root(root, L, right);
+}
+
+template<typename T, typename V, typename S>
+std::pair<statistic_node<T, V, S>*,statistic_node<T,V,S>*> 
+    split(statistic_node<T, V, S>* node,T threshold)
+{
+    statistic_node<T, V, S>* left = nullptr, * right = nullptr;
+    if (!node)
+        return std::make_pair(left, right);
+    if (node->right)
+        node->right->parent = nullptr;
+    if (node->left)
+        node->left->parent = nullptr;
+    if (node->v < threshold)
+    {
+        auto [L, R] = split(node->right, threshold);
+        if (L)
+            L->parent = nullptr;
+        if (R)
+            R->parent = nullptr;
+        left = merge_with_root(node,node->left,L);
+        right = R;
+    }
+    else
+    {
+        auto [L, R] = split(node->left, threshold);
+        if (L)
+            L->parent = nullptr;
+        if (R)
+            R->parent = nullptr;
+        right = merge_with_root(node,R, node->right);
+        left = L;
+    }
+    return std::make_pair(left, right);
 }
 
 /*

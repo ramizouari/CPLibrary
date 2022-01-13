@@ -5,7 +5,9 @@
 #ifndef __ZIP_H__
 #define __ZIP_H__
 #include <utility>
-
+/*
+* This is an iterator used for the zip function. It stores each argument's iterator
+*/
 template<typename ...A>
 struct zip_t;
 
@@ -118,6 +120,13 @@ struct zip_t :public std::tuple < A... >
     }
 };
 
+/*
+* zip is used to iterate over a tuple of iterables having the same size
+* All captured values are by r/l-reference.
+* @Requirements
+* - Each type A is an iterable having a forward iterator
+* - All the iterables have the same size
+*/
 template<typename ...A>
 zip_t<A&&...> zip(A&&... a)
 {
@@ -125,6 +134,13 @@ zip_t<A&&...> zip(A&&... a)
     return S;
 }
 
+/*
+* zip is used to iterate over a tuple of iterables having the same size
+* All captured values are by r/l-reference.
+* @Requirements
+* - Each type A is an iterable having a forward iterator
+* - All the iterables have the same size
+*/
 template<typename ...A>
 zip_t<A...> zip_copy(const A&... a)
 {

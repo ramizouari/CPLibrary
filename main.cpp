@@ -46,8 +46,19 @@ int main()
 	d_matrix<real> X(data);
 	d_vector<real> y(flower_class);
 	multilogistic_regression M;
+	k_nearest_neighbour_classifier<L1_norm<d_vector<real>>> KN;
 	auto y_pred= M.fit(X, y).predict(X);
+	KN.fit(X, y);
 	L2_inner_product<real, d_vector<real>> L2;
-	std::cout << '\n' << M.score(X, y) << '\t' << M.error(X,y);
+	std::cout << '\n' << M.score(X, y) << '\t' << M.error(X,y) << '\n';
+	KN.k = 15;
+	std::cout << '\n' << KN.score(X, y) << '\n';
+
+	key_sum_node_t<int,plus_t>* T1 = nullptr, * T2 = nullptr;
+	std::cout << "Class Size: " << sizeof(key_sum_node_t<int, plus_t>);
+	for (int i = 0; i < 1000000; i++)
+		T1 = insert(T1, i);
+	auto [S1, S2] = split(T1, 500000);
+
 }
 
