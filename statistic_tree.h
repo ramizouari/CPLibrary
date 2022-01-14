@@ -328,6 +328,13 @@ void destroy(statistic_node<T,V,S>*node)
     delete node;
 }
 
+/*
+* Merge a node with two trees
+* @Requirements
+* 1. all keys of left are less or equal to the key of the root node
+* 2. all keys of right are greater or equal to the key of the root node
+* 3. the left & right trees do not have a parent
+*/
 template<typename T,typename V,typename S>
 statistic_node<T, V, S>* merge_with_root(statistic_node<T, V, S>* root, 
     statistic_node<T, V, S> *left, statistic_node<T, V, S> *right)
@@ -362,6 +369,11 @@ statistic_node<T, V, S>* merge_with_root(statistic_node<T, V, S>* root,
     return rebalance(root);
 }
 
+/*
+* Merge two trees
+* @Requirements
+* The biggest key of left is smaller than the smallest key of right
+*/
 template<typename T, typename V, typename S>
 statistic_node<T, V, S>* merge(statistic_node<T, V, S>* left, statistic_node<T, V, S>* right)
 {
@@ -373,7 +385,13 @@ statistic_node<T, V, S>* merge(statistic_node<T, V, S>* left, statistic_node<T, 
     auto [root,L] = extract(last, last->v);
     return merge_with_root(root, L, right);
 }
-
+/*
+* Split a tree into two trees with respect to threshold
+* - The left part is the resultant tree whose keys are smaller than threshold
+* - The right part is the resultant tree whose keys are not smaller than threshold
+* @Requirements
+* None
+*/
 template<typename T, typename V, typename S>
 std::pair<statistic_node<T, V, S>*,statistic_node<T,V,S>*> 
     split(statistic_node<T, V, S>* node,T threshold)

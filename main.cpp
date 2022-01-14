@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <set>
+#include "b_tree.h"
 
 int main()
 {
@@ -56,9 +57,12 @@ int main()
 
 	key_sum_node_t<int,plus_t>* T1 = nullptr, * T2 = nullptr;
 	std::cout << "Class Size: " << sizeof(key_sum_node_t<int, plus_t>);
-	for (int i = 0; i < 1000000; i++)
+	for (int i = 0; i < 10000; i++)
 		T1 = insert(T1, i);
-	auto [S1, S2] = split(T1, 500000);
-
+	auto [S1, S2] = split(T1, 5000);
+	destroy(S1);
+	destroy(S2);
+	b_node<int, int>* b_tree=init_b_node<int,int>();
+	b_tree = insert(b_tree, 5, 10);
 }
 
