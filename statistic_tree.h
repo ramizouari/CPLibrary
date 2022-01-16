@@ -9,7 +9,7 @@
 #include <variant>
 
 /*
-* * Ordered Statistic Tree:
+* * Order Statistic Tree:
 * It is an AVL-tree augmented with a statistic
 * The statistic is a function of:
 * 1. The key
@@ -28,7 +28,6 @@
 * 2. S has a public static method called update which accepts Tree<T,V,S>.
 * 3. the update method "updates" adequately the statistics, and only the statistics
 */
-
 template<typename T,typename V,typename S>
 struct statistic_node;
 
@@ -48,18 +47,29 @@ struct statistic_node
     }
 };
 
+
+/*
+* Get the height of the (sub)-tree
+*/
 template<typename T,typename V,typename S>
 int height(statistic_node<T,V,S>*node)
 {
     return node?node->h:0;
 }
 
+
+/*
+* Get the balance of the current node
+*/
 template<typename T,typename V,typename S>
 int balance(statistic_node<T,V,S>* tree)
 {
     return height(tree->left)-height(tree->right);
 }
 
+/*
+* Get the node whose key is strictly bigger than v
+*/
 template<typename T,typename V,typename S>
 statistic_node<T,V,S>* upper_bound(statistic_node<T,V,S>* tree,const 
     typename std::common_type<T>::type& v)
@@ -77,6 +87,9 @@ statistic_node<T,V,S>* upper_bound(statistic_node<T,V,S>* tree,const
     }
 }
 
+/*
+* Get the node whose key is strictly smaller than v
+*/
 template<typename T,typename V,typename S>
 statistic_node<T,V,S>* reverse_upper_bound(statistic_node<T,V,S>* tree,
     const typename std::common_type<T>::type & v)
@@ -94,6 +107,9 @@ statistic_node<T,V,S>* reverse_upper_bound(statistic_node<T,V,S>* tree,
     }
 }
 
+/*
+* Get the node whose key is not smaller than v
+*/
 template<typename T,typename V,typename S>
 statistic_node<T,V,S>* lower_bound(statistic_node<T,V,S>* tree,
     const typename std::common_type<T>::type& v)
@@ -128,6 +144,9 @@ statistic_node<T,V,S>* reverse_lower_bound(statistic_node<T,V,S>* tree,
     }
 }
 
+/*
+* Get the node with the smallest key
+*/
 template<typename T, typename V, typename S>
 statistic_node<T, V, S>* begin(statistic_node<T, V, S>* tree)
 {
@@ -138,6 +157,9 @@ statistic_node<T, V, S>* begin(statistic_node<T, V, S>* tree)
     return tree;
 }
 
+/*
+* Get the successor of the current node
+*/
 template<typename T, typename V, typename S>
 statistic_node<T, V, S>* next(statistic_node<T, V, S>* tree)
 {
@@ -162,6 +184,36 @@ statistic_node<T, V, S>* next(statistic_node<T, V, S>* tree)
     }
 }
 
+/*
+* Get the previous of the current node
+*/
+template<typename T, typename V, typename S>
+statistic_node<T, V, S>* prev(statistic_node<T, V, S>* tree)
+{
+    if (tree == nullptr)
+        return nullptr;
+    if (tree->left)
+    {
+        tree = tree->left;
+        while (tree->right)
+            tree = tree->right;
+        return tree;
+    }
+    else
+    {
+        auto tmp = tree;
+        tree = tree->parent;
+        while (tree && tree->v > tmp->v)
+            tree = tree->parent;
+        if (!tree)
+            return nullptr;
+        return tree;
+    }
+}
+
+/*
+* Applies a right rotation to the ordered statistic tree on the current node.
+*/
 template<typename T,typename V,typename S>
 statistic_node<T,V,S>* rebalance_right(statistic_node<T,V,S>* x)
 {
@@ -181,6 +233,9 @@ statistic_node<T,V,S>* rebalance_right(statistic_node<T,V,S>* x)
     return y;
 }
 
+/*
+* Applies a left rotation to the ordered statistic tree on the current node.
+*/
 template<typename T,typename V,typename S>
 statistic_node<T,V,S>* rebalance_left(statistic_node<T,V,S>* x)
 {
@@ -200,6 +255,9 @@ statistic_node<T,V,S>* rebalance_left(statistic_node<T,V,S>* x)
     return y;
 }
 
+/*
+* Rebalance the ordered statistic tree. 
+*/
 template<typename T,typename V,typename S>
 statistic_node<T,V,S>* rebalance(statistic_node<T,V,S>* x)
 {
@@ -223,6 +281,12 @@ statistic_node<T,V,S>* rebalance(statistic_node<T,V,S>* x)
     return rebalance(x->parent);
 }
 
+/*
+* Insert (v,data) into the ordered statistic tree
+* @Cases
+* 1. If or_assign is false, (v,data) is inserted while allowing duplicates
+* 2. if or_assign is true, (v,data) is inserted if the tree does not have a key v. Otherwise the value mapped by v is changed to data.
+*/
 template<typename T,typename V,typename S>
 statistic_node<T,V,S>* insert(statistic_node<T,V,S>* tree,const typename std::common_type<T>::type& v,
     const typename std::common_type<V>::type& data,bool or_assign=false)
@@ -265,6 +329,11 @@ statistic_node<T, std::monostate, S>* insert(statistic_node<T, std::monostate, S
     return insert(tree, v, {},or_assign);
 }
 
+
+/*
+* Insert (v,data) into the ordered statistic tree if it does not have a key v
+* Otherwise, change the value mapped by v to data.
+*/
 template<typename T, typename V, typename S>
 statistic_node<T, V, S>* insert_or_assign(statistic_node<T, V, S>* tree,const
     typename std::common_type<T>::type& v,const typename std::common_type<V>::type& data)
@@ -272,6 +341,10 @@ statistic_node<T, V, S>* insert_or_assign(statistic_node<T, V, S>* tree,const
     return insert(tree, v, data, true);
 }
 
+/*
+* Insert (v,data) into the ordered statistic tree if it does not have a key v
+* Otherwise, Do nothing
+*/
 template<typename T, typename S>
 statistic_node<T, std::monostate, S>* insert_or_assign(statistic_node<T, std::monostate, S>* tree, const
     typename std::common_type<T>::type& v)
@@ -279,6 +352,12 @@ statistic_node<T, std::monostate, S>* insert_or_assign(statistic_node<T, std::mo
     return insert_or_assign(tree, v, {});
 }
 
+/*
+* Extract a node from an ordered statistic tree given its key
+* The node is not deleted
+* @Requirements
+* The tree does have a node with the given key
+*/
 template<typename T,typename V,typename S>
 std::pair<statistic_node<T,V,S>*,statistic_node<T,V,S>*> extract(statistic_node<T,V,S>* tree,const 
     typename std::common_type<T>::type& v)

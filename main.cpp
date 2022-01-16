@@ -41,7 +41,7 @@ void to_vector(b_node<T, V, m>* node, std::vector<R> &A)
 	{
 		to_vector(p->data.ptr,A);
 		if (p->v != order_closure<T>{inf})
-			A.push_back(std::get<T>(p->v));
+			A.push_back(p->data.data.value());
 	} while (p = next(p));
 }
 
@@ -130,21 +130,20 @@ int main()
 	std::cout << "Class Size: " << sizeof(key_sum_node_t<int, plus_t>) << '\n';
 	T1 = new key_sum_node_t<int, plus_t>{1,{},nullptr};
 	T1->left = new key_sum_node_t<int, plus_t>{ 0,{},T1 };
-
 	T2 = insert(T2, 2);
 	T1->h = 2;
 	auto T = merge_with_root(T2, T1,(decltype(T1))nullptr);
-	b_node<int, int,1000>* b_tree=nullptr;
+	b_node<int, int,20>* b_tree=nullptr;
 	constexpr int limit = 1e6;
 	std::vector<int> D;
 	for (int i = 0; i < limit; i++)
 		b_tree = insert(b_tree, i,i);
 	to_vector(b_tree, D);
-	std::cout << std::endl << "Tree Height: " << height(b_tree) << "\tTree Size: " << size(b_tree);
+	std::cout << std::endl << "Tree Height: " << height(b_tree) << "\tTree Size: " << size(b_tree) << '\n';
 	for (int i = 0; i < D.size(); i++) if (i != D[i])
-		std::cerr << "Error";
+		std::cout << "Error: " << i << ' ' << D[i] << '\n';
 	print(b_tree);
 	destroy(b_tree);
-	_sleep(4000);
+	_sleep(2000);
 }
 

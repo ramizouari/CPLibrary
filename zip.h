@@ -124,8 +124,8 @@ struct zip_t :public std::tuple < A... >
 * zip is used to iterate over a tuple of iterables having the same size
 * All captured values are by r/l-reference.
 * @Requirements
-* - Each type A is an iterable having a forward iterator
-* - All the iterables have the same size
+* - Each type A is an iterable having a forward iterator.
+* - All the iterables have the same size.
 */
 template<typename ...A>
 zip_t<A&&...> zip(A&&... a)
