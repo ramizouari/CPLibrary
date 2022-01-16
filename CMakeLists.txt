@@ -11,8 +11,6 @@ find_package(Boost)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(CMAKE_CXX_STACK_SIZE /STACK:4000000000)
-
 
 add_executable(ACPC_Preparation linear_algebra.h modular_arithmetic.h number_theory.h
         ring_extension.h polynomial.h fft.h optimisation.h string.h data_structures.h binary_operation.h

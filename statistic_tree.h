@@ -6,6 +6,7 @@
 #define __STATISTIC_NODE__
 #include <tuple>
 #include "binary_operation.h"
+#include <variant>
 
 /*
 * * Ordered Statistic Tree:
@@ -124,6 +125,40 @@ statistic_node<T,V,S>* reverse_lower_bound(statistic_node<T,V,S>* tree,
         if(w==nullptr)
             return tree;
         return w;
+    }
+}
+
+template<typename T, typename V, typename S>
+statistic_node<T, V, S>* begin(statistic_node<T, V, S>* tree)
+{
+    if (!tree)
+        return nullptr;
+    while (tree->left)
+        tree = tree->left;
+    return tree;
+}
+
+template<typename T, typename V, typename S>
+statistic_node<T, V, S>* next(statistic_node<T, V, S>* tree)
+{
+    if (tree == nullptr)
+        return nullptr;
+    if (tree->right)
+    {
+        tree = tree->right;
+        while (tree->left)
+            tree = tree->left;
+        return tree;
+    }
+    else
+    {
+        auto tmp = tree;
+        tree = tree->parent;
+        while (tree && tree->v < tmp->v)
+            tree = tree->parent;
+        if (!tree)
+            return nullptr;
+        return tree;
     }
 }
 
@@ -339,29 +374,32 @@ template<typename T,typename V,typename S>
 statistic_node<T, V, S>* merge_with_root(statistic_node<T, V, S>* root, 
     statistic_node<T, V, S> *left, statistic_node<T, V, S> *right)
 {
+    if (left == nullptr)
+        return insert(right, root->v, root->data);
+    else if (right == nullptr)
+        return insert(left, root->v, root->data);
     auto potential = height(left) - height(right);
     if (potential <=0)
     {
         while (potential < -1)
             potential = height(left) - height(right=right->left);
         if (right && right->parent)
-        {
             right->parent->left = root;
+        if(right)
             root->parent = right->parent;
-        }
     }
     else
     {
         while (potential > 1)
             potential = height(left=left->right) - height(right);
         if (left && left->parent)
-        {
             left->parent->right = root;
+        if(left)
             root->parent = left->parent;
-        }
     }
     root->left = left;
     root->right = right;
+    root->update();
     if (left)
         left->parent = root;
     if (right)
@@ -451,7 +489,7 @@ void order_stats::update(statistic_node<T, V, order_stats> *node) {
 }
 
 template<typename T, typename V,typename OrderStats>
-int tree_size(statistic_node<T, V, OrderStats> *node)
+int size(statistic_node<T, V, OrderStats> *node)
 {
     return node?node->statistic.size:0;
 }
@@ -468,13 +506,13 @@ T order_inf(statistic_node<T,V, OrderStats> *tree,const typename std::common_typ
         auto o=order_inf(tree->left,v);
         if(o!=-1)
             return o;
-        else return tree_size(tree->left);
+        else return size(tree->left);
     }
     else
     {
         auto o=order_inf(tree->right,v);
         if(o!=-1)
-            return tree_size(tree->left)+1+o;
+            return size(tree->left)+1+o;
         else return -1;
     }
 }
@@ -489,10 +527,10 @@ T order_sup(statistic_node<T,V, OrderStats> *tree,const typename std::common_typ
     else if(tree->v==v)
     {
         if(tree->right && tree->right->v==v)
-            return tree_size(tree->left)+1+order_sup(tree->right,v);
-        else return tree_size(tree->left);
+            return size(tree->left)+1+order_sup(tree->right,v);
+        else return size(tree->left);
     }
-    else return tree_size(tree->left)+1+order_sup(tree->right,v);
+    else return size(tree->left)+1+order_sup(tree->right,v);
 }
 
 template<typename T, typename V, typename OrderStats>
@@ -505,21 +543,27 @@ int order(statistic_node<T, V, OrderStats>* tree, const typename std::common_typ
     else if (tree->v == v)
     {
         if (tree->right && tree->right->v == v)
-            return tree_size(tree->left) + 1 + order(tree->right, v);
-        else return tree_size(tree->left);
+            return size(tree->left) + 1 + order(tree->right, v);
+        else return size(tree->left);
     }
-    else return tree_size(tree->left) + 1 + order(tree->right, v);
+    else return size(tree->left) + 1 + order(tree->right, v);
 }
 
 template<typename T,typename V,typename OrderStats>
-T select(statistic_node<T,V, OrderStats> *tree,int o)
+statistic_node<T,V,OrderStats>* select(statistic_node<T,V, OrderStats> *tree,int o)
 {
-    int s= tree_size(tree->left);
+    int s= size(tree->left);
     if(s==o)
-        return tree->v;
+        return tree;
     else if(s<o)
         return select(tree->right,o-s-1);
     else return select(tree->left,o);
+}
+
+template<typename T, typename V, typename OrderStats>
+statistic_node<T, V, OrderStats>* median(statistic_node<T, V, OrderStats>* tree)
+{
+    return select(tree, size(tree) / 2);
 }
 
 /*

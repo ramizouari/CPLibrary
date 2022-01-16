@@ -136,7 +136,7 @@ zip_t<A&&...> zip(A&&... a)
 
 /*
 * zip is used to iterate over a tuple of iterables having the same size
-* All captured values are by r/l-reference.
+* All captured values are copies of the original ones.
 * @Requirements
 * - Each type A is an iterable having a forward iterator
 * - All the iterables have the same size
@@ -155,6 +155,13 @@ zip_t<A...> zip_move(const A&&... a)
     return S;
 }
 
+/*
+* zip is used to iterate over a tuple of const iterables having the same size
+* All captured values are by r/l-reference.
+* @Requirements
+* - Each type A is an iterable having a forward iterator
+* - All the iterables have the same size
+*/
 template<typename ...A>
 zip_t<const A&...> zip_const(const A&... a)
 {

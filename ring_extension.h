@@ -169,8 +169,8 @@ public:
 namespace std
 {
     template<typename R>
-    struct std::tuple_size<rational_extension<R>> : std::integral_constant<size_t, 2> {};
-    template<int k, typename R>
+    struct tuple_size<rational_extension<R>> : integral_constant<size_t, 2> {};
+    template<unsigned long long int k, typename R>
     struct tuple_element<k, rational_extension<R>>
     {
         using type = R;
@@ -931,8 +931,8 @@ auto operator-(R k,const quadratic_extension<R,a,b> &O)
 namespace std
 {
     template<typename R,int a,int b>
-    struct std::tuple_size<quadratic_extension<R,a,b>> : std::integral_constant<size_t, 2> {};
-    template<int k, typename R,int a,int b>
+    struct tuple_size<quadratic_extension<R,a,b>> : integral_constant<size_t, 2> {};
+    template<unsigned long long int k, typename R,int a,int b>
     struct tuple_element<k, quadratic_extension<R,a,b>>
     {
         using type = R;

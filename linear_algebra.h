@@ -268,8 +268,8 @@ auto operator*(const R&k,const s_vector<R,n>& u)
 namespace std
 {
     template<typename R,int n>
-    struct std::tuple_size<s_vector<R, n>> : std::integral_constant<size_t, n>{};
-    template<int k,typename R,int n>
+    struct tuple_size<s_vector<R, n>> : std::integral_constant<size_t, n>{};
+    template<unsigned long long int k,typename R,int n>
     struct tuple_element<k, s_vector<R, n>>
     {
         using type = R;

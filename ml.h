@@ -300,7 +300,7 @@ class k_nearest_neighbour_classifier : public ml_model
 {
 	d_matrix<real> X;
 	d_vector<real> y;
-	inline static constexpr metric d;
+	inline static constexpr metric d=metric{};
 public:
 	int k=5;
 	ml_model& fit(const d_matrix<real>& _X,const d_vector<real>& _y) override
@@ -354,7 +354,7 @@ class k_nearest_neighbour_regression : public ml_model
 {
 	d_matrix<real> X;
 	d_vector<real> y;
-	inline static constexpr metric d;
+	inline static constexpr metric d=metric{};
 public:
 	int k = 5;
 	ml_model& fit(const d_matrix<real>& _X, const d_vector<real>& _y) override
