@@ -79,36 +79,39 @@ The following list of topics are present on this library:
 
 ## 3. Additional Content
 The following list of topics was not intended for CP, but I chose to include it as a demonstration to the power of this library:
-a.	Analysis:
+1.	Analysis:
 	- First <img src="https://render.githubusercontent.com/render/math?math=n"> 
 	terms of <img src="https://render.githubusercontent.com/render/math?math=\exp,\log"> over a suitable commutative ring
 	- <img src="https://render.githubusercontent.com/render/math?math=\exp,\log"> over a Banach algebra $\mathcal{A}$
 	- Newton-Raphson Method over a <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}">-vector space, 
 	with <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}\in\{\mathbb{R},\mathbb{C}\}">.
-b.	Topology:
+2.	Topology:
 	- Abstract metrics, norms and inner products
 	- Generic definition for the usual metrics, norms and inner products.
 	- Derivation of any multivariable function between two <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}">-vector 
 	spaces, with <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}\in\{\mathbb{R},\mathbb{C}\}">.
-c.	Functional:
+3.	Functional:
 	- pointwise unary operators: calculate a scalar function pointwise on all elements of a matrix, vector or even an iterable
 	- pointwise binary operators
 	- foreach over iterables
 	- pointwise reduce: reduce all elements under an associative binary operator
 	- pointwise aggregate: transform each element of a matrix/vector to a given element, and reduce the resulting matrix/vector under
 		an associative operator
-d.	Generic:
+4.	Generic:
 	- zip function: iterate simultaneously over iterables having the same size.
-e.	Basic Machine Learning Support:
+5.	Basic Machine Learning Support:
 	- Linear Regression
 	- Logistic Regression
 	- Multinomial Logistic Regression
 	- K-Neighbours Regression
 	- K-Neighbours Classification
-f.	Order:
+6.	Order:
 	- Order closure of a totally ordered set <img src="https://render.githubusercontent.com/render/math?math=S">.
 	- Algebraic operations on an order closure of a group/ring having a total order.
-g. B-Tree:
+7. B-Tree:
 	- B-Trees over an underlying Order Statistic Tree.
 	- Guaranteed to have <img src="https://render.githubusercontent.com/render/math?math=\mathcal{O}(\ln n)"> performance, 
 	even for large values of <img src="https://render.githubusercontent.com/render/math?math=m">.
+
+## 4. Remarks
+This is only a tiny subset of the computer science & mathematical litterature, so I recommend you to frequently read and discover new topics.
