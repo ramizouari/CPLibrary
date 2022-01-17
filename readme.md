@@ -25,7 +25,7 @@ The following list of topics are present on this library:
 3. Graph (To Be Done)
 4. Abstract Algebra:
 	- Generic definition of usual binary operations
-	- Fast Exponentiation over a monoid $\mathcal{M}$
+	- Fast Exponentiation over a monoid <img src="https://render.githubusercontent.com/render/math?math=\mathcal{M}">
 	- Extended Euclidean Algorithm, and Bezout Coefficient over an integral domain $\mathcal{I}$
 	- Rational Extension: field of rationals over an integral domain $\mathcal{I}$
 	- dynamic/static ring extension of a commutative ring
@@ -40,7 +40,8 @@ The following list of topics are present on this library:
 	- Discrete logarithm
 	- Modular square root
 	- Legendre Symbol
-	- Linear time inverse table: $1^{-1},\dots,n^{-1}$ in $\mathcal{O}(n)$.
+	- Linear time inverse table: <img src="https://render.githubusercontent.com/render/math?math=1^{-1},\dots,n^{-1}"> in 
+	<img src="https://render.githubusercontent.com/render/math?math=\mathcal{O}(n)">.
 6. Linear Algebra:
 	- dynamic and static vectors over commutative rings
 	- dynamic and static matrices over commutative rings
@@ -54,13 +55,17 @@ The following list of topics are present on this library:
 	- subquadratic polynomial multiplication for commutative rings
 	- Newton Interpolation
 8. FFT(To Be Complete):
-	- FFT over $\mathbb{C}$
-	- FFT over $\mathbb{F}_p$ for vectors with size $n | p$
-	- FFT2 over $\mathbb{C}$
-	- FFT2 over $\mathbb{F}_p$ for vectors with size $2^k | p$
-	- Fast Hadamard Transform over a ring $\mathcal{R}$
-	- Multidimensional FFT over $\mathbb{C}$
-	- Multidimensional FFT over $\mathbb{F}_p$ if the tensor is of shape $(n_1,\dots,n_k)$ and $n_i | p \quad \forall i\in\{1,\dots,k\}$ 
+	- FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{C}">
+	- FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> 
+	for vectors with size <img src="https://render.githubusercontent.com/render/math?math=n | p">
+	- FFT2 over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{C}">
+	- FFT2 over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> for vectors with size 
+	<img src="https://render.githubusercontent.com/render/math?math=2^k | p">
+	- Fast Hadamard Transform over a ring <img src="https://render.githubusercontent.com/render/math?math=\mathcal{R}">
+	- Multidimensional FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{C}">
+	- Multidimensional FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> 
+	if the tensor is of shape <img src="https://render.githubusercontent.com/render/math?math=(n_1,\dots,n_k)"> and 
+	<img src="https://render.githubusercontent.com/render/math?math=n_i | p \quad \forall i\in\{1,\dots,k\}"> 
 	- Fast polynomial multiplication over $\mathbb{C},\mathbb{R},\mathbb{Z},\mathbb{F}_p$
 9. Fast Polynomials(To Be Done)
 10. Number Theory:
