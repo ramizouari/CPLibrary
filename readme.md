@@ -26,8 +26,8 @@ The following list of topics are present on this library:
 4. Abstract Algebra:
 	- Generic definition of usual binary operations
 	- Fast Exponentiation over a monoid <img src="https://render.githubusercontent.com/render/math?math=\mathcal{M}">
-	- Extended Euclidean Algorithm, and Bezout Coefficient over an integral domain $\mathcal{I}$
-	- Rational Extension: field of rationals over an integral domain $\mathcal{I}$
+	- Extended Euclidean Algorithm, and Bezout Coefficient over an integral domain <img src="https://render.githubusercontent.com/render/math?math=\mathcal{I}">
+	- Rational Extension: field of rationals over an integral domain <img src="https://render.githubusercontent.com/render/math?math=\mathcal{I}">
 	- dynamic/static ring extension of a commutative ring
 	- Quadratic extension of a commutative ring
 	- Conjugate element of a quadratic extension
@@ -66,10 +66,10 @@ The following list of topics are present on this library:
 	- Multidimensional FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> 
 	if the tensor is of shape <img src="https://render.githubusercontent.com/render/math?math=(n_1,\dots,n_k)"> and 
 	<img src="https://render.githubusercontent.com/render/math?math=n_i | p \quad \forall i\in\{1,\dots,k\}"> 
-	- Fast polynomial multiplication over $\mathbb{C},\mathbb{R},\mathbb{Z},\mathbb{F}_p$
+	- Fast polynomial multiplication over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{C},\mathbb{R},\mathbb{Z},\mathbb{F}_p">
 9. Fast Polynomials(To Be Done)
 10. Number Theory:
-	- Prime Numbers sieve in $\mathcal{O}(n\ln n)$
+	- Prime Numbers sieve in <img src="https://render.githubusercontent.com/render/math?math=\mathcal{O}(n\ln n)">
 	- Implementation of the most used multiplicative functions
 	- Chinese Remainder Theorem
 	- Rabin-Miller primality test
@@ -80,13 +80,16 @@ The following list of topics are present on this library:
 ## 3. Additional Content
 The following list of topics was not intended for CP, but I chose to include it as a demonstration to the power of this library:
 a.	Analysis:
-	- First $n$ terms of $\exp,\log$ over a suitable commutative ring
-	- $\exp,\log$ over a Banach algebra $\mathcal{A}$
-	- Newton-Raphson Method over a $\mathbb{K}$-vector space, with $\mathbb{K}\in\{\mathbb{R},\mathbb{C}\}$.
+	- First <img src="https://render.githubusercontent.com/render/math?math=n"> 
+	terms of <img src="https://render.githubusercontent.com/render/math?math=\exp,\log"> over a suitable commutative ring
+	- <img src="https://render.githubusercontent.com/render/math?math=\exp,\log"> over a Banach algebra $\mathcal{A}$
+	- Newton-Raphson Method over a <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}">-vector space, 
+	with <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}\in\{\mathbb{R},\mathbb{C}\}">.
 b.	Topology:
 	- Abstract metrics, norms and inner products
 	- Generic definition for the usual metrics, norms and inner products.
-	- Derivation of any multivariable function between two $\mathbb{K}$-vector spaces, with $\mathbb{K}\in\{\mathbb{R},\mathbb{C}\}$.
+	- Derivation of any multivariable function between two <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}">-vector 
+	spaces, with <img src="https://render.githubusercontent.com/render/math?math=\mathbb{K}\in\{\mathbb{R},\mathbb{C}\}">.
 c.	Functional:
 	- pointwise unary operators: calculate a scalar function pointwise on all elements of a matrix, vector or even an iterable
 	- pointwise binary operators
@@ -103,8 +106,9 @@ e.	Basic Machine Learning Support:
 	- K-Neighbours Regression
 	- K-Neighbours Classification
 f.	Order:
-	- Order closure of a totally ordered set $S$.
+	- Order closure of a totally ordered set <img src="https://render.githubusercontent.com/render/math?math=S">.
 	- Algebraic operations on an order closure of a group/ring having a total order.
 g. B-Tree:
 	- B-Trees over an underlying Order Statistic Tree.
-	- Guaranteed to have $\mathcal{O}(\ln n)$ performance, even for large values of $m$.
+	- Guaranteed to have <img src="https://render.githubusercontent.com/render/math?math=\mathcal{O}(\ln n)"> performance, 
+	even for large values of <img src="https://render.githubusercontent.com/render/math?math=m">.
