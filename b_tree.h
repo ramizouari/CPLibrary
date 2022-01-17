@@ -9,7 +9,7 @@
 * It is an (m/2,m)-tree which is used mainly on DBMS to minimise disk access
 * It is build on top of an Ordered Statistic Tree to support big values of m
 * @Requirements:
-* - (C,<=) is a totally ordered set, where C is the order closure of T
+* - (T,<=) is a totally ordered set
 * - m is even
 * @Notes
 * Every B-tree contains an element inf, this element does not have a correspending value.
@@ -57,17 +57,30 @@ b_node<T, V, m>* init_b_node()
 	return node;
 }
 
+template<typename T, typename V, int m>
+order_node<order_closure<T>, b_data<T, V, m>>* find(b_node<T, V, m>* node, const typename std::common_type<T>::type& v)
+{
+	if (!node)
+		return nullptr;
+	auto L = lower_bound(node->children, v);
+	if (L->v == order_closure<T>{v})
+		return L;
+	else return find(L->data.ptr, v);
+}
 
 /*
 * Rotate Right
 * @Requirements
+* - R is the next of L
+* - L is the previous of R
+* - L and R are members of node->children
 * - The right B-subtree must have strictly more than m/2 elemeents
 * - The left B-subtree must have strictly less than m elements
 */
 template<typename T, typename V, int m>
-b_node<T, V, m>* rotate_left(b_node<T, V, m>* node, int pos)
+b_node<T, V, m>* rotate_left(b_node<T, V, m>* node, order_node<order_closure<T>,b_data<T,V,m>> *L,
+	order_node<order_closure<T>,b_data<T,V,m>>*R)
 {
-	auto L = select(node->children, pos-1),R=select(node->children,pos);
 	auto p = R->data.ptr->children;
 	while (p->left)
 		p = p->left;
@@ -88,13 +101,16 @@ b_node<T, V, m>* rotate_left(b_node<T, V, m>* node, int pos)
 /*
 * Rotate Left
 * @Requirements
+* - R is the next of L
+* - L is the previous of R
+* - L and R are members of node->children
 * - The left B-subtree must have strictly more than m/2 elemeents
 * - The right B-subtree must have strictly less than m elements
 */
 template<typename T, typename V, int m>
-b_node<T, V, m>* rotate_right(b_node<T, V, m>* node, int pos)
+b_node<T, V, m>* rotate_right(b_node<T, V, m>* node, order_node<order_closure<T>, b_data<T, V, m>>* L,
+	order_node<order_closure<T>, b_data<T, V, m>>* R)
 {
-	auto L = select(node->children, pos), R = select(node->children, pos + 1);
 	auto p = L->data.ptr->children;
 	while (p->right)
 		p = p->right;
@@ -116,19 +132,22 @@ b_node<T, V, m>* rotate_right(b_node<T, V, m>* node, int pos)
 /*
 * Merge two B-subtrees into one
 * @Requirements
-* Each B-subtree must have m/2 children
+* - R is the next of L
+* - L is the previous of R
+* - L and R are members of node->children
+* - Each B-subtree must have exactly m/2 children
 */
 template<typename T, typename V, int m>
-b_node<T, V, m>* merge(b_node<T, V, m>* node, int pos)
+b_node<T, V, m>* merge(b_node<T, V, m>* node, order_node<order_closure<T>, b_data<T, V, m>>* L,
+	order_node<order_closure<T>, b_data<T, V, m>>* R)
 {
-	auto L = select(node->children, pos), R = select(node->children, pos + 1);
 	auto p = L->data.ptr->children;
 	while (p->right)
 		p = p->right;
 	p->v = L->v;
 	p->data.data = L->data.data;
 	R->data.ptr->children = merge(L->data.ptr->children, R->data.ptr->children);
-	erase(L, L->v);
+	node->children=erase(L, L->v);
 	return node;
 }
 
@@ -220,6 +239,126 @@ b_node<T, std::monostate, m>* insert_or_assign(b_node<T, std::monostate, m>* nod
 {
 	return insert(node, v, {},true);
 }
+
+
+template<typename T,typename V,int m>
+void rebalance(b_node<T,V,m> *node, order_node<order_closure<T>,b_data<T,V,m>>*L)
+{
+	auto R = next(L), LL = prev(L);
+	if (R && size(R->data.ptr->children) > m / 2)
+		rotate_left(node, L, R);
+	else if (LL && size(LL->data.ptr->children) > m / 2)
+		rotate_right(node, LL, L);
+	else if (R && size(R->data.ptr->children) == m / 2)
+		merge(node, L, R);
+	else if (LL && size(LL->data.ptr->children) == m / 2)
+		merge(node, LL, L);
+}
+
+/*
+* Inserts (v,data) into the B-tree.
+*/
+template<typename T, typename V, int m>
+void replace_with_next(order_node<order_closure<T>, b_data<T, V, m>>* node,b_node<T,V,m>* succ)
+{
+	auto p = succ->children;
+	while (p->left)
+		p = p->left;
+	if (p->data.ptr)
+	{
+		if (size(p->data.ptr->children) == m / 2)
+			rebalance(succ, p);
+		p = succ->children;
+		while (p->left)
+			p = p->left;
+		replace_with_next(node, p->data.ptr);
+	}
+	else
+	{
+		std::swap(node->data.data, p->data.data);
+		std::swap(node->v, p->v);
+		succ->children=erase(p, p->v);
+	}
+}
+
+/*
+* Inserts (v,data) into the B-tree.
+*/
+template<typename T, typename V, int m>
+void replace_with_prev(order_node<order_closure<T>, b_data<T, V, m>>* node, b_node<T, V, m>* ances)
+{
+	auto p = ances->children;
+	while (p->right)
+		p = p->right;
+	if (p->data.ptr)
+	{
+		if (size(p->data.ptr->children) == m / 2)
+			rebalance(ances, p);
+		p = ances->children;
+		while (p->right)
+			p = p->right;
+		replace_with_prev(node, p->data.ptr);
+	}
+	else
+	{
+		std::swap(node->data.data, p->data.data);
+		std::swap(node->v, p->v);
+		ances->children=erase(p, p->v);
+	}
+}
+
+/*
+* Removes a key v from the B-Tree.
+*/
+template<typename T, typename V, int m>
+void erase_no_root(b_node<T, V, m>* node, const typename std::common_type<T>::type& v)
+{
+	if (!node)
+		return;
+	auto L = lower_bound(node->children, v);
+	bool value_found = L->v == order_closure<T>{v};
+	if (value_found)
+	{
+		if (L->data.ptr)
+		{
+			//If a value is found, it is guaranteed that the underlying order statistic node has a successor element.
+			auto R = next(L);
+			if (size(R->data.ptr->children) == m / 2)
+			{
+				rebalance(node, R);
+				erase_no_root(node, v);
+			}
+			else replace_with_next(L,R->data.ptr);
+		}
+		else node->children=erase(L, L->v);
+	}
+	else
+	{
+		if (size(L->data.ptr->children) == m / 2)
+		{
+			rebalance(node, L);
+			L = lower_bound(node->children, v);
+		}
+		erase_no_root(L->data.ptr,v);
+	}
+}
+
+/*
+* Removes a key v from the B-Tree.
+*/
+template<typename T, typename V, int m>
+b_node<T,V,m>* erase(b_node<T, V, m>* node, const typename std::common_type<T>::type& v)
+{
+	erase_no_root(node, v);
+	if (size(node->children) == 1)
+	{
+		auto old_root = node;
+		node = old_root->children->data.ptr;
+		delete old_root;
+	}
+	return node;
+}
+
 template<typename T, typename V, int m>
 void destroy(order_node<order_closure<T>, b_data<T,V,m>>* node)
 {

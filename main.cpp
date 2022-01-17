@@ -24,9 +24,8 @@ void print(b_node<T, V, m>* node)
 	do
 	{
 		print(p->data.ptr);
-		if (p->v == order_closure<T>{inf}&& p->data.data.has_value() || p->data.data.has_value() && p->v.index()==1 && p->data.data != std::get<T>(p->v) ||
-			p->v.index()==1 && !p->data.data.has_value())
-			std::cout << std::get<T>(p->v) << ' ';
+		if (p->v.index()==1)
+			std::cout << std::get<T>(p->v) << "->" << p->data.data.value() << '\t';
 		std::cout.flush();
 	} while (p = next(p));
 }
@@ -126,14 +125,7 @@ int main()
 	std::cout << '\n' << M.score(X, y) << '\t' << M.error(X,y) << '\n';
 	KN.k = 15;
 	std::cout << '\n' << KN.score(X, y) << '\n';
-	key_sum_node_t<int,plus_t>* T1 = nullptr, * T2 = nullptr;
-	std::cout << "Class Size: " << sizeof(key_sum_node_t<int, plus_t>) << '\n';
-	T1 = new key_sum_node_t<int, plus_t>{1,{},nullptr};
-	T1->left = new key_sum_node_t<int, plus_t>{ 0,{},T1 };
-	T2 = insert(T2, 2);
-	T1->h = 2;
-	auto T = merge_with_root(T2, T1,(decltype(T1))nullptr);
-	b_node<int, int,20>* b_tree=nullptr;
+	b_node<int, int,100>* b_tree=nullptr;
 	constexpr int limit = 1e6;
 	std::vector<int> D;
 	for (int i = 0; i < limit; i++)
@@ -142,8 +134,11 @@ int main()
 	std::cout << std::endl << "Tree Height: " << height(b_tree) << "\tTree Size: " << size(b_tree) << '\n';
 	for (int i = 0; i < D.size(); i++) if (i != D[i])
 		std::cout << "Error: " << i << ' ' << D[i] << '\n';
+	for (int i = 0; i < limit-1; i++)
+		b_tree = erase(b_tree, (1023*i+423)%limit);
+	//b_tree = erase(b_tree, (13 * 99+ 76) % limit);
 	print(b_tree);
 	destroy(b_tree);
-	_sleep(2000);
+	_sleep(12000);
 }
 
