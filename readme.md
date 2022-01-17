@@ -59,13 +59,10 @@ The following list of topics are present on this library:
 	- FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> 
 for vectors with size <img src="https://render.githubusercontent.com/render/math?math=n | p">
 	- FFT2 over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{C}">
-	- FFT2 over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> for vectors with size 
-<img src="https://render.githubusercontent.com/render/math?math=2^k | p">
+	- FFT2 over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> for vectors with size <img src="https://render.githubusercontent.com/render/math?math=2^k | p">
 	- Fast Hadamard Transform over a ring <img src="https://render.githubusercontent.com/render/math?math=\mathcal{R}">
 	- Multidimensional FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{C}">
-	- Multidimensional FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> 
-if the tensor is of shape <img src="https://render.githubusercontent.com/render/math?math=(n_1,\dots,n_k)"> and 
-<img src="https://render.githubusercontent.com/render/math?math=n_i | p \quad \forall i\in\{1,\dots,k\}"> 
+	- Multidimensional FFT over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{F}_p"> if the tensor is of shape <img src="https://render.githubusercontent.com/render/math?math=(n_1,\dots,n_k)"> and <img src="https://render.githubusercontent.com/render/math?math=n_i | p \quad \forall i\in\{1,\dots,k\}"> 
 	- Fast polynomial multiplication over <img src="https://render.githubusercontent.com/render/math?math=\mathbb{C},\mathbb{R},\mathbb{Z},\mathbb{F}_p">
 9. Fast Polynomials(To Be Done)
 10. Number Theory:
