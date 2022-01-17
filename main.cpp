@@ -125,8 +125,8 @@ int main()
 	std::cout << '\n' << M.score(X, y) << '\t' << M.error(X,y) << '\n';
 	KN.k = 15;
 	std::cout << '\n' << KN.score(X, y) << '\n';
-	b_node<int, int,100>* b_tree=nullptr;
-	constexpr int limit = 1e6;
+	b_node<int, int,10>* b_tree=nullptr;
+	constexpr int limit = 100;
 	std::vector<int> D;
 	for (int i = 0; i < limit; i++)
 		b_tree = insert(b_tree, i,i);
@@ -134,9 +134,8 @@ int main()
 	std::cout << std::endl << "Tree Height: " << height(b_tree) << "\tTree Size: " << size(b_tree) << '\n';
 	for (int i = 0; i < D.size(); i++) if (i != D[i])
 		std::cout << "Error: " << i << ' ' << D[i] << '\n';
-	for (int i = 0; i < limit-1; i++)
-		b_tree = erase(b_tree, (1023*i+423)%limit);
-	//b_tree = erase(b_tree, (13 * 99+ 76) % limit);
+	for(int i=0;i<limit;i++)
+		b_tree = erase(b_tree, i);
 	print(b_tree);
 	destroy(b_tree);
 	_sleep(12000);

@@ -62,9 +62,52 @@ int height(statistic_node<T,V,S>*node)
 * Get the balance of the current node
 */
 template<typename T,typename V,typename S>
-int balance(statistic_node<T,V,S>* tree)
+int balance(statistic_node<T, V, S>* tree)
 {
-    return height(tree->left)-height(tree->right);
+    return height(tree->left) - height(tree->right);
+}
+
+/*
+* Find node that has the given key, return nullptr otherwise
+* @Notes
+* 1. If the value is altered, and the statistic depends on that value. The calculated statistic will not be updated.
+*   In that case, better use the insert_or_assign function or the update function
+* 2. If the key is altered, It will probably cause the tree to be in an inconsistent state unless the tree does not have a key
+* on the interval whose limit points are the old key value, and the new one.
+*/
+template<typename T, typename V, typename S>
+statistic_node<T,V,S>* find(statistic_node<T, V, S>* node, const typename std::common_type<T>::type& v)
+{
+    if (!node)
+        return nullptr;
+    if (node->v == v)
+        return node->data;
+    else if (node->v < v)
+        return find(node->right, v);
+    else return find(node->left, v);
+}
+
+/*
+* Find the data mapped by the given key
+* @Requirements
+* The Order Statistic Tree must contain at least one such key
+* @Exception
+* std::logic_error thrown if no such key is found
+* @Notes
+* If the value is altered, and the statistic depends on that value. The calculated statistic will not be updated.
+* In that case, better use the insert_or_assign function or the update function
+*/
+template<typename T, typename V, typename S>
+V& value_at(statistic_node<T, V, S>* node, const typename std::common_type<T>::type& v)
+{
+    [[unlikely]]
+    if (!node)
+        throw std::out_of_range("key does not exist");
+    if (node->v == v)
+        return node;
+    else if (node->v < v)
+        return value_at(node->right, v);
+    else return value_at(node->left, v);
 }
 
 /*

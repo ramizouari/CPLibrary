@@ -7,18 +7,19 @@
 #include <array>
 #include "polynomial.h"
 
-/*
- * Dynamic Vector:
- * It is the union of R^k for all k
- * - Addition between 2 vectors are defined with respect to the first vector's shape
- * - for all k, the set of all vectors of shape k is a vector space
- * */
-
 struct v_shape
 {
     int n;
 };
 
+/*
+ * Dynamic Vector:
+ * It is the union of R^k for all k
+ * - Addition between 2 vectors are defined with respect to the first vector's shape
+ * - for all k, the set of all vectors of shape k is a vector space
+ * @Requirements
+ * R is a commutative ring
+ * */
 template<typename R>
 class d_vector
 {
@@ -129,7 +130,10 @@ auto operator*(const R&k,const d_vector<R>& u)
 /*
  * Static Vector:
  * It is a member of an R-vector space E where dim(E)= n
- * */
+ * @Requirements
+ * R is a commutative ring. Formally, E is a R-module, and it is a vector space only if R is a field; the name s_vector is used
+ * for consistency with the computer science's name.
+ */
 
 template<typename R,int n>
 class s_vector
@@ -281,6 +285,11 @@ struct m_shape
     int n,m;
 };
 
+/*
+* This is the union of R^(n*m) for all n and m
+* @Requirements
+* R is a commutative ring. Formally, it is the set of matrices over R
+*/
 template<typename R>
 class d_matrix
 {
@@ -627,6 +636,9 @@ d_matrix<R> operator*(const R&a,const d_matrix<R> &M)
 
 /*
  * It is an element of the vector space L(R^n,R^m)
+ * @Requirements
+ * R is a commutative ring
+ * @Notes
  * - Multiplication between 2 matrices is defined if the shapes are compatible
  * - Multiplication between a matrix and a vector is defined if the shapes are compatible
  * - It is an associative algebra if n=m

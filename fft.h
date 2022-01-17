@@ -359,8 +359,9 @@ public:
     {
         auto &F=this->F_ref.value().get();
         auto phi=F.totient(m);
+        [[unlikely]]
         if(phi%n)
-            ;//throw std::exception("Fast NTT cannot be defined for this setting");
+            throw std::domain_error("Fast NTT cannot be defined for this size");
         IK r=pow<IK>(primitive_root_of_unity(m,F),phi/n);
         if constexpr (is_inverse)
             w=r.inv();

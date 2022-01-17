@@ -57,6 +57,14 @@ b_node<T, V, m>* init_b_node()
 	return node;
 }
 
+/*
+* Find node that has the given key, return nullptr otherwise
+* @Notes
+* If the key is altered, It will probably cause the B-tree to be in an inconsistent state unless:
+* 1. The underlying order statistic tree does not have a key on the interval whose limit points are the old key value, 
+*	and the new one.
+* 2. The new key is not greater than the key-value of the current B-supertree and not lower than the key-value of the previous of such B-supertree
+*/
 template<typename T, typename V, int m>
 order_node<order_closure<T>, b_data<T, V, m>>* find(b_node<T, V, m>* node, const typename std::common_type<T>::type& v)
 {
@@ -66,6 +74,24 @@ order_node<order_closure<T>, b_data<T, V, m>>* find(b_node<T, V, m>* node, const
 	if (L->v == order_closure<T>{v})
 		return L;
 	else return find(L->data.ptr, v);
+}
+
+/*
+* Find the data mapped by the given key
+* @Requirements
+* The B-Tree must contain at least one such key
+* @Exception
+* std::logic_error thrown if no such key is found
+*/
+template<typename T, typename V, int m>
+V& value_at(b_node<T, V, m>* node, const typename std::common_type<T>::type& v)
+{
+	if (!node)
+		throw std::out_of_range("key does not exist");
+	auto L = lower_bound(node->children, v);
+	if (L->v == order_closure<T>{v})
+		return L->data.data.value();
+	else return value_at(L->data.ptr, v);
 }
 
 /*
