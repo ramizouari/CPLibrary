@@ -4,6 +4,7 @@
 #ifndef __DATA_STRUCTURES_H__
 #define __DATA_STRUCTURES_H__
 #include <vector>
+#include "statistic_tree.h"
 
 unsigned int bit_log(unsigned int n)
 {
@@ -279,5 +280,118 @@ struct fenwick_matrix {
         add(x,y,F(F.inv(sum(x,x,y,y)),delta));
     }
 };
+
+
+template<typename T,typename O>
+class sparse_segment_tree
+{
+    sum_node<int, T, O>* tree;
+public:
+    sparse_segment_tree():tree(nullptr) {}
+    ~sparse_segment_tree()
+    {
+        destroy(tree);
+        tree = nullptr;
+    }
+
+    void insert(int k, const T& v)
+    {
+        tree = ::insert(tree, k, v);
+    }
+
+    void update(int k, const T& v)
+    {
+        tree = insert_or_assign(k, v);
+    }
+
+    void erase(int k)
+    {
+        tree = ::erase(tree, k);
+    }
+
+    T query(int l, int r) const
+    {
+        return sum(tree, l, r);
+    }
+
+    T index_query(int l, int r) const
+    {
+        return index_sum(tree,l, r);
+    }
+};
+
+template<typename T, typename O>
+class dynamic_segment_tree
+{
+    sum_node<int, T, O>* tree;
+    int size;
+public:
+    dynamic_segment_tree() :tree(nullptr),size(0) {}
+    ~dynamic_segment_tree()
+    {
+        destroy(tree);
+        tree = nullptr;
+        size = 0;
+    }
+
+    void push_back(const T& v)
+    {
+        tree = insert(tree, size++, v);
+    }
+
+    void update(int k, const T& v)
+    {
+        tree = insert_or_assign(k, v);
+    }
+
+    void pop_back()
+    {
+        tree = erase(tree, size--);
+    }
+
+    T query(int l, int r) const
+    {
+        return sum(tree, l, r);
+    }
+
+    T index_query(int l, int r) const
+    {
+        return query(l, r);
+    }
+};
+
+template<typename T, typename O>
+class ordered_segment_tree
+{
+    key_sum_node<T,O>* tree;
+public:
+    ordered_segment_tree() :tree(nullptr) {}
+    ~ordered_segment_tree()
+    {
+        destroy(tree);
+        tree = nullptr;
+    }
+
+    void insert(const T& v)
+    {
+        tree = ::insert(tree, v);
+    }
+
+    void erase(const T&v)
+    {
+        tree = ::erase(tree, v);
+    }
+
+    T query(const T& l, const T& r) const
+    {
+        return key_sum(tree, l, r);
+    }
+
+    T index_query(int a, int b) const
+    {
+        return index_key_sum(tree, a, b);
+    }
+};
+
 
 #endif

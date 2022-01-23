@@ -763,6 +763,39 @@ V sum(statistic_node<T, V, SumStats>* tree, const
     else return SumStats::F(suffix_sum(tree->left, L), tree->data, prefix_sum(tree->right, R));
 }
 
+template<typename T, typename V, typename SumStats>
+V prefix_index_sum(statistic_node<T, V, SumStats>* tree, int n)
+{
+    if (!tree || n <= 0)
+        return SumStats::neutral;
+    else if (size(tree->left) >= n)
+        return prefix_index_sum(tree->left, n);
+    else return SumStats::F(tree_sum(tree->left), tree->data, prefix_index_sum(tree->right, n - 1 - size(tree->left)));
+}
+
+template<typename T, typename V, typename SumStats>
+V suffix_index_sum(statistic_node<T, V, SumStats>* tree, int n)
+{
+    if (!tree)
+        return SumStats::neutral;
+    else if (size(tree->right) >= n)
+        return suffix_index_sum(tree->right, n);
+    else return SumStats::F(suffix_index_sum(tree->left, n - 1 - size(tree->right)), tree->data, tree_sum(tree->right));
+}
+
+template<typename T, typename V, typename SumStats>
+V index_sum(statistic_node<T, V, SumStats>* tree, int a, int b)
+{
+    if (!tree || a >= b)
+        return SumStats::neutral;
+    int left_size = size(tree->left);
+    if (left_size < a)
+        return SumStats::F(tree->data,index_sum(tree->right, a - left_size - 1, b - left_size - 1));
+    else if (left_size >= b)
+        return index_sum(tree->left, a, b);
+    else return SumStats::F(suffix_index_sum(tree->left, left_size), tree->data, prefix_index_sum(tree->right, left_size - 1));
+}
+
 /* * Key Sum Statistic:
 * It is an Ordered Statistic Tree augmented with a sum acting on keys:
 * The sum is defined over an associative binary operation having a neutral element
@@ -838,6 +871,39 @@ T key_sum(statistic_node<T, V, KeySumStats>* tree, const typename std::common_ty
     else if (tree->v >= R)
         return key_sum(tree->left, L, R);
     else return KeySumStats::F(suffix_key_sum(tree->left, L), tree->v, prefix_key_sum(tree->right, R));
+}
+
+template<typename T, typename V, typename KeySumStats>
+T prefix_index_key_sum(statistic_node<T, V, KeySumStats>* tree, int n)
+{
+    if (!tree || n <= 0)
+        return KeySumStats::key_neutral;
+    else if (size(tree->left) >= n)
+        return prefix_index_key_sum(tree->left, n);
+    else return KeySumStats::F(tree_key_sum(tree->left), tree->v, prefix_index_key_sum(tree->right, n - 1 - size(tree->left)));
+}
+
+template<typename T, typename V, typename KeySumStats>
+T suffix_index_key_sum(statistic_node<T, V, KeySumStats>* tree, int n)
+{
+    if (!tree)
+        return KeySumStats::key_neutral;
+    else if (size(tree->right) >= n)
+        return suffix_index_key_sum(tree->right, n);
+    else return KeySumStats::F(suffix_index_key_sum(tree->left, n-1-size(tree->right)), tree->v, tree_key_sum(tree->right));
+}
+
+template<typename T, typename V, typename KeySumStats>
+T index_key_sum(statistic_node<T, V, KeySumStats>* tree, int a,int b)
+{
+    if (!tree || a>=b)
+        return KeySumStats::key_neutral;
+    int left_size = size(tree->left);
+    if (left_size < a)
+        return KeySumStats::F(tree->v,index_key_sum(tree->right, a-left_size-1, b-left_size-1));
+    else if (left_size >= b)
+        return index_key_sum(tree->left, a, b);
+    else return KeySumStats::F(suffix_index_key_sum(tree->left, left_size-a), tree->v, prefix_index_key_sum(tree->right, b-left_size-1));
 }
 
 /*
