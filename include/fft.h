@@ -4,13 +4,13 @@
 
 #ifndef ACPC_PREPARATION_FFT_H
 #define ACPC_PREPARATION_FFT_H
-#include "abstract_algebra.h"
+#include "algebra/abstract_algebra.h"
 #include <numbers>
-#include "polynomial.h"
-#include "number_theory.h"
+#include "polynomial/polynomial.h"
+#include "nt/number_theory.h"
 #include <algorithm>
 #include <optional>
-#include "modular_arithmetic.h"
+#include "nt/modular_arithmetic.h"
 
 const real pi = acos(-1);
 /*

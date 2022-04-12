@@ -5,7 +5,7 @@
 #ifndef __STATISTIC_NODE__
 #define __STATISTIC_NODE__
 #include <tuple>
-#include "binary_operation.h"
+#include "../algebra/binary_operation.h"
 #include <variant>
 
 /*

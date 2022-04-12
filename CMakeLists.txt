@@ -1,20 +1,24 @@
 cmake_minimum_required(VERSION 3.11)
-project(ACPC_Preparation)
+project(CPLibrary)
 
 
 #Put this in your CMakeLists.txt file (change any options from OFF to ON if you want):
 
 
-
-include_directories("C:/local/boost_1_78_0")
-find_package(Boost)
+find_package(Boost COMPONENTS unit_test_framework)
 
 set(CMAKE_CXX_STANDARD 23)
 
+set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arithmetic.h include/nt/number_theory.h
+        include/polynomial/ring_extension.h include/polynomial/polynomial.h include/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/data_structures.h include/algebra/binary_operation.h
+        include/topology/topology.h include/data_structures/statistic_tree.h)
 
-add_executable(ACPC_Preparation linear_algebra.h modular_arithmetic.h number_theory.h
-        ring_extension.h polynomial.h fft.h optimisation.h string.h data_structures.h binary_operation.h
-        topology.h statistic_tree.h main.cpp )
+add_executable(CPLibrary main.cpp ${HEADER_FILES} tests/number_theory/modular_arithmetic_test.cpp)
 
-        
-target_include_directories(ACPC_Preparation PUBLIC "C:/local/boost_1_78_0/boost)")
+add_executable(LinearAlgebraTest tests/linear_algebra/linear_algebra_approximate_test.cpp tests/linear_algebra/linear_algebra_exact_test.cpp tests/print.h
+        ${HEADER_FILES})
+add_executable(NumberTheoryTest tests/number_theory/modular_arithmetic_test.cpp tests/print.h
+        ${HEADER_FILES})
+include_directories(include)
+target_link_libraries (LinearAlgebraTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+target_link_libraries (NumberTheoryTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})

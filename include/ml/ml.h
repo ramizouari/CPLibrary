@@ -4,10 +4,13 @@
 
 #ifndef __ML_H__
 #define __ML_H__
-#include "abstract_algebra.h"
-#include "optimisation.h"
-#include "linear_algebra.h"
+#include "algebra/abstract_algebra.h"
+#include "topology/optimisation.h"
+#include "linear_algebra/linear_algebra.h"
+#include "functional/zip.h"
+#include "functional/functional.h"
 #include <algorithm>
+#include <numeric>
 #include <queue>
 /*
 * Basic Machine Learning Support
@@ -20,8 +23,9 @@ class ml_model
 	virtual real score(const d_matrix<real>& X, const d_vector<real>& y) const = 0;
 };
 
-/*
-* Linear Regression
+/**
+* @brief Linear Regression
+* @refitem Linear Regression,
 * @Input
 * n p-dimensional samples X
 * @Cost
@@ -55,7 +59,7 @@ public:
 	}
 };
 
-/*
+/**
 * Logistic Regression
 * @Input
 * n p-dimensional samples X
@@ -148,7 +152,7 @@ auto xlogy(auto x, auto y)
 }
 
 
-/*
+/**
 * MultiLogistic Regression
 * @Input
 * n p-dimensional samples X
@@ -280,7 +284,7 @@ public:
 	}
 };
 
-/*
+/**
 * K-NearestNeighbours Classifier
 * @Input
 * n p-dimensional samples X

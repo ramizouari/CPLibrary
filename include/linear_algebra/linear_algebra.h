@@ -5,18 +5,22 @@
 #define __LINEAR__ALGEBRA__
 #include <vector>
 #include <array>
-#include "polynomial.h"
+#include "algebra/abstract_algebra.h"
+#include "polynomial/polynomial.h"
 
 struct v_shape
 {
     int n;
 };
 
-/*
- * Dynamic Vector:
- * It is the union of R^k for all k
- * - Addition between 2 vectors are defined with respect to the first vector's shape
- * - for all k, the set of all vectors of shape k is a vector space
+/**
+ * @brief Dynamic Vector
+ * @detail Dynamic Vector is a vector in the mathematical sense,
+ * @formal It is the union of R^k for all k, where k is the dimension of the vector.
+ * <ul>
+ * <li> Addition between 2 vectors are defined with respect to the first vector's shape <br>
+ * <li> for all k, the set of all vectors of shape k is a vector space
+ * </ul>
  * @Requirements
  * R is a commutative ring
  * */
@@ -31,6 +35,11 @@ public:
     d_vector():u(n){}
     d_vector(std::vector<R> _u):u(std::move(_u)){}
     d_vector(v_shape shape):u(shape.n){}
+
+    bool operator==(const d_vector<R>& other) const
+    {
+        return u==other.u;
+    }
     auto dim() const
     {
         return u.size();
@@ -127,12 +136,15 @@ auto operator*(const R&k,const d_vector<R>& u)
     return v*=k;
 }
 
-/*
- * Static Vector:
- * It is a member of an R-vector space E where dim(E)= n
+/**
+ * @brief Static Vector:
+ * @tparam R is the base field
+ * @tparam n is the dimension of the vector space
+ * @details It is a member of an R-vector space E where dim(E)= n
  * @Requirements
- * R is a commutative ring. Formally, E is a R-module, and it is a vector space only if R is a field; the name s_vector is used
- * for consistency with the computer science's name.
+ * <strong>R</strong> is a commutative ring. <br>
+ * @Formal <strong>E</strong> is an <strong>R</strong>-module, and it is a vector space only if <strong>R</strong> is a field. <br>
+ * In fact, the name s_vector is used for consistency with the computer science's name.
  */
 
 template<typename R,int n>
@@ -154,6 +166,8 @@ public:
     }
 
     s_vector(std::array<R,n>_u):u(std::move(_u)){}
+
+    bool operator==(const s_vector&) const = default;
 
     auto& operator[](int k)
     {
@@ -273,7 +287,7 @@ namespace std
 {
     template<typename R,int n>
     struct tuple_size<s_vector<R, n>> : std::integral_constant<size_t, n>{};
-    template<unsigned long long int k,typename R,int n>
+    template<size_t k,typename R,int n>
     struct tuple_element<k, s_vector<R, n>>
     {
         using type = R;
@@ -285,10 +299,13 @@ struct m_shape
     int n,m;
 };
 
-/*
-* This is the union of R^(n*m) for all n and m
+/**
+ * @brief Matrix:
+* @details This is the union of R^(n*m) for all n and m
 * @Requirements
-* R is a commutative ring. Formally, it is the set of matrices over R
+* <strong>R</strong> is a commutative ring.
+* @formal it is the set of matrices over the commutative ring <strong>R</strong> <br>
+ * In fact, It is the union of L(R^a,R^b) over all a and b where L(E,F) is the set of matrices acting on E with values over F
 */
 template<typename R>
 class d_matrix
@@ -634,14 +651,21 @@ d_matrix<R> operator*(const R&a,const d_matrix<R> &M)
     return N*=a;
 }
 
-/*
+/**
+ * @details Static Matrix
  * It is an element of the vector space L(R^n,R^m)
- * @Requirements
- * R is a commutative ring
- * @Notes
- * - Multiplication between 2 matrices is defined if the shapes are compatible
- * - Multiplication between a matrix and a vector is defined if the shapes are compatible
- * - It is an associative algebra if n=m
+ * @tparam R the base commutative ring
+ * @tparam n the number of rows
+ * @tparam m the number of columns
+ * @Requirements R is a commutative ring
+ * @Requirements n>=0
+ * @Requirements m>=0
+ * @Formal
+ * <ul>
+ * <li> Multiplication between 2 matrices is defined if the shapes are compatible
+ * <li> Multiplication between a matrix and a vector is defined if the shapes are compatible
+ * <li> It is an associative algebra if n=m
+ * </ul>
  * */
 
 template<typename R,int n,int m>
@@ -651,6 +675,7 @@ class s_matrix
 public:
     using base_field=R;
     using base_ring=R;
+    bool operator==(const s_matrix&) const = default;
     s_matrix(R k=0)
     {
         for(int i=0;i<n;i++) for(int j=0;j<m;j++)
@@ -663,7 +688,7 @@ public:
         return n;
     }
 
-    s_matrix(const std::vector<std::array<R,n>> &_M)
+    s_matrix(const std::vector<std::array<R,m>> &_M)
     {
         int counter=0;
         for(int i=0;i<n;i++) for(int j=0;j<m;j++)
@@ -719,7 +744,7 @@ public:
     auto &operator-=(const s_matrix &O)
     {
         for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                M[i][j]+=O.M[i][j];
+                M[i][j]-=O.M[i][j];
         return *this;
     }
 
@@ -744,11 +769,11 @@ public:
     }
 
     template<int p>
-    s_matrix<R,n,p> operator*(const s_matrix<R,p,m> &O) const
+    s_matrix<R,n,p> operator*(const s_matrix<R,m,p> &O) const
     {
         s_matrix<R,n,p> N(0);
         for(int i=0;i<n;i++) for(int k=0;k<m;k++) for(int j=0;j<p;j++)
-                    N.M[i][j]+=M[i][k]*O.M[k][j];
+            N[i][j]+=M[i][k]*O[k][j];
         return N;
     }
 
@@ -760,10 +785,11 @@ public:
         return *this;
     }
 
-    auto & operator*=(R k)
-    {
-        for(auto &row:M) for(auto &u:row)
-            u*=k;
+    auto & operator*=(R k) {
+        for (auto &row: M)
+            for (auto &u: row)
+                u *= k;
+        return *this;
     }
     s_vector<R,n> operator*(const s_vector<R,m> &u) const
     {

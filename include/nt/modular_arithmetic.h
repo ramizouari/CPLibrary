@@ -5,11 +5,11 @@
 #define __MODULAR__ARITHMETIC__
 #include <cstdint>
 #include <utility>
-#include "abstract_algebra.h"
+#include "algebra/abstract_algebra.h"
 #include <random>
 #include <unordered_map>
 #include "number_theory.h"
-#include "ring_extension.h"
+#include "polynomial/ring_extension.h"
 
 
 template<integer mod>
@@ -287,7 +287,7 @@ public:
     }
 };
 
-template<int m>
+template<integer m>
 struct std::hash<cyclic<m>>
 {
     inline static std::random_device dev=std::random_device();
@@ -296,7 +296,7 @@ struct std::hash<cyclic<m>>
     std::uniform_int_distribution<integer> d=std::uniform_int_distribution<integer>(1,M);
     integer a=d(g),b=d(g);
 public:
-    auto operator()(const cyclic<m> &x) const
+    size_t operator()(const cyclic<m> &x) const noexcept
     {
         return (a*static_cast<integer>(x)+b)%M;
     }

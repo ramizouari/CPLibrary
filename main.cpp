@@ -1,14 +1,15 @@
 ﻿#include "fft.h"
-#include "polynomial.h"
-#include "analysis.h"
-#include "zip.h"
-#include "statistic_tree.h"
-#include "binary_operation.h"
-#include "functional.h"
-#include "data_structures.h"
+#include "polynomial/polynomial.h"
+#include "topology/analysis.h"
+#include "functional/zip.h"
+#include "data_structures/statistic_tree.h"
+#include "algebra/binary_operation.h"
+#include "functional/functional.h"
+#include "data_structures/data_structures.h"
 #include <iostream>
 #include <utility>
-#include "order.h"
+#include "algebra/order.h"
+
 
 
 int main()

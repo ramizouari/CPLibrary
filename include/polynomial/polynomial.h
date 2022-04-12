@@ -6,10 +6,12 @@
 #include <vector>
 #include <map>
 
-/*
-* This is the class of polynomials over commutative ring R
+/**
+* @brief Polynomial class
+* @details This is the class of polynomials over a commutative ring R
+* @tparam R the type of the coefficients
 * @Requirements
-* R is a commutative ring
+* <strong>R</strong> is a commutative ring
 * @Notes
 * Formally this class is simply R[x]
 */
@@ -154,8 +156,8 @@ public:
         return q-=a;
     }
 
-    /*
-    * creates a preorder between polynomials based on the degree
+    /**
+    * @details creates a preorder between polynomials based on the degree
     * @Requirements:
     * None
     * @Notes
@@ -189,16 +191,19 @@ public:
         return q/=k;
     }
 
-    /*
-    * Applies euclidean division between two polynomials
-    * @Requirements:
+    /**
+     * @brief Euclidean division
+    * @details Applies euclidean division between two polynomials
+    * @Requirements
     * One of the following
-    * - R is a field (1)
-    * - R is an euclidean domain (2)
-    * - R is a commutative ring, and the dominant coefficient of O is inversible
+    * <ul>
+    * <li> R is a field [1]
+    * <li> R is an euclidean domain [2]
+    * <li> R is a commutative ring, and the dominant coefficient of <strong>O</strong> is inversible
+    * <ul/>
     * @Notes
-    * Even that condition (1) is a special case of (2), given that some properties of euclidean division are
-    * guaranteed only if R is a field, We will seperate the two cases
+    * Even that condition [1] is a special case of [2], given that some properties of euclidean division are
+    * guaranteed only if <strong>R</strong> is a field, We will seperate the two cases
     */
     std::pair<polynomial,polynomial> euclidean_division(const polynomial &O) const
     {
@@ -253,10 +258,12 @@ public:
         D.p.resize(degree());
     }
 
-    /*
+    /**
+    * @brief Polynomial Evaluation
+    * @details Evaluates the polynomial at a given point
     * Evaluates the polynomial over an associative R-algebra H
-    * @Requirements:
-    * H is an associative algebra over R
+    * @Requirements
+    * <strong>H</strong> is an associative algebra over <strong>R</strong>
     */
     template<typename H>
     H operator()(H a)
@@ -305,8 +312,9 @@ polynomial<R> operator*(R a,const polynomial<R> &p)
     return q*=a;
 }
 
-/*
-* This constant is the generator of all polynomials over R.
+/**
+* @brief The functional identity polynomial
+* @details This constant is the generator of all polynomials over R.
 * @Notes
 * Formally, it is simply the polynomial X:x->x
 */
@@ -314,14 +322,15 @@ template<typename R>
 const polynomial<R> X=polynomial<R>(std::vector<R>{0,1});
 
 
-/*
-* This is the class of sparse polynomials over commutative ring R
+/**
+ * @brief Sparse Polynomial
+* @details This is the class of sparse polynomials over commutative ring R
 * @Requirements
-* R is a commutative ring
+* <strong>R</strong> is a commutative ring
 * @Recommendation
-* 1. The coefficients are sparse. Formally a k-sparse polynomial p of degree n is a polynomial where:
+* <ol> <li> The coefficients are sparse. Formally a k-sparse polynomial p of degree n is a polynomial where:
 * (card supp {p_1,..,p_n}) / n <= k
-* 2. It is recommended that k<=0.01
+* <li> It is recommended that k<=0.01 </ol>
 * @Notes
 * Formally this class is simply R[x]
 */
@@ -473,8 +482,9 @@ public:
         return p.at(k);
     }
 
-    /* *
-    * Evaluates the polynomial over an associative R-algebra H
+    /**
+     * @brief Polynomial evaluation
+    * @details Evaluates the polynomial at a point a.
     * @Requirements:
     * H is an associative algebra over R
     */
@@ -516,13 +526,18 @@ sparse_polynomial<R> operator*(R a,const sparse_polynomial<R> &p)
     return q*=a;
 }
 
-/* 
-* Applies Lagrange Interpolation over points (x,y)
-* @Requirements:
-* 1. x does not have a duplicate element
-* 2. One of the following
-*   2.1. R is a field
-*   2.2 (s-t) is inversible for all elements s,t in x 
+/**
+* @brief Newton Interpolation
+* @details Applies Lagrange Interpolation over points (x,y) using Newton's method
+* @Requirements
+ * <ol>
+* <li> x does not have a duplicate element
+* <li> One of the following
+ * <ul>
+*   <li> R is a field
+*   <li> (s-t) is invertible for all elements s,t in x
+ *  </ul>
+ * </ol>
 */
 template<typename R>
 polynomial<R> newton_interpolation(const std::vector<R> &x,const std::vector<R> &y)
@@ -541,9 +556,10 @@ polynomial<R> newton_interpolation(const std::vector<R> &x,const std::vector<R> 
     return p;
 }
 
-/*
-* Applies Karatsuba multiplication between the two polynomials
-* @Requirements:
+/**
+ * @brief Karatsuba multiplication
+* @details Applies Karatsuba multiplication between two polynomials
+* @Requirements
 * None
 */
 template<typename R>

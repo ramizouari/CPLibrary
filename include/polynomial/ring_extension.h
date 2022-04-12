@@ -3,7 +3,7 @@
 //
 #ifndef __RING__EXTENSION__
 #define __RING__EXTENSION__
-#include "abstract_algebra.h"
+#include "../algebra/abstract_algebra.h"
 #include "polynomial.h"
 /*
  * This header contains a list of usual ring extensions:
@@ -170,7 +170,7 @@ namespace std
 {
     template<typename R>
     struct tuple_size<rational_extension<R>> : integral_constant<size_t, 2> {};
-    template<unsigned long long int k, typename R>
+    template<size_t k, typename R>
     struct tuple_element<k, rational_extension<R>>
     {
         using type = R;
@@ -932,7 +932,7 @@ namespace std
 {
     template<typename R,int a,int b>
     struct tuple_size<quadratic_extension<R,a,b>> : integral_constant<size_t, 2> {};
-    template<unsigned long long int k, typename R,int a,int b>
+    template<size_t k, typename R,int a,int b>
     struct tuple_element<k, quadratic_extension<R,a,b>>
     {
         using type = R;
@@ -951,8 +951,9 @@ struct extension_polynomial_t
     polynomial<R> p;
 };
 
-/*
- * It is simply the union of R[x]/q over all polynomials q
+/**
+ * @brief Dynamic Ring Extension
+ * @details It is simply the union of R[x]/q over all polynomials q
  * @Requirements
  * One of the following:
  *  - R is a commutative ring and q is a monic polynomial

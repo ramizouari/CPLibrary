@@ -4,8 +4,8 @@
 
 #ifndef __OPTIMISATION__
 #define __OPTIMISATION__
-#include "linear_algebra.h"
-#include "abstract_algebra.h"
+#include "../linear_algebra/linear_algebra.h"
+#include "../algebra/abstract_algebra.h"
 #include "topology.h"
 #include <functional>
 

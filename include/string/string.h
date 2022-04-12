@@ -1,10 +1,10 @@
 //
 // Created by ramizouari on 01/12/2021.
 //
-#ifndef __NT_H__
-#define __NT_H__
+#ifndef __STRING_UTILS_H__
+#define __STRING_UTILS_H__
 #include <vector>
-#include "modular_arithmetic.h"
+#include "nt/modular_arithmetic.h"
 
 template<integer m>
 struct uniform_hash

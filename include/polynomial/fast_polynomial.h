@@ -4,7 +4,7 @@
 
 #ifndef ACPC_PREPARATION_FAST_POLY_H
 #define ACPC_PREPARATION_FAST_POLY_H
-#include "fft.h"
+#include "../fft.h"
 #include "polynomial.h"
 
 

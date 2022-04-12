@@ -1,8 +1,8 @@
 //
 // Created by ASUS on 01/12/2021.
 //
-#ifndef __NT_H__
-#define __NT_H__
+#ifndef __NUMBERTHEORY_H__
+#define __NUMBERTHEORY_H__
 #include <cstdint>
 #include <vector>
 #include <map>
@@ -10,7 +10,7 @@
 #include <cmath>
 #include <stack>
 #include <algorithm>
-#include "abstract_algebra.h"
+#include "algebra/abstract_algebra.h"
 
 using couple =std::pair<integer,integer>;
 
