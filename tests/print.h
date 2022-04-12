@@ -33,4 +33,5 @@ std::ostream & operator<<(std::ostream & os,const s_matrix<T,n,m> & v)
 
 
 
+
 #endif //CPLIBRARY_PRINT_H

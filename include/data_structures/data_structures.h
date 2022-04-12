@@ -6,7 +6,7 @@
 #include <vector>
 #include "statistic_tree.h"
 
-unsigned int bit_log(unsigned int n)
+inline unsigned int bit_log(unsigned int n)
 {
     unsigned char a=0,b=30,r=0;
     while(a<=b)
@@ -25,12 +25,12 @@ unsigned int bit_log(unsigned int n)
     return r;
 }
 
-unsigned int bit_floor(unsigned int n)
+inline unsigned int bit_floor(unsigned int n)
 {
     return 1<<bit_log(n);
 }
 
-unsigned int bit_ceil(unsigned int n)
+inline unsigned int bit_ceil(unsigned int n)
 {
     return 1<<(bit_log(n)+1);
 }
@@ -214,18 +214,18 @@ struct fenwick_tree {
     T sum(int x) {
         if(x<0)
             return O::neutral;
-        T ret = 0;
+        T ret = O::neutral;
         for (int i = x; i >= 0; i = (i & (i + 1)) - 1)
             ret = F(ret,bit[i]);
         return ret;
     }
 
-    int query(int a,int b)
+    T query(int a,int b)
     {
-        return F(F.inv(sum(a)),b);
+        return F(F.inv(sum(a-1)),sum(b));
     }
 
-    int sum(int a,int b)
+    T sum(int a,int b)
     {
         return query(a,b);
     }

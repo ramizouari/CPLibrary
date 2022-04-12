@@ -143,6 +143,12 @@ auto operator*(int k,cyclic<m> s)
     return s*k;
 }
 
+template<integer m>
+auto operator+(int k,cyclic<m> s)
+{
+    return s+k;
+}
+
 class d_cyclic
 {
     integer n;
@@ -267,7 +273,7 @@ public:
     }
 };
 
-auto operator*(int k,d_cyclic O)
+inline auto operator*(int k,d_cyclic O)
 {
     return O*=k;
 }
@@ -317,7 +323,7 @@ integer discrete_log(cyclic_ring a, cyclic_ring r)
     return -1;
 }
 
-std::vector<integer> inverse_table(int n,int prime)
+inline std::vector<integer> inverse_table(int n,int prime)
 {
     std::vector<integer> I(n + 1);
     I[0] = I[1] = 1;
@@ -327,7 +333,7 @@ std::vector<integer> inverse_table(int n,int prime)
     return I;
 }
 
-integer primitive_root_of_unity(integer p,factoriser &F)
+inline integer primitive_root_of_unity(integer p,factoriser &F)
 {
     d_cyclic::m=p;
     auto phi=F.totient(p);

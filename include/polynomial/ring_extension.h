@@ -3,7 +3,7 @@
 //
 #ifndef __RING__EXTENSION__
 #define __RING__EXTENSION__
-#include "../algebra/abstract_algebra.h"
+#include "algebra/abstract_algebra.h"
 #include "polynomial.h"
 /*
  * This header contains a list of usual ring extensions:
@@ -21,15 +21,20 @@ struct rational_t
     R q;
 };
 
-/*
-* This is the field of fractions over R.
+/**
+* @brief Rational Extension
+* @details This is the field of fractions over R.
 * @Requirements
-* - R is an integral domain. In particular, R should be an euclidean domain
-* - R is not a field
+* <ol>
+ * <li>R is an integral domain. In particular, R should be an euclidean domain</li>
+* <li>  R is not a field</li>
+ * </ol>
 * @Notes
 * We excluded the case R is a field, because
-* - Otherwise, Frac(R) will be isomorphic to R
-* - Euclidean division is frequently not implemented when R is a field
+* <ol>
+ * <li> Otherwise, Frac(R) will be isomorphic to R</li>
+* <li> Euclidean division is frequently not implemented when R is a field</li>
+ * </ol>
 */
 template<typename R>
 class rational_extension
@@ -42,10 +47,10 @@ class rational_extension
         q/=d;
     }
 public:
-    /*
-    * Initialize an element r
+    /**
+    * Initialize a rational element
     * @Requirements
-    * q is not zero
+    * <strong>q</strong> is not zero
     */
     rational_extension(R _p=0,R _q=1):p(_p),q(_q)
     {
@@ -177,10 +182,10 @@ namespace std
     };
 }
 
-/*
+/**
 * Extension of R into R[x]/x^n. with n the nilpotence index
 * @Requirements:
-* None
+* <strong>R</strong> is a commutative ring
 */
 template<typename R,int nilpotence>
 class nilpotent_extension
@@ -290,11 +295,11 @@ struct nilpotence_t
     int n;
 };
 
-/*
+/**
 * This is simply the union of R[x]/x^n over all n
-* @Requirements:
-* None
-* @Notes:
+* @Requirements
+* <strong> R </strong> is a commutative ring
+* @Notes
 * If we don't specify the index manually. It will be equal as default to the public static member nilpotence
 * @Warning
 * the value of nilpotence should be initialized.
@@ -519,7 +524,7 @@ public:
     }
 };
 
-/*
+/**
  * Extension of the ring R to R[x]/q(x) where q is a given poylnomial
  * @Requirements
  * One of the following:

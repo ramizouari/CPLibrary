@@ -80,7 +80,7 @@ public:
 	ml_model& fit(const d_matrix<real>& X, const d_vector<real>& y) override
 	{
 		derivator<d_vector<real>, real, d_vector<real>> D;
-		barzilai_borwein_gradient_descent<d_vector<real>, L2_inner_product<real, d_vector<real>>>
+		barzilai_borwein_gradient_descent<d_vector<real>,real, L2_inner_product<real, d_vector<real>>>
 			GD(D,1e-3);
 		int k = 0;
 		w = GD.argmin([&X,&y,&k](const d_vector<real>& u)->std::pair<real,d_vector<real>>
@@ -183,7 +183,7 @@ public:
 		for (auto [s,R] : zip(y,Y))
 			R[(int)s] = 1;
 		derivator<d_vector<real>, real, d_vector<real>> D;
-		barzilai_borwein_gradient_descent<d_vector<real>, L2_inner_product<real, d_vector<real>>>
+		barzilai_borwein_gradient_descent<d_vector<real>,IR, L2_inner_product<real, d_vector<real>>>
 			GD(D, 1e-3);
 		int k = 0;
 		w = GD.argmin([&X, &y, &k,C=this->C](const d_vector<real>& u)->std::pair<real,d_vector<real>>

@@ -28,12 +28,13 @@ public:
         else return degree() == 0 && p.front() == a;
     }
 
+    bool operator==(const polynomial<R> &) const = default;
+
     void reduce()
     {
         while(!p.empty() && p.back()==R(0))
             p.pop_back();
     }
-    template<typename NotInteger= std::enable_if_t<!std::is_same_v<R, int>>>
     polynomial(R k):p(1,k)
     {
         reduce();
@@ -168,14 +169,15 @@ public:
         return degree() < O.degree();
     }
 
-    /*
-    * Divides the polynomial by a constant
-    * @Requirements:
-    * One of the following
-    * - R is an integral ring (2)
-    * - k is invertible
-    * @Notes
-    * None
+    /**
+     * @brief Polynomial self division
+    * @details Divides the polynomial by a constant and stores the result in itself
+    * @Requirements
+    * One of the following:
+     * <ul>
+    * <li> R is an integral ring [2]
+    * <li> k is invertible
+     * </ul>
     */
 
     auto& operator/=(R k)

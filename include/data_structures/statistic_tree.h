@@ -5,28 +5,32 @@
 #ifndef __STATISTIC_NODE__
 #define __STATISTIC_NODE__
 #include <tuple>
-#include "../algebra/binary_operation.h"
+#include "algebra/binary_operation.h"
 #include <variant>
 
-/*
-* * Order Statistic Tree:
-* It is an AVL-tree augmented with a statistic
+/**
+* @definition Order Statistic Tree: It is an AVL-tree augmented with a statistic.
 * The statistic is a function of:
-* 1. The key
-* 2. The value
-* 3. left and right subtree
+ * </ol>
+* <li> The key
+* <li> The value
+* <li> left and right subtree
+ * </ol>
 * @Requirements
-* 1. a class T
-* 2. (T,<=) is a totally ordered set
-* 3. S is a statistic type
-* 
-* * Statistic Type:
-* A statistic S is a class having some attributes serving as additional informations
+* <ol><li> a class T
+* <li> (T,<=) is a totally ordered set
+* <li> S is a statistic type
+* </ol>
+* @tparam T the type of the key
+* @tparam V the type of the value
+* @tparam S the statistic type: a statistic S is a class having some attributes serving as additional informations
 * Those informations can be aggregated via the static update method
-* @Requirements:
-* 1. class S
-* 2. S has a public static method called update which accepts Tree<T,V,S>.
-* 3. the update method "updates" adequately the statistics, and only the statistics
+* @Requirements
+* <ol>
+* <li> class S
+* <li> S has a public static method called update which accepts Tree<T,V,S>.
+* <li> the update method "updates" adequately the statistics, and only the statistics
+ * </ol>
 */
 template<typename T,typename V,typename S>
 struct statistic_node;
@@ -67,7 +71,7 @@ int balance(statistic_node<T, V, S>* tree)
     return height(tree->left) - height(tree->right);
 }
 
-/*
+/**
 * Find node that has the given key, return nullptr otherwise
 * @Notes
 * 1. If the value is altered, and the statistic depends on that value. The calculated statistic will not be updated.
@@ -549,8 +553,6 @@ statistic_node<T, V, S>* merge(statistic_node<T, V, S>* left, statistic_node<T, 
 * Split a tree into two trees with respect to threshold
 * - The left part is the resultant tree whose keys are smaller than threshold
 * - The right part is the resultant tree whose keys are not smaller than threshold
-* @Requirements
-* None
 */
 template<typename T, typename V, typename S>
 std::pair<statistic_node<T, V, S>*,statistic_node<T,V,S>*> 
@@ -591,8 +593,6 @@ std::pair<statistic_node<T, V, S>*,statistic_node<T,V,S>*>
 * It is a Self Balanced Binary Search Tree augmented with an order:
 * - The order of an element can be calculated in O(log(n))
 * - An element can be selected given its order in O(log(n))
-* @Requirements
-* None
 */
 
 struct order_stats
@@ -688,7 +688,7 @@ statistic_node<T, V, OrderStats>* median(statistic_node<T, V, OrderStats>* tree)
     return select(tree, size(tree) / 2);
 }
 
-/*
+/**
 * Sum Statistic:
 * It is an Ordered Statistic Tree augmented with a sum acting on data:
 * The sum is defined over an associative binary operation having a neutral element
@@ -796,7 +796,7 @@ V index_sum(statistic_node<T, V, SumStats>* tree, int a, int b)
     else return SumStats::F(suffix_index_sum(tree->left, left_size), tree->data, prefix_index_sum(tree->right, left_size - 1));
 }
 
-/* * Key Sum Statistic:
+/** Key Sum Statistic:
 * It is an Ordered Statistic Tree augmented with a sum acting on keys:
 * The sum is defined over an associative binary operation having a neutral element
 * It supports range sum (L,R) for keys belonging to the interval [L,R[ 
@@ -916,6 +916,8 @@ T index_key_sum(statistic_node<T, V, KeySumStats>* tree, int a,int b)
 * The first two considers the case when the binary operator's class is a template
 * The last two considers the case when the binary operator's class is not a template
 */
+
+//
 template<typename T, typename V, template<typename S = T> typename O>
 using sum_node_t = statistic_node<T, V, sum_stats<V, O<V>>>;
 

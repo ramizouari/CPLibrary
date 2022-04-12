@@ -200,27 +200,27 @@ d_vector<real> simplex(
     return d;
 }
 
-template<typename E,typename Norm=L2_inner_product<real,E>>
+template<typename E,real_type IK,typename Norm=L2_inner_product<real,E>>
 class gradient_descent
 {
     inline static constexpr Norm N=Norm();
 protected:
-    real p=.05;
-    real eps;
+    IK p=.05;
+    IK eps;
     derivator<E,real,E>& D;
 public:
-    gradient_descent(derivator<E,real,E> &d,real _eps=1e-3):D(d),eps(_eps) {}
-    E argmin(const std::function<real(E)>& f,E x) const
+    gradient_descent(derivator<E,IK,E> &d,IK _eps=1e-3):D(d),eps(_eps) {}
+    E argmin(const std::function<IK(E)>& f,E x) const
     {
         for (; N.norm(D.gradient(f, x)) > eps; x -= p * D.gradient(f, x));
         return x;
     }
-    E argmin(const std::function<real(E)>& f, E x,int L) const
+    E argmin(const std::function<IK(E)>& f, E x,int L) const
     {
         for (; N.norm(D.gradient(f, x)) > eps && L--; x -= p * D.gradient(f, x));
         return x;
     }
-    E argmin(const std::function<std::pair<real,E>(E)>& f, E x) const
+    E argmin(const std::function<std::pair<IK,E>(E)>& f, E x) const
     {
         auto P = f(x);
         while (N.norm(P.second) > eps)
@@ -244,17 +244,17 @@ public:
 
 };
 
-template<typename E,typename InnerProduct=L2_inner_product<real,E>>
+template<typename E,real_type IK=IR,typename InnerProduct=L2_inner_product<IK,E>>
 class barzilai_borwein_gradient_descent
 {
-    real p=.1;
-    real eps=1e-8;
+    IK p=.1;
+    IK eps=1e-8;
     derivator<E,real,E>& D;
     inline static constexpr InnerProduct B = InnerProduct();
 public:
-    barzilai_borwein_gradient_descent(derivator<E, real,E>& d, real _p):D(d),p(_p){}
+    barzilai_borwein_gradient_descent(derivator<E, IK,E>& d, real _p):D(d),p(_p){}
 
-    E argmin(const std::function<real(E)>& f, E s,int L)
+    E argmin(const std::function<IK(E)>& f, E s,int L)
     {
         this->p = 0.1;
         E x = s- this->p*this->D.gradient(f, s);
@@ -267,7 +267,7 @@ public:
         return x;
     }
 
-    E argmin(const std::function<std::pair<real, E>(E)>& f, E s, int L)
+    E argmin(const std::function<std::pair<IK, E>(E)>& f, E s, int L)
     {
         auto P = f(s);
         E x = s - this->p * f(s).second;
@@ -284,7 +284,7 @@ public:
     }
 
 
-    virtual void update_rate(const std::function<real(E)>& f, const E& x,const E& s)
+    virtual void update_rate(const std::function<IK(E)>& f, const E& x,const E& s)
     {
         auto L = this->D.gradient(f, x) - this->D.gradient(f, s);
         this->p = B.inner_product(L,x - s) / B.inner_product(L,L);

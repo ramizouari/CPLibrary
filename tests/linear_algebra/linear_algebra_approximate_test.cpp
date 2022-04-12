@@ -5,11 +5,13 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/mpl/list.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/mp11/algorithm.hpp>
 #include <complex>
 #include <topology/topology.h>
 #include <functional/zip.h>
-using test_types=boost::mpl::list<double,long double,float,std::complex<long double>,std::complex<double>,std::complex<float>> ;
-using real_types=boost::mpl::list<double,long double,float>;
+using test_types=boost::mp11::mp_list<double,long double,float,std::complex<long double>,std::complex<double>,std::complex<float>> ;
+using real_types=boost::mp11::mp_list<double,long double,float>;
 #include "../print.h"
 #include <random>
 
@@ -42,6 +44,15 @@ double l2_distance(const s_matrix<T,n,m>&A,const s_matrix<T,n,m>&B)
     return std::sqrt(res);
 }
 
+template<typename T>
+double l2_distance(const d_matrix<T>&A,const d_matrix<T>&B)
+{
+    double res=0;
+    for(auto&& [R1,R2]:zip(A,B)) for(auto &&[a,b]:zip(R1,R2))
+            res+=std::pow(a-b,2);
+    return std::sqrt(res);
+}
+
 template<int n,int m>
 s_matrix<real,n,m> random_matrix()
 {
@@ -56,6 +67,7 @@ s_matrix<real,n,m> random_matrix()
             c = d(rng);
     return U;
 }
+
 
 template<int rank>
 bool test_solver() {
@@ -241,12 +253,17 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
             BOOST_CHECK(std::abs(l2_distance(A * A.inv(), decltype(A)((T)1)))<err);
         }
 
-        BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_inv_rand,T,real_types)
+        using dimension_t=boost::mp11::mp_list_c<int,10,50,100,200>;
+        using inv_test_types=boost::mp11::mp_product<std::tuple,real_types,dimension_t>;
+        BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_inv_rand,U,inv_test_types)
         {
+            using T = typename std::tuple_element<0,U>::type;
+            using I = typename std::tuple_element<1,U>::type;
             std::random_device dev;
             std::mt19937_64 rng(dev());
-            constexpr int dimension=100;
-            constexpr double std=.175;
+            constexpr int dimension=I::value;
+            const double std=1.68/std::sqrt(dimension);
+            constexpr int N=10;
             std::normal_distribution<double> d(0,std);
             for(int i=0;i<N;i++) {
                 s_matrix<T, dimension, dimension> A;
@@ -255,6 +272,28 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
                         c = d(rng);
                 if(A.det()!=0)
                     BOOST_CHECK(std::abs(l2_distance(A * A.inv(), decltype(A)((T)1)))<err);
+            }
+        }
+        using d_dimension_t=boost::mp11::mp_list_c<int,10,50,100,200,500,1000>;
+        using d_inv_test_types=boost::mp11::mp_product<std::tuple,real_types,d_dimension_t>;
+
+        BOOST_AUTO_TEST_CASE_TEMPLATE(test_dmatrix_inv_rand,U,d_inv_test_types)
+        {
+            using T = typename std::tuple_element<0,U>::type;
+            using I = typename std::tuple_element<1,U>::type;
+            std::random_device dev;
+            std::mt19937_64 rng(dev());
+            constexpr int dimension=I::value;
+            const double std=1.68/std::sqrt(dimension);
+            constexpr int N=10;
+            std::normal_distribution<double> d(0,std);
+            for(int i=0;i<N;i++) {
+                d_matrix<T> A(0,m_shape{dimension,dimension});
+                for (auto &R: A)
+                    for (auto &c: R)
+                        c = d(rng);
+                if(A.det()!=0)
+                    BOOST_CHECK(std::abs(l2_distance(A * A.inv(), decltype(A)((T)1,m_shape{dimension,dimension})))<err);
             }
         }
         BOOST_AUTO_TEST_SUITE(test_solve)
@@ -318,68 +357,19 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
                     BOOST_CHECK(innerProduct.metric(A*A.solve(v), v)<err);
                 }
             }
-            BOOST_AUTO_TEST_CASE(test_solve_rand_rank50)
+            using test_solve_rank=boost::mp11::mp_list_c<int,0,10,50,99,100>;
+            BOOST_AUTO_TEST_CASE_TEMPLATE(test_solve_rand_rank,Rank,test_solve_rank)
             {
                 int success=0;
                 for(int i=0;i<N;i++) {
-                    bool test= test_solver<50>();
+                    bool test= test_solver<Rank::value>();
                     success+=test;
                     BOOST_WARN(test);
                 }
                 BOOST_CHECK(static_cast<double>(success)/N>1-failure_tolerance);
             }
 
-            BOOST_AUTO_TEST_CASE(test_solve_rand_rank100)
-            {
-                int success=0;
-                for(int i=0;i<N;i++) {
-                    bool test= test_solver<100>();
-                    success+=test;
-                    BOOST_WARN(test);
-                }
-                BOOST_CHECK(static_cast<double>(success)/N>1-failure_tolerance);
-            }
 
-            BOOST_AUTO_TEST_CASE(test_solve_rand_rank90)
-            {
-                int success=0;
-                for(int i=0;i<N;i++) {
-                    bool test= test_solver<90>();
-                    success+=test;
-                    BOOST_WARN(test);
-                }
-                BOOST_CHECK(static_cast<double>(success)/N>1-failure_tolerance);
-            }
-            BOOST_AUTO_TEST_CASE(test_solve_rand_rank0)
-            {
-                int success=0;
-                for(int i=0;i<N;i++) {
-                    bool test= test_solver<0>();
-                    success+=test;
-                    BOOST_WARN(test);
-                }
-                BOOST_CHECK(static_cast<double>(success)/N>1-failure_tolerance);
-            }
-            BOOST_AUTO_TEST_CASE(test_solve_rand_rank99)
-            {
-                int success=0;
-                for(int i=0;i<N;i++) {
-                    bool test= test_solver<99>();
-                    success+=test;
-                    BOOST_WARN(test);
-                }
-                BOOST_CHECK(static_cast<double>(success)/N>1-failure_tolerance);
-            }
-            BOOST_AUTO_TEST_CASE(test_rank_rand_rank99)
-            {
-                int success=0;
-                for(int i=0;i<N;i++) {
-                    int rank=(random_matrix<100,99>()* random_matrix<99,100>()).rank();
-                    success+=rank==99;
-                    BOOST_WARN_EQUAL(rank,99);
-                }
-                BOOST_CHECK(static_cast<double>(success)/N>1-failure_tolerance);
-            }
         BOOST_AUTO_TEST_SUITE_END()
     BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE_END()

@@ -213,7 +213,7 @@ public:
 
 };
 
-integer chinese_remainder(const std::vector<std::pair<integer,integer>> &S)
+inline integer chinese_remainder(const std::vector<std::pair<integer,integer>> &S)
 {
     std::stack<std::pair<integer,integer>> Q;
     for(auto s:S)
@@ -231,7 +231,7 @@ integer chinese_remainder(const std::vector<std::pair<integer,integer>> &S)
     return Q.top().first;
 }
 
-integer chinese_remainder(const std::vector<integer>& A,const std::vector<integer>& P)
+inline integer chinese_remainder(const std::vector<integer>& A,const std::vector<integer>& P)
 {
     std::vector<std::pair<integer,integer>> S;
     int n=A.size(),m=P.size();

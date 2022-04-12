@@ -4,6 +4,15 @@
 #include "../linear_algebra/linear_algebra.h"
 #include <functional>
 
+template<typename R>
+concept complex_type= requires(const R&r) {
+  {r.real()} -> std::convertible_to<double>;
+  {r.imag()} -> std::convertible_to<double>;
+};
+
+template<typename R>
+concept real_type= !complex_type<R>;
+
 /*
 * This class is the class of all metrics over E
 * @Requirements
@@ -167,14 +176,14 @@ public:
     }
 };
 
-template<typename E>
-class derivator<E,real,E>
+template<typename E,real_type IK>
+class derivator<E,IK,E>
 {
-    real eps;
+    IK eps;
 public:
-    derivator(real _eps=1e-7):eps(_eps){}
+    derivator(IK _eps=1e-7):eps(_eps){}
 
-    E gradient(const std::function<real(E)>&f,E a) const
+    E gradient(const std::function<IK(E)>&f,E a) const
     {
         E grad(a);
         for(int i=0;i<grad.dim();i++)
@@ -190,31 +199,32 @@ public:
     }
 };
 
-template<>
-class derivator<real,real,real>
+template<real_type IK>
+class derivator<IK,IK,IK>
 {
-    real eps;
+    IK eps;
 public:
-    derivator(real _eps=1e-7):eps(_eps){}
-    real derivative(const std::function<real(real)>&f,real a) const
+    derivator(IK _eps=1e-7):eps(_eps){}
+    real derivative(const std::function<IK(IK)>&f,IK a) const
     {
         return (f(a+eps)-f(a-eps))/(2*eps);
     }
 
-    real gradient(const std::function<real(real)>&f,real a) const
+    real gradient(const std::function<IK(IK)>&f,IK a) const
     {
         return derivative(f,a);
     }
 };
 
-template<typename E>
-class derivator<E,IC,E>
+template<typename E,complex_type IK>
+class derivator<E,IK,E>
 {
+    using real_type =typename IK::value_type;
     real eps;
 public:
-    derivator(real _eps=1e-7):eps(_eps){}
+    derivator(real_type _eps=1e-7):eps(_eps){}
 
-    E gradient(const std::function<IC(E)>&f,E a) const
+    E gradient(const std::function<IK(E)>&f,E a) const
     {
         E grad(a);
         for(int i=0;i<grad.dim();i++)
@@ -230,18 +240,19 @@ public:
     }
 };
 
-template<>
-class derivator<IC,IC ,IC>
+template<complex_type IK>
+class derivator<IK,IK ,IK>
 {
-    real eps;
+    using real_type = typename IK::value_type;
+    real_type eps;
 public:
-    derivator(real _eps=1e-7):eps(_eps){}
-    IC derivative(const std::function<IC(IC)>&f,IC a) const
+    derivator(real_type _eps=1e-7):eps(_eps){}
+    IC derivative(const std::function<IK(IK)>&f,IK a) const
     {
         return (f(a+eps)-f(a-eps))/(2*eps);
     }
 
-    IC gradient(const std::function<IC(IC)>&f,IC a) const
+    IC gradient(const std::function<IK(IK)>&f,IK a) const
     {
         return derivative(f,a);
     }
@@ -250,16 +261,16 @@ public:
 template<typename K,typename R,typename M,typename Norm=L2_inner_product<K,R>>
 class newton_raphson;
 
-template<typename Norm>
-class newton_raphson<real,real,real,Norm>
+template<typename Norm,real_type IK>
+class newton_raphson<IK,IK,IK,Norm>
 {
     inline static constexpr Norm N=Norm();
-    derivator<real, real,real> &D;
+    derivator<IK, IK,IK> &D;
     real x0;
     real eps=1e-5;
 public:
-    newton_raphson(real _x0, derivator<real, real, real>& d) :D(d),x0(_x0) {}
-    real root(const std::function<real(real)>& f) const
+    newton_raphson(real _x0, derivator<IK, IK, IK>& d) :D(d),x0(_x0) {}
+    real root(const std::function<IK(IK)>& f) const
     {
         real x = x0;
         while (N.norm(f(x)) > eps)
@@ -268,16 +279,16 @@ public:
     }
 };
 
-template<typename Norm>
-class newton_raphson<IC,IC,IC,Norm>
+template<typename Norm,complex_type IK>
+class newton_raphson<IK,IK,IK,Norm>
 {
     inline static constexpr Norm N=Norm();
-    derivator<IC, IC,IC> &D;
+    derivator<IK, IK,IK> &D;
     IC x0;
     real eps=1e-5;
 public:
-    newton_raphson(real _x0, derivator<IC, IC, IC>& d) :D(d),x0(_x0) {}
-    IC root(const std::function<IC(IC)>& f) const
+    newton_raphson(real _x0, derivator<IK, IK, IK>& d) :D(d),x0(_x0) {}
+    IC root(const std::function<IK(IK)>& f) const
     {
         IC x = x0;
         while (N.norm(f(x)) > eps)
@@ -286,13 +297,13 @@ public:
     }
 };
 
-template<typename E,typename M,typename Norm>
-class newton_raphson<real,E,M,Norm>
+template<real_type IK,typename E,typename M,typename Norm>
+class newton_raphson<IK,E,M,Norm>
 {
     inline static constexpr Norm N=Norm();
     derivator<E, E,M> &D;
     E x0;
-    real eps=1e-5;
+    IK eps=1e-5;
 public:
     newton_raphson(E _x0, derivator<E, E, M>& d) :D(d),x0(_x0) {}
     template<typename ...StructureMetaData>
@@ -308,8 +319,8 @@ public:
 };
 
 
-template<typename E,typename M,typename Norm>
-class newton_raphson<IC,E,M,Norm>
+template<complex_type IK,typename E,typename M,typename Norm>
+class newton_raphson<IK,E,M,Norm>
 {
     inline static constexpr Norm N=Norm();
     derivator<E, E,M> &D;

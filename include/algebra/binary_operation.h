@@ -20,7 +20,13 @@ struct binary_operation
 };
 
 template<typename T>
-struct plus_t:public binary_operation<T>
+struct invertible_operation
+{
+    virtual T inv(const T& a) const = 0;
+};
+
+template<typename T>
+struct plus_t:public binary_operation<T>,public invertible_operation<T>
 {
     T reduce(const T&a,const T&b) const override
     {
@@ -46,7 +52,7 @@ struct multiplies_t:public binary_operation<T>
 };
 
 template<typename T>
-struct field_multiplies_t:public multiplies_t<T>
+struct field_multiplies_t:public multiplies_t<T>,public invertible_operation<T>
 {
     T inv(const T&a) const
     {
@@ -55,7 +61,7 @@ struct field_multiplies_t:public multiplies_t<T>
 };
 
 template<>
-struct field_multiplies_t<real>:public multiplies_t<real>
+struct field_multiplies_t<real>:public multiplies_t<real>,public invertible_operation<real>
 {
     real inv(const real& a)const
     {
@@ -64,7 +70,7 @@ struct field_multiplies_t<real>:public multiplies_t<real>
 };
 
 template<>
-struct field_multiplies_t<IC>:public multiplies_t<IC>
+struct field_multiplies_t<IC>:public multiplies_t<IC>,public invertible_operation<IC>
 {
     IC inv(const IC& a)const
     {
@@ -80,7 +86,7 @@ struct max_t:public binary_operation<T>
         return std::max(a,b);
     }
 
-    inline static T neutral=0;
+    inline static T neutral=T(0);
 };
 
 template<typename T>
@@ -91,7 +97,7 @@ struct min_t:public binary_operation<T>
         return std::min(a,b);
     }
 
-    inline static T neutral;
+    inline static T neutral{};
 };
 
 template<typename T>
@@ -102,7 +108,7 @@ struct gcd_t:public binary_operation<T>
         return std::gcd(a,b);
     }
 
-    inline static T neutral=0;
+    inline static T neutral=T(0);
 };
 
 template<typename T>
@@ -117,7 +123,7 @@ struct lcm_t:public binary_operation<T>
 };
 
 template<typename T>
-struct xor_t:public binary_operation<T>
+struct xor_t:public binary_operation<T>,public invertible_operation<T>
 {
     T reduce(const T&a,const T&b) const
     {
@@ -129,7 +135,7 @@ struct xor_t:public binary_operation<T>
         return a;
     }
 
-    inline static T neutral=0;
+    inline static T neutral=T(0);
 };
 
 template<typename T>
@@ -177,7 +183,7 @@ struct logical_or_t :public binary_operation<T>
 };
 
 template<typename T>
-struct logical_xor_t :public binary_operation<T>
+struct logical_xor_t :public binary_operation<T>,public invertible_operation<T>
 {
     T reduce(const T& a, const T& b) const override
     {
