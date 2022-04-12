@@ -169,10 +169,12 @@ auto xlogy(auto x, auto y)
 class multilogistic_regression :public ml_model
 {
 	d_matrix<real> W;
-	int C;
 public:
 	int limit = 2000;
-	ml_model& fit(const d_matrix<real>& X, const d_vector<real>& y) override
+    int C;
+    real lambda = 0.1;
+    multilogistic_regression(real lambda) :lambda(lambda){}
+    ml_model& fit(const d_matrix<real>& X, const d_vector<real>& y) override
 	{
 		d_vector<real> w;
 		C = 0;
@@ -186,7 +188,7 @@ public:
 		barzilai_borwein_gradient_descent<d_vector<real>,IR, L2_inner_product<real, d_vector<real>>>
 			GD(D, 1e-3);
 		int k = 0;
-		w = GD.argmin([&X, &y, &k,C=this->C](const d_vector<real>& u)->std::pair<real,d_vector<real>>
+		w = GD.argmin([&X, &y, &k,C=this->C,lambda=this->lambda](const d_vector<real>& u)->std::pair<real,d_vector<real>>
 			{
 				k++;
 				d_matrix<real> U(0, m_shape{ (int)X.col_dim(),C});
@@ -214,7 +216,10 @@ public:
 						du[h * C + k] -= x[h];
 					i++;
 				}
-				du /= X.row_dim()*C;
+                du+=lambda*u;
+                du /= X.row_dim()*C;
+                for(auto &s:u)
+                    err+=lambda*s*s/2;
 				err /= X.row_dim()*C;
 				return std::make_pair(err,du);
 			}, d_vector<real>{v_shape{ (int)X.col_dim()*C }}, limit);
@@ -306,7 +311,8 @@ class k_nearest_neighbour_classifier : public ml_model
 	d_vector<real> y;
 	inline static constexpr metric d=metric{};
 public:
-	int k=5;
+    int k;
+    k_nearest_neighbour_classifier(int k=5) : k(k) {}
 	ml_model& fit(const d_matrix<real>& _X,const d_vector<real>& _y) override
 	{
 		X = _X;
@@ -334,8 +340,10 @@ public:
 				auto [distance, s] = P.top();
 				P.pop();
 				occurence[s]++;
-				if (occurence[s] > max_votes)
-					chosen_class = s;
+				if (occurence[s] >= max_votes) {
+                    chosen_class = s;
+                    max_votes=occurence[s];
+                }
 			}
 			_s = chosen_class;
 		}
@@ -402,4 +410,4 @@ public:
 		return a / static_cast<real>(y.dim());
 	}
 };
-#endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#endif //__ML_H__

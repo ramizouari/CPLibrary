@@ -25,8 +25,12 @@ add_executable(PolynomialTest tests/polynomial/polynomial_test.cpp tests/print.h
         ${HEADER_FILES} tests/polynomial/polynomial_test.cpp)
 add_executable(DataStructuresTest tests/data_structures/segment_tree_test.cpp tests/data_structures/fenwick_tree.cpp tests/print.h
         ${HEADER_FILES} )
+
+add_executable(MachineLearningTest tests/ml/machine_learning_test.cpp tests/print.h
+        ${HEADER_FILES} )
 include_directories(include)
 target_link_libraries (LinearAlgebraTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
 target_link_libraries (NumberTheoryTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(PolynomialTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(DataStructuresTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+target_link_libraries(MachineLearningTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
