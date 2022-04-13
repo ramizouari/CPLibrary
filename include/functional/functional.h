@@ -4,7 +4,6 @@
 
 #ifndef __FUNCTIONAL_H__
 #define __FUNCTIONAL_H__
-#include "../algebra/abstract_algebra.h"
 #include <concepts>
 
 template<typename F,typename M>

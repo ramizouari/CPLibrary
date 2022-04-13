@@ -10,7 +10,7 @@ find_package(Boost COMPONENTS unit_test_framework)
 set(CMAKE_CXX_STANDARD 23)
 
 set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arithmetic.h include/nt/number_theory.h
-        include/polynomial/ring_extension.h include/polynomial/polynomial.h include/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/data_structures.h include/algebra/binary_operation.h
+        include/polynomial/ring_extension.h include/polynomial/polynomial.h include/polynomial/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/data_structures.h include/algebra/binary_operation.h
         include/topology/topology.h include/data_structures/statistic_tree.h)
 
 add_executable(CPLibrary main.cpp ${HEADER_FILES})
@@ -28,9 +28,13 @@ add_executable(DataStructuresTest tests/data_structures/segment_tree_test.cpp te
 
 add_executable(MachineLearningTest tests/ml/machine_learning_test.cpp tests/print.h
         ${HEADER_FILES} )
+
+add_executable(TopologyTest tests/topology/topology_test.cpp tests/print.h
+        ${HEADER_FILES} )
 include_directories(include)
 target_link_libraries (LinearAlgebraTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
 target_link_libraries (NumberTheoryTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(PolynomialTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(DataStructuresTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(MachineLearningTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+target_link_libraries(TopologyTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})

@@ -26,7 +26,7 @@ M conj(M a)
         if constexpr (std::is_same_v<G, M>)
             return std::conj(a);
         else for (auto& s : a)
-            s = conj<std::remove_reference<decltype(s)>::type, G>(s);
+            s = conj<typename std::remove_reference<decltype(s)>::type, G>(s);
     }
     return a;
 }

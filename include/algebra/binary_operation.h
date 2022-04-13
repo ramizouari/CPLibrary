@@ -37,7 +37,7 @@ struct plus_t:public binary_operation<T>,public invertible_operation<T>
     {
         return -a;
     }
-    inline static T neutral=T();
+    inline static T neutral{};
 };
 
 template<typename T>
@@ -86,7 +86,7 @@ struct max_t:public binary_operation<T>
         return std::max(a,b);
     }
 
-    inline static T neutral=T(0);
+    inline static T neutral{0};
 };
 
 template<typename T>
@@ -108,7 +108,7 @@ struct gcd_t:public binary_operation<T>
         return std::gcd(a,b);
     }
 
-    inline static T neutral=T(0);
+    inline static T neutral{0};
 };
 
 template<typename T>
@@ -119,7 +119,7 @@ struct lcm_t:public binary_operation<T>
         return std::lcm(a,b);
     }
 
-    inline static T neutral=1;
+    inline static T neutral{1};
 };
 
 template<typename T>
@@ -135,7 +135,7 @@ struct xor_t:public binary_operation<T>,public invertible_operation<T>
         return a;
     }
 
-    inline static T neutral=T(0);
+    inline static T neutral{};
 };
 
 template<typename T>
@@ -157,7 +157,7 @@ struct or_t:public binary_operation<T>
         return a|b;
     }
 
-    inline static T neutral=0;
+    inline static T neutral{};
 };
 
 template<typename T>
@@ -168,7 +168,7 @@ struct logical_and_t :public binary_operation<T>
         return a && b;
     }
 
-    inline static T neutral = T(true);
+    inline static T neutral{true};
 };
 
 template<typename T>
@@ -179,7 +179,7 @@ struct logical_or_t :public binary_operation<T>
         return a || b;
     }
 
-    inline static T neutral = T(false);
+    inline static T neutral{false};
 };
 
 template<typename T>
@@ -193,7 +193,7 @@ struct logical_xor_t :public binary_operation<T>,public invertible_operation<T>
     {
         return !a;
     }
-    inline static T neutral = T(false);
+    inline static T neutral{false};
 };
 
 #endif

@@ -1075,4 +1075,4 @@ using IM_IR = std::conditional_t<n >= 0 && m>=0, s_matrix<real, n,m>, d_matrix<r
 
 template<int n = -1, int m = n>
 using IM_IC = std::conditional_t<n >= 0 && m >= 0, s_matrix<IC, n, m>, d_matrix<IC>>;
-#endif
+#endif // __LINEAR__ALGEBRA__
