@@ -58,6 +58,12 @@ R gcd(R a,R b)
     return a;
 }
 
+template<typename R>
+R lcm(const R &a,const R &b)
+{
+    return a*b/gcd(a,b);
+}
+
 template<typename R=integer>
 struct egcd_t
 {

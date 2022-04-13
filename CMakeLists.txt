@@ -31,6 +31,8 @@ add_executable(MachineLearningTest tests/ml/machine_learning_test.cpp tests/prin
 
 add_executable(TopologyTest tests/topology/topology_test.cpp tests/print.h
         ${HEADER_FILES} )
+add_executable(AlgebraTest tests/algebra/abstract_algebra_test.cpp tests/print.h
+        ${HEADER_FILES} )
 include_directories(include)
 target_link_libraries (LinearAlgebraTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
 target_link_libraries (NumberTheoryTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
@@ -38,3 +40,4 @@ target_link_libraries(PolynomialTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(DataStructuresTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(MachineLearningTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
 target_link_libraries(TopologyTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
+target_link_libraries(AlgebraTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})

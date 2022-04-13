@@ -1,6 +1,6 @@
 ﻿#ifndef __ORDER_H__
 #define __ORDER_H__
-#include "abstract_algebra.h"
+#include "abstract_algebra_test.h"
 #include <compare>
 #include <variant>
 

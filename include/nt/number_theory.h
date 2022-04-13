@@ -10,7 +10,7 @@
 #include <cmath>
 #include <stack>
 #include <algorithm>
-#include "algebra/abstract_algebra.h"
+#include "algebra/abstract_algebra_test.h"
 
 using couple =std::pair<integer,integer>;
 

@@ -4,7 +4,7 @@
 
 #ifndef ACPC_PREPARATION_FFT_H
 #define ACPC_PREPARATION_FFT_H
-#include "algebra/abstract_algebra.h"
+#include "algebra/abstract_algebra_test.h"
 #include <numbers>
 #include "polynomial/polynomial.h"
 #include "nt/number_theory.h"

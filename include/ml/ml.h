@@ -4,7 +4,7 @@
 
 #ifndef __ML_H__
 #define __ML_H__
-#include "algebra/abstract_algebra.h"
+#include "algebra/abstract_algebra_test.h"
 #include "topology/optimisation.h"
 #include "linear_algebra/linear_algebra.h"
 #include "functional/zip.h"

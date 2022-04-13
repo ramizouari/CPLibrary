@@ -4,7 +4,7 @@
 #ifndef __OPERATION_H__
 #define __OPERATION_H__
 #include <numeric>
-#include "abstract_algebra.h"
+#include "abstract_algebra_test.h"
 
 template<typename T>
 struct binary_operation
@@ -105,7 +105,7 @@ struct gcd_t:public binary_operation<T>
 {
     T reduce(const T&a,const T&b) const override
     {
-        return std::gcd(a,b);
+        return gcd(a,b);
     }
 
     inline static T neutral{0};
@@ -116,7 +116,7 @@ struct lcm_t:public binary_operation<T>
 {
     T reduce(const T&a,const T&b) const override
     {
-        return std::lcm(a,b);
+        return lcm(a,b);
     }
 
     inline static T neutral{1};

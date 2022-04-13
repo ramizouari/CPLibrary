@@ -1,6 +1,6 @@
 #ifndef __TOPOLOGY_H__
 #define __TOPOLOGY_H__
-#include "../algebra/abstract_algebra.h"
+#include "../algebra/abstract_algebra_test.h"
 #include "../linear_algebra/linear_algebra.h"
 #include <functional>
 
