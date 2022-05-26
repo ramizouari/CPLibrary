@@ -4,7 +4,7 @@
 
 #ifndef ACPC_PREPARATION_FFT_H
 #define ACPC_PREPARATION_FFT_H
-#include "algebra/abstract_algebra_test.h"
+#include "algebra/abstract_algebra.h"
 #include <numbers>
 #include "polynomial/polynomial.h"
 #include "nt/number_theory.h"
@@ -432,7 +432,7 @@ struct fast_ntt_base_2:public fast_ntt<is_inverse>
 {
 public:
     using fast_ntt<is_inverse>::fast_ntt;
-    using IK=fast_ntt<is_inverse>::IK;
+    using IK=typename fast_ntt<is_inverse>::IK;
     std::vector<d_cyclic> unnormalized(const std::vector<d_cyclic> &X) const
     {
         auto &n=this->n;

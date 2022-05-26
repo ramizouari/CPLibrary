@@ -3,7 +3,7 @@
 //
 #ifndef __RING__EXTENSION__
 #define __RING__EXTENSION__
-#include "algebra/abstract_algebra_test.h"
+#include "algebra/abstract_algebra.h"
 #include "polynomial.h"
 /*
  * This header contains a list of usual ring extensions:

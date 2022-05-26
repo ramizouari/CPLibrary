@@ -5,7 +5,7 @@
 #ifndef __OPTIMISATION__
 #define __OPTIMISATION__
 #include "../linear_algebra/linear_algebra.h"
-#include "../algebra/abstract_algebra_test.h"
+#include "../algebra/abstract_algebra.h"
 #include "topology.h"
 #include <functional>
 
@@ -200,10 +200,10 @@ d_vector<real> simplex(
     return d;
 }
 
-template<typename E,real_type IK,typename Norm=L2_inner_product<real,E>>
+template<typename E,real_type IK=IR,typename Norm=L2_inner_product<real,E>>
 class gradient_descent
 {
-    inline static constexpr Norm N=Norm();
+    inline static constexpr Norm N{};
 protected:
     IK p=.05;
     IK eps;
@@ -250,7 +250,7 @@ class barzilai_borwein_gradient_descent
     IK p=.1;
     IK eps=1e-8;
     derivator<E,real,E>& D;
-    inline static constexpr InnerProduct B = InnerProduct();
+    inline static constexpr InnerProduct B{};
 public:
     barzilai_borwein_gradient_descent(derivator<E, IK,E>& d, real _p):D(d),p(_p){}
 

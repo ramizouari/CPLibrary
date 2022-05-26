@@ -4,7 +4,7 @@
 #ifndef __OPERATION_H__
 #define __OPERATION_H__
 #include <numeric>
-#include "abstract_algebra_test.h"
+#include "abstract_algebra.h"
 
 template<typename T>
 struct binary_operation
@@ -26,18 +26,20 @@ struct invertible_operation
 };
 
 template<typename T>
-struct plus_t:public binary_operation<T>,public invertible_operation<T>
-{
-    T reduce(const T&a,const T&b) const override
-    {
-        return a+b;
+struct monoid_plus_t:public binary_operation<T> {
+    T reduce(const T &a, const T &b) const override {
+        return a + b;
     }
+    inline static T neutral{};
+};
 
-    T inv(const T&a) const
+template<typename T>
+struct plus_t:public monoid_plus_t<T>,public invertible_operation<T>
+{
+    T inv(const T&a) const override
     {
         return -a;
     }
-    inline static T neutral{};
 };
 
 template<typename T>

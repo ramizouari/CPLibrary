@@ -4,7 +4,7 @@
 
 #ifndef __ML_H__
 #define __ML_H__
-#include "algebra/abstract_algebra_test.h"
+#include "algebra/abstract_algebra.h"
 #include "topology/optimisation.h"
 #include "linear_algebra/linear_algebra.h"
 #include "functional/zip.h"
@@ -409,5 +409,147 @@ public:
 				a++;
 		return a / static_cast<real>(y.dim());
 	}
+};
+
+class naive_bayes : public ml_model
+{
+    std::unordered_map<int,real> class_probability;
+    std::vector<std::map<std::pair<int,int>,real>> attribute_conditional_probability;
+public:
+    ml_model& fit(const d_matrix<real>& _X, const d_vector<real>& _y) override
+    {
+        for (auto s : _y)
+            class_probability[s]++;
+        auto totalWeight=std::accumulate(class_probability.begin(),class_probability.end(),0,[](real a,const auto& b){return a+b.second;});
+        for (auto& [s,p] : class_probability)
+            p/=totalWeight;
+        attribute_conditional_probability.resize(_X.col_dim());
+        for(auto [x,y]: zip(_X,_y)) for(auto [counter,c]:zip(attribute_conditional_probability,x))
+            counter[{c,y}]++;
+        for(auto& conditional:attribute_conditional_probability)
+        {
+            std::unordered_map<int,real> conditional_class_count;
+            for(const auto& [c,p]:conditional)
+                conditional_class_count[c.second]+=p;
+            for(auto& [c,p]:conditional)
+                p/=conditional_class_count[c.second];
+        }
+        return *this;
+    }
+
+    d_vector<real> predict(const d_matrix<real>& _X) const override
+    {
+        d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+        for (auto [_x, _s] : zip(_X, _y))
+        {
+            real max_probability=0;
+            for(auto [C,_]:class_probability)
+            {
+                real p= probability(_x,C);
+                if(p>max_probability)
+                {
+                    max_probability=p;
+                    _s = p;
+                }
+            }
+        }
+        return _y;
+    }
+
+    real probability(const d_vector<real> &x,int C) const
+    {
+        real P_class = class_probability.at(C);
+        for (auto [c, p] : zip(x, attribute_conditional_probability))
+            P_class *= p.at({c, C});
+        return P_class;
+    }
+
+    real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+    {
+        auto y_pred = predict(X);
+        int a = 0;
+        for (auto [s, p] : zip(y, y_pred))
+            if (s == p)
+                a++;
+        return a / static_cast<real>(y.dim());
+    }
+};
+
+template<typename metric = L2_inner_product<real, d_vector<real>>>
+class k_means
+{
+    int k;
+    inline static constexpr metric d{};
+    std::vector<d_vector<real>> centroids;
+    d_matrix<real> X;
+    d_vector<real> y;
+    int steps;
+    void divide_points()
+    {
+        int n=centroids.front().dim();
+        for (auto [x, s] : zip(X, y))
+        {
+            real min_distance = std::numeric_limits<real>::max();
+            int min_index = 0;
+            for (int i=0;i< n;i++)
+            {
+                real distance = d.distance(x, centroids[i]);
+                if (distance < min_distance)
+                {
+                    min_distance = distance;
+                    min_index = i;
+                }
+            }
+            s = min_index;
+        }
+    }
+public:
+    k_means(int k=3,int steps=100): k(k),centroids(k),steps(steps){}
+    ml_model& fit(const d_matrix<real>& _X)
+    {
+        X=_X;
+        y=d_vector<real>(v_shape{(int)_X.row_dim()});
+        d_vector<int> counter(v_shape{k});
+        for(auto &centroid:centroids)
+            centroid=d_vector<real>(v_shape{(int)_X.col_dim()});
+        for(int i=0;i<steps;i++)
+        {
+            divide_points();
+            std::fill(centroids.begin(),centroids.end(),v_shape{(int)_X.col_dim()});
+            for(auto [x,s]:zip(_X,y)) {
+                centroids[s] += x;
+                counter[s]++;
+            }
+            for(auto [centroid,C]:zip(centroids,counter))
+                centroid/=C;
+        }
+        return *this;
+    }
+
+    [[nodiscard]] d_vector<real> predict(const d_matrix<real>& _X) const
+    {
+        d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+        for (auto [_x, _s] : zip(_X, _y))
+        {
+            real min_distance = std::numeric_limits<real>::max();
+            int min_index = 0;
+            for (int i=0;i< k;i++)
+            {
+                real distance = d.distance(_x, centroids[i]);
+                if (distance < min_distance)
+                {
+                    min_distance = distance;
+                    min_index = i;
+                }
+            }
+            _s = min_index;
+        }
+        return _y;
+    }
+
+    [[nodiscard]] d_vector<real> predict() const
+    {
+        return y;
+    }
 };
 #endif //__ML_H__

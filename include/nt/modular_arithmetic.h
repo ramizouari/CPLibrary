@@ -5,7 +5,7 @@
 #define __MODULAR__ARITHMETIC__
 #include <cstdint>
 #include <utility>
-#include "algebra/abstract_algebra_test.h"
+#include "algebra/abstract_algebra.h"
 #include <random>
 #include <unordered_map>
 #include "number_theory.h"

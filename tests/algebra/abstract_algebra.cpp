@@ -7,7 +7,7 @@
 #include <boost/mpl/list.hpp>
 #include "nt/modular_arithmetic.h"
 #include <boost/test/data/test_case.hpp>
-#include "algebra/abstract_algebra_test.h"
+#include "algebra/abstract_algebra.h"
 
 
 constexpr std::int64_t M = 1000000007;

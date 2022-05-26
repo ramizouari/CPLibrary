@@ -5,7 +5,7 @@
 #define __LINEAR__ALGEBRA__
 #include <vector>
 #include <array>
-#include "algebra/abstract_algebra_test.h"
+#include "algebra/abstract_algebra.h"
 #include "polynomial/polynomial.h"
 
 struct v_shape

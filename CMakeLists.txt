@@ -13,8 +13,11 @@ set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arit
         include/polynomial/ring_extension.h include/polynomial/polynomial.h include/polynomial/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/data_structures.h include/algebra/binary_operation.h
         include/topology/topology.h include/data_structures/statistic_tree.h)
 
-add_executable(CPLibrary main.cpp ${HEADER_FILES})
+set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParser.cpp src/parser/LLParser.cpp)
+
+add_executable(CPLibrary main.cpp ${HEADER_FILES} ${SOURCE_FILES})
 add_executable(MLExample example/machine_learning.cpp ${HEADER_FILES})
+add_executable(PowerSeriesExample example/power_series_composition.cpp ${HEADER_FILES})
 
 
 add_executable(LinearAlgebraTest tests/linear_algebra/linear_algebra_approximate_test.cpp tests/linear_algebra/linear_algebra_exact_test.cpp tests/print.h
@@ -31,8 +34,8 @@ add_executable(MachineLearningTest tests/ml/machine_learning_test.cpp tests/prin
 
 add_executable(TopologyTest tests/topology/topology_test.cpp tests/print.h
         ${HEADER_FILES} )
-add_executable(AlgebraTest tests/algebra/abstract_algebra_test.cpp tests/print.h
-        ${HEADER_FILES} )
+add_executable(AlgebraTest tests/algebra/abstract_algebra.cpp tests/print.h
+        ${HEADER_FILES} tests/algebra/binary_operation.cpp)
 include_directories(include)
 target_link_libraries (LinearAlgebraTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY} )
 target_link_libraries (NumberTheoryTest ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY})
