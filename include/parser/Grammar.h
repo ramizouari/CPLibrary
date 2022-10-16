@@ -192,8 +192,9 @@ public:
     template<typename Left,typename... Right>
     void addRuleList(Left && left, Right && ... right)
     {
+        auto S=addSymbol(std::forward<Left>(left));
         std::vector<Symbol> rightVec{addSymbol(std::forward<Right>(right))...};
-        Rule rule(addSymbol(std::forward<Left>(left)),rightVec);
+        Rule rule(S,rightVec);
         Grammar::addRule(std::move(rule));
     }
 

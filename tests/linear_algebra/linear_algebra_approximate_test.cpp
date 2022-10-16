@@ -105,6 +105,7 @@ BOOST_AUTO_TEST_SUITE(test_vector_real)
             BOOST_CHECK_EQUAL(v1[3], T(4));
             BOOST_CHECK_EQUAL(v1[4], T(5));
         }
+
     BOOST_AUTO_TEST_SUITE_END()
     BOOST_AUTO_TEST_SUITE(test_vector_operator)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_add_vector,T,test_types) {
@@ -237,8 +238,15 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
         }
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_det,T,real_types)
         {
+            // given
             s_matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
-            BOOST_CHECK_CLOSE(A.det(),35,err);
+            T expected_result = 35 ;
+
+            // when
+            T result = A.det();
+
+            // then
+            BOOST_CHECK_CLOSE(result,expected_result,err);
         }
 
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_trace,T,real_types)

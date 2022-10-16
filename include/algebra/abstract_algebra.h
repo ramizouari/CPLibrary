@@ -102,4 +102,5 @@ std::pair<R,R> bezout(R a, R b)
     auto [u,v,_]=egcd(a,b);
     return {u,v};
 }
+
 #endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H

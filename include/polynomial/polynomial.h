@@ -16,7 +16,7 @@
 * Formally this class is simply R[x]
 */
 template<typename R>
-class polynomial
+struct polynomial
 {
     std::vector<R> p;
 

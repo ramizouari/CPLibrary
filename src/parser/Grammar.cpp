@@ -74,15 +74,19 @@ void GrammarWithFirstFollow::buildFirst() {
         {
             auto &leftSymbol=symbols[rule.left.id];
             auto &leftFirstIds=firstIds[leftSymbol.id];
-            for(auto &rightSymbol : rule.right)
+            int i;
+            for(i=0;i<rule.right.size();i++)
             {
+                auto &rightSymbol = rule.right[i];
                 auto &rightFirstIds = this->firstIds[rightSymbol.id];
                 for(auto &firstId : rightFirstIds)
-                    if(leftFirstIds.insert(firstId).second)
+                    if(firstId != SpecialCharacter::Epsilon && leftFirstIds.insert(firstId).second)
                         insertion=true;
                 if(!rightFirstIds.contains(SpecialCharacter::Epsilon))
                     break;
             }
+            if(i==rule.right.size() && leftFirstIds.insert(SpecialCharacter::Epsilon).second)
+                insertion=true;
         }
     } while(insertion);
 }
@@ -106,7 +110,7 @@ void GrammarWithFirstFollow::buildFollow()
                 for (int j = i + 1; j < rule.right.size(); j++)
                 {
                     auto &S2 = rule.right[j];
-                    for(auto &id:firstIds[S2.id])
+                    for(auto &id:firstIds[S2.id]) if(id != SpecialCharacter::Epsilon)
                     {
                         auto [_,inserted]=followIds[S1.id].insert(id);
                         insertion=insertion||inserted;

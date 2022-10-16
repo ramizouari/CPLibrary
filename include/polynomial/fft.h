@@ -123,6 +123,40 @@ public:
 using inverse_fast_fourier=fast_fourier<true>;
 using inverse_fast_fourier_base_2=fast_fourier_base_2<true>;
 
+
+void inplace_fft2(std::vector<IC> & a, bool inverse=false) {
+    int n = a.size();
+
+    for (int i = 1, j = 0; i < n; i++) {
+        int bit = n >> 1;
+        for (; j & bit; bit >>= 1)
+            j ^= bit;
+        j ^= bit;
+
+        if (i < j)
+            swap(a[i], a[j]);
+    }
+
+    for (int len = 2; len <= n; len <<= 1) {
+        double ang = 2 * pi / len * (inverse ? -1 : 1);
+        IC wlen(cos(ang), sin(ang));
+        for (int i = 0; i < n; i += len) {
+            IC w(1);
+            for (int j = 0; j < len / 2; j++) {
+                IC u = a[i+j], v = a[i+j+len/2] * w;
+                a[i+j] = u + v;
+                a[i+j+len/2] = u - v;
+                w *= wlen;
+            }
+        }
+    }
+
+    if (inverse) {
+        for (IC & x : a)
+            x /= n;
+    }
+}
+
 std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y,factoriser &F)
 {
     fast_fourier<>::set_factoriser(F);
@@ -139,6 +173,22 @@ std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y,factoris
     auto z=IFFT(w);
     for(auto &s:z)
         s/=r;
+    z.resize(n+m-1);
+    return z;
+}
+
+std::vector<IC> fast_inplace_multiplication(std::vector<IC> x,std::vector<IC> y)
+{
+    int n=x.size(),m=y.size();
+    int r= std::bit_ceil<unsigned int>(n+m-1);
+    x.resize(r);
+    y.resize(r);
+    inplace_fft2(x);
+    inplace_fft2(y);
+    std::vector<IC> z(r);
+    for(int i=0;i<r;i++)
+        z[i]=x[i]*y[i];
+    inplace_fft2(z,true);
     z.resize(n+m-1);
     return z;
 }
@@ -162,12 +212,16 @@ std::vector<IC> fast_multiplication(std::vector<IC> x,std::vector<IC> y)
     return z;
 }
 
-polynomial<IC> fast_multiplication(const polynomial<IC>& x,const polynomial<IC>& y,factoriser &F=fast_fourier<>::get_factoriser())
+polynomial<IC> fast_multiplication(const polynomial<IC>& x,const polynomial<IC>& y,factoriser &F)
 {
     return fast_multiplication(static_cast<const std::vector<IC>&>(x),
                          static_cast<const std::vector<IC>&>(y),F);
 }
-
+polynomial<IC> fast_multiplication(const polynomial<IC>& x,const polynomial<IC>& y)
+{
+    return fast_multiplication(static_cast<const std::vector<IC>&>(x),
+                               static_cast<const std::vector<IC>&>(y));
+}
 
 template<typename R>
 struct fast_hadamard
