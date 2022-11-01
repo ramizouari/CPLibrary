@@ -188,7 +188,7 @@ namespace std
 * <strong>R</strong> is a commutative ring
 */
 template<typename R,int nilpotence>
-class nilpotent_extension
+struct nilpotent_extension
 {
     std::vector<R> p;
     void reduce()
@@ -305,7 +305,7 @@ struct nilpotence_t
 * the value of nilpotence should be initialized.
 */
 template<typename R>
-class d_nilpotent_extension
+struct d_nilpotent_extension
 {
     std::vector<R> p;
     int index;

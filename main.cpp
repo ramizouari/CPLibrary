@@ -1,44 +1,38 @@
 ﻿#include <iostream>
 #include <vector>
-#include <polynomial/ring_extension.h>
-#include <nt/modular_arithmetic.h>
-#include <polynomial/fft.h>
+#include "nt/modular_arithmetic.h"
+#include "nt/number_theory.h"
 
+int L=1e6;
 
-constexpr integer M=998244353 ;
-using IK=d_cyclic;
-using R=polynomial<IK>;
+real eps=1e-8;
 
-
-void Q_divide(R&p,integer n,integer k,integer d,integer iter)
+template<typename T>
+auto sorted(std::vector<T> A)
 {
-
-    for(integer i=n;i>=d;i--) for(integer j=k;j<=i;j+=k)
-        p[i]+=p[i-j];
+    std::sort(A.begin(),A.end());
+    return A;
 }
-
 
 int main()
 {
-    factoriser F(1e5);
-    fast_ntt<>::set_factoriser(F);
-    d_cyclic::m=M;
-    R P,w=1;
-    integer n,k;
-    std::cin >> n >> k;
-    P.p.resize(n+1);
-    w.p.resize(n+1);
-    for(integer i=1,d=i*(2*k+i-1)/2;i<=n-k && d<=n;i++,d=i*(2*k+i-1)/2)
-    {
-        Q_divide(w,n,k+i-1,d,i);
-        for(integer j=0;j+d<=n && j<=w.degree();j++)
-            P[j+d]+=w[j];
+   factoriser F(L);
+   int n;
+   int D=0;
+   for(int i=2;i<=L;i++)
+       D=std::max<int>(D,F.divisors_count(i));
+   std::cout << "Divisors: " << D << '\n';
+   std::cin >> n;
 
-    }
-    integer d = (n-k)*n/2;
-    Q_divide(w,n,n-k,d,n-k);
-    for(int i=0;i+d<=n && i<=w.degree();i++)
-        P[i+d]+=w[i];
-    for(int i=1;i<=n;i++)
-        std::cout << (integer)P[i] << ' ';
+   std::vector<real> E(n+1);
+   E[1]=0;
+   for(auto r:sorted(F.divisors_list(n))) if(r!=1)
+   {
+       for(auto d:sorted(F.divisors_list(r))) if(d!=r)
+            E[r]+=F.totient(r/d)*E[r/d];
+       E[r]/=r;
+       E[r]=(E[r]+1)/(1.-static_cast<real>(F.totient(r))/r);
+   }
+   std::cout << "Expected: " << E[n] << '\n';
+
 }

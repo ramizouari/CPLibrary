@@ -103,4 +103,10 @@ std::pair<R,R> bezout(R a, R b)
     return {u,v};
 }
 
+template<typename B>
+B next_gray(B n)
+{
+    return n^(n>>1);
+}
+
 #endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H

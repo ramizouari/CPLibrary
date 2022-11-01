@@ -92,7 +92,7 @@ struct fast_fourier_base_2:public fast_fourier<is_inverse>
 {
 public:
     using fast_fourier<is_inverse>::fast_fourier;
-    std::vector<IC> unnormalized(const std::vector<IC> &X) const
+    [[nodiscard]] std::vector<IC> unnormalized(const std::vector<IC> &X) const
     {
         auto &n=this->n;
         auto &w=this->w;
@@ -542,6 +542,8 @@ std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_
 
 std::vector<d_cyclic> fast_multiplication(std::vector<d_cyclic> x,std::vector<d_cyclic> y,factoriser &F=fast_ntt<>::get_factoriser())
 {
+    if(x.empty() || y.empty())
+        return {};
     return fast_multiplication(x,y,x.size()+y.size()-1,F);
 }
 
@@ -557,6 +559,8 @@ std::vector<integer> fast_multiplication(const std::vector<integer>& x,const std
 {
     constexpr integer L=1e9;
     int n=x.size(),m=y.size();
+    if(n==0 || m==0)
+        return {};
     integer r=std::bit_ceil<unsigned int>(n+m-1);
     integer k=((L+r-1)/r)*r;
     while(!F.is_prime(k+1))

@@ -103,7 +103,7 @@ private:
 };
 
 template<typename T,typename O>
-class sparse_array
+struct sparse_array
 {
     inline static constexpr O F=O();
     int n,h;
@@ -283,7 +283,7 @@ struct fenwick_matrix {
 
 
 template<typename T,typename O>
-class sparse_segment_tree
+struct sparse_segment_tree
 {
     sum_node<int, T, O>* tree;
 public:
@@ -361,7 +361,7 @@ public:
 };
 
 template<typename T, typename O>
-class ordered_segment_tree
+struct ordered_segment_tree
 {
     key_sum_node<T,O>* tree;
 public:

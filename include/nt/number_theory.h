@@ -51,7 +51,7 @@ public:
         }
     }
 
-    const auto& prime_factors(integer m) const
+    [[nodiscard]] const auto& prime_factors(integer m) const
     {
         static std::vector<integer> holder;
         if(m<=n)
@@ -110,6 +110,7 @@ public:
     const auto& divisors_list(integer m)
     {
         static std::vector<integer> holder;
+        static std::map<integer,std::vector<integer>> cache;
         if(m<=n)
         {
             if (d_list[m].empty())
@@ -121,13 +122,16 @@ public:
         }
         else
         {
+            if(cache.count(m))
+                return cache[m];
             divisors_list_rec(m,holder, prime_factors(m));
             std::sort(holder.begin(),holder.end());
-            return holder;
+            cache[m]=holder;
+            return cache[m];
         }
     }
 
-    integer smallest_divisor(integer m) const
+    [[nodiscard]] integer smallest_divisor(integer m) const
     {
         if(m<=n)
             return smallest_d[m];
@@ -142,7 +146,7 @@ public:
         return m;
     }
 
-    bool is_prime(int m) const
+    [[nodiscard]] bool is_prime(int m) const
     {
         if(m<n)
             return m>1 && smallest_d[m]==m;
@@ -201,12 +205,12 @@ public:
         return divisor_function(n,1);
     }
 
-    integer count_primes() const
+    [[nodiscard]] integer count_primes() const
     {
         return p_list.size();
     }
 
-    const auto& prime_list() const
+    [[nodiscard]] const auto& prime_list() const
     {
         return p_list;
     }
@@ -240,4 +244,6 @@ inline integer chinese_remainder(const std::vector<integer>& A,const std::vector
         S.emplace_back(A[i],P[i]);
     return chinese_remainder(S);
 }
+
+
 #endif

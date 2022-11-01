@@ -207,8 +207,9 @@ public:
         {
             std::vector<Symbol>  rightSymbols;
             Symbol leftSymbol=addSymbol(ruleMatch[1]);
+            std::cout << ruleMatch[2] << std::endl;
             for(const auto &s : split(ruleMatch[2],R"(\s+)"))
-                rightSymbols.push_back(addSymbol(s));
+                 rightSymbols.push_back(addSymbol(s));
             Rule rule(leftSymbol,rightSymbols);
             Grammar::addRule(std::move(rule));
         }
