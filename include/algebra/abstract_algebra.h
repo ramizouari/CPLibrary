@@ -109,4 +109,63 @@ B next_gray(B n)
     return n^(n>>1);
 }
 
+template<typename F,typename R>
+std::pair<integer,integer> floyd_functional_cycle(F && f,R x0)
+{
+    /*
+     * Find a period
+     * */
+    R x=x0,y=x;
+    integer m=0;
+    do
+    {
+        x=f(x);
+        y=f(f(y));
+        m++;
+    }while(y!=x);
+    /*
+     * Find offset
+     * */
+    x=x0,y=x;
+    for(int i=0;i<m;i++)
+        y=f(y);
+    int offset=0;
+    while(x!=y)
+    {
+        x=f(x);
+        y=f(y);
+        offset++;
+    }
+
+    /*
+     * Find fundamental period
+     * */
+    y=f(x);
+    integer period=1;
+    while(x!=y) {
+        y = f(y);
+        period++;
+    }
+    return std::make_pair(period,offset);
+}
+
+
+template<typename F,typename R>
+integer functional_period(F &&f, R x)
+{
+    /*
+    * Find a period
+    * */
+    R y=x;
+    integer m=0;
+    do
+    {
+        x=f(x);
+        y=f(f(y));
+        m++;
+    }while(y!=x);
+    return m;
+}
+
+
 #endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H

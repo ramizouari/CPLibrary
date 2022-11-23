@@ -25,7 +25,7 @@ struct b_node;
 * 2. ptr contains a B-subtree of the same order with keys less than k
 * @Notes
 * - The keys in ptr are not less than the previous key in the current order statistic tree
-* - Every B-tree contains an element inf, this element does not have a correspending value. In this case the ptr represents
+* - Every B-tree contains an element inf, this element does not have a corresponding value. In this case the ptr represents
 * the B-subtree having all keys not less than the biggest key in the current order statistic tree
 */
 template<typename T,typename V,int m>

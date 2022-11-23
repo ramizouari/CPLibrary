@@ -268,7 +268,7 @@ public:
     * <strong>H</strong> is an associative algebra over <strong>R</strong>
     */
     template<typename H>
-    H operator()(H a)
+    H operator()(H a) const
     {
         H r(0);
         for(int i=degree();i>=0;i--)

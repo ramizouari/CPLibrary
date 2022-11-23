@@ -390,7 +390,7 @@ cyclic_field sqrt(cyclic_field n)
     cyclic_field a = 2;
     while (legendre_symbol(a*a-n) != -1)
         ++a;
-    extension_polynomial_t q = { polynomial<cyclic_field>({n-a * a,0,1}) };
+    extension_polynomial_t<cyclic_field> q = { polynomial<cyclic_field>({n-a * a,0,1}) };
     d_ring_extension<cyclic_field> phi(std::vector<cyclic_field>{ a,1 }, q);
     return pow(phi, (cyclic_field::m+1)/2,q)[0];
 }

@@ -113,7 +113,7 @@ public:
     {
         int r=1;
         for(int i=h;i>=0;i--,r*=2)
-            S[i].resize(n-r+1);
+            S[i].resize(n-r+1,O::neutral);
         for(int i=0;i<n;i++)
             S[h][i]=A[i];
         r=1;
