@@ -53,7 +53,7 @@ This is a  class which defines $S=\bigcup_{n\in\mathbb{N}^*}\mathbb{Z}/n\mathbb{
 
 This module defines the following concept:
 
-- Cyclic Ring: denoted by `cyclic_ring`, which is any type that has addition and multiplication to be consistent with that of some cyclic ring $\mathbb{Z}/m\mathbb{Z}$ for some $m\in\mathbb{N}^*.$
+- Cyclic Ring: denoted by `cyclic_ring`, which is any op that has addition and multiplication to be consistent with that of some cyclic ring $\mathbb{Z}/m\mathbb{Z}$ for some $m\in\mathbb{N}^*.$
 - Cyclic Field: denoted by `cyclic_filed`, which is a Cyclic Ring with some prime module $p\in\mathbb{P}.$
 
 ## 2. Functions

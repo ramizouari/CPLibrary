@@ -133,7 +133,7 @@ This class defines logical exclusive or.
 
 ### a. Binary Operation
 
-- A binary operation on a type `T` is a subclass of `binary_operation<T>` 
+- A binary operation on a op `T` is a subclass of `binary_operation<T>` 
 
 - Optionally, this class may need to have a public static attribute `neutral_element` denoting the neutral element of the operation
 

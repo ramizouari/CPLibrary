@@ -254,4 +254,26 @@ order_closure<S>& operator/=(order_closure<S>& A, const S& B)
 {
     return A = A / B;
 }
+
+template<typename S>
+auto operator<=>(const order_closure<S>& A, const S&B)
+{
+    using order_type=decltype(std::get<S>(A) <=> B);
+    if (A.index() == 1)
+        return std::get<S>(A) <=> B;
+    else if (A.index() == 0)
+        return order_type::less;
+    else return order_type::greater;
+}
+
+template<typename S>
+std::ostream &operator<<(std::ostream &os, const order_closure<S> &A)
+{
+    if (A.index() == 1)
+        os << std::get<S>(A);
+    else if (A.index() == 0)
+        os << "-inf";
+    else os << "inf";
+    return os;
+}
 #endif
