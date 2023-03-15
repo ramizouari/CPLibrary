@@ -256,14 +256,31 @@ order_closure<S>& operator/=(order_closure<S>& A, const S& B)
 }
 
 template<typename S>
-auto operator<=>(const order_closure<S>& A, const S&B)
+using base_order_type = decltype(std::declval<S>() <=> std::declval<S>());
+
+template<typename S>
+base_order_type<S> operator<=>(const order_closure<S>& A, const S&B)
 {
-    using order_type=decltype(std::get<S>(A) <=> B);
+    using order_type=base_order_type<S>;
     if (A.index() == 1)
         return std::get<S>(A) <=> B;
     else if (A.index() == 0)
         return order_type::less;
     else return order_type::greater;
+}
+
+template<typename S>
+base_order_type<S> operator<=>(const order_closure<S>&A,inf_minus_t B)
+{
+    using order_type=base_order_type<S>;
+    return A.index() == 0 ? order_type::equal : order_type::greater;
+}
+
+template<typename S>
+base_order_type<S> operator<=>(const order_closure<S>&A,inf_plus_t B)
+{
+    using order_type=base_order_type<S>;
+    return A.index() == 2 ? order_type::equal : order_type::less;
 }
 
 template<typename S>
