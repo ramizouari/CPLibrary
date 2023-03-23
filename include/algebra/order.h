@@ -270,6 +270,12 @@ base_order_type<S> operator<=>(const order_closure<S>& A, const S&B)
 }
 
 template<typename S>
+bool operator==(const order_closure<S>& A, const S&B)
+{
+    return A <=> B == 0;
+}
+
+template<typename S>
 base_order_type<S> operator<=>(const order_closure<S>&A,inf_minus_t B)
 {
     using order_type=base_order_type<S>;
@@ -281,6 +287,18 @@ base_order_type<S> operator<=>(const order_closure<S>&A,inf_plus_t B)
 {
     using order_type=base_order_type<S>;
     return A.index() == 2 ? order_type::equal : order_type::less;
+}
+
+template<typename S>
+bool operator==(const order_closure<S>&A,inf_minus_t B)
+{
+    return A <=> B == 0;
+}
+
+template<typename S>
+bool operator==(const order_closure<S>&A,inf_plus_t B)
+{
+    return A <=> B == 0;
 }
 
 template<typename S>
