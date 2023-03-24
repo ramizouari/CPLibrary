@@ -279,14 +279,14 @@ template<typename S>
 base_order_type<S> operator<=>(const order_closure<S>&A,inf_minus_t B)
 {
     using order_type=base_order_type<S>;
-    return A.index() == 0 ? order_type::equal : order_type::greater;
+    return A.index() == 0 ? order_type::equivalent : order_type::greater;
 }
 
 template<typename S>
 base_order_type<S> operator<=>(const order_closure<S>&A,inf_plus_t B)
 {
     using order_type=base_order_type<S>;
-    return A.index() == 2 ? order_type::equal : order_type::less;
+    return A.index() == 2 ? order_type::equivalent : order_type::less;
 }
 
 template<typename S>
