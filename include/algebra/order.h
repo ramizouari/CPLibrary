@@ -84,7 +84,7 @@ order_closure<S> operator+(const order_closure<S>& A, const order_closure<S>& B)
         return std::get<S>(A) + std::get<S>(B);
     else if (A.index() == B.index())
         return A;
-    else return 0;
+    else return S{};
 }
 
 template<typename S>
@@ -97,7 +97,7 @@ order_closure<S> operator-(const order_closure<S>& A, const order_closure<S>& B)
     else if (A.index() == 1 && B.index() == 1)
         return std::get<S>(A) - std::get<S>(B);
     else if (A.index() == B.index())
-        return 0;
+        return S{};
     else return A;
 }
 
