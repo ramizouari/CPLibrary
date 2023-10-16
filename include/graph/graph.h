@@ -18,11 +18,11 @@
  * @details Each Graph is a couple G=(V,E) where V={0,...,n-1} are nodes, and E is a subset of VxV
  * @param n the size of the Graph
  * */
-class Graph
+struct Graph
 {
-protected:
     int n;
     std::vector<std::vector<int>> adjacencyList,reverseList;
+protected:
 
     void topologicalSort(int r,std::vector<int> &L,std::vector<bool> &visited)
     {
@@ -103,6 +103,21 @@ public:
             components[componentId[r]].push_back(i);
         }
         return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+    }
+
+    std::pair<Graph,std::vector<int>> condensationGraph()
+    {
+        auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+        Graph DAG(components.size());
+        std::vector<std::set<int>> S(components.size());
+        for(int i=0;i<n;i++) for(auto j:adjacencyList[i])
+            if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
+            {
+                auto u=componentId[i],v=componentId[j];
+                S[u].insert(v);
+                DAG.connect(u,v);
+            }
+        return std::make_pair(DAG,componentId);
     }
 
     std::vector<std::vector<int>> getConnectedComponents()
@@ -222,6 +237,15 @@ public:
         return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
     }
 
+    std::pair<OrderedGraph,OrderedUnionFind<OrderedSet>> condensationGraph()
+    {
+        auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+        OrderedGraph DAG(components.size());
+        for(auto [u,v]:adjacencyList) if(!classes.equivalent(u,v))
+            DAG.connect(classes.representative(u),classes.representative(v));
+        return std::make_pair(DAG,classes);
+    }
+
     std::vector<std::vector<OrderedSet>> getConnectedComponents()
     {
         return getConnectedComponentsWithMetaData().components;
@@ -325,6 +349,15 @@ public:
             components[componentId[r]].push_back(u);
         }
         return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+    }
+
+    std::pair<UnorderedGraph,UnorderedUnionFind<UnorderedSet>> condensationGraph()
+    {
+        auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+        UnorderedGraph DAG(components.size());
+        for(auto [u,v]:adjacencyList) if(!classes.equivalent(u,v))
+                DAG.connect(classes.representative(u),classes.representative(v));
+        return std::make_pair(DAG,classes);
     }
 
     std::vector<std::vector<UnorderedSet>> getConnectedComponents()

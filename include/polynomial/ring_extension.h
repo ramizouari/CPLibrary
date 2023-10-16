@@ -193,7 +193,7 @@ struct nilpotent_extension
     std::vector<R> p;
     void reduce()
     {
-        while(!p.empty() && p.back()==0)
+        while(!p.empty() && is_zero(p.back()))
             p.pop_back();
     }
 public:
@@ -311,7 +311,7 @@ struct d_nilpotent_extension
     int index;
     void reduce()
     {
-        while(!p.empty() && (p.back()==0||p.size()>index))
+        while(!p.empty() && (is_zero(p.back())||p.size()>index))
             p.pop_back();
     }
 
@@ -427,7 +427,7 @@ class idempotent_extension
     std::vector<R> p;
     void reduce()
     {
-        while(!p.empty() && p.back()==0)
+        while(!p.empty() && is_zero(p.back()))
             p.pop_back();
     }
 public:

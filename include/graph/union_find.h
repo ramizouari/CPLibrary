@@ -6,6 +6,7 @@
 #define CPLIBRARY_UNION_FIND_H
 #include <vector>
 #include <map>
+#include <unordered_map>
 
 class UnionFind
 {

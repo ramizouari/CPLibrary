@@ -282,7 +282,7 @@ template<>
 struct std::hash<d_cyclic>
 {
     inline static std::random_device dev=std::random_device();
-    inline static std::mt19937 g=std::mt19937(dev());
+    inline static std::mt19937_64 g=std::mt19937_64(dev());
     inline static constexpr integer M=1e9+7;
     std::uniform_int_distribution<integer> d=std::uniform_int_distribution<integer>(1,M);
     integer a=d(g),b=d(g);

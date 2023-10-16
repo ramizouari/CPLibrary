@@ -20,7 +20,7 @@ inline unsigned int bit_log(unsigned int n)
             r=c-1;
         }
     }
-    if((1<<(r-1))==n)
+    if(r && (1<<(r-1))==n)
         return r-1;
     return r;
 }
@@ -114,7 +114,7 @@ public:
         int r=1;
         for(int i=h;i>=0;i--,r*=2)
             S[i].resize(n-r+1,O::neutral);
-        for(int i=0;i<n;i++)
+        for(int i=0;i<A.size();i++)
             S[h][i]=A[i];
         r=1;
         for(int i=h-1;i>=0;i--,r*=2) for(int j=0;j<=n-2*r;j++)

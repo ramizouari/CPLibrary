@@ -115,6 +115,7 @@ polynomial<R> fast_polynomial_expansion(const std::vector<R> &X)
     return S.S[0][0];
 }
 
+
 template<typename R>
 std::vector<R> fast_multi_evaluation(const polynomial<R> &A,const std::vector<R> &X)
 {

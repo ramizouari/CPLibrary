@@ -11,6 +11,7 @@ using integer = std::int64_t;
 using real = long double;
 using IR=real;
 using IC= std::complex<IR>;
+constexpr real epsilon=1e-7;
 
 template<typename R>
 R commutator(R a,R b)
@@ -43,12 +44,28 @@ R pow(R a, long long n,StructureMetaData ... meta_info)
 }
 
 template<typename R>
+bool is_zero(const R&a)
+{
+    return a==R{};
+}
+
+bool is_zero(const IC&a)
+{
+    return std::abs(a) < epsilon;
+}
+
+bool is_zero(const real &a)
+{
+    return std::abs(a) < epsilon;
+}
+
+template<typename R>
 R gcd(R a,R b)
 {
     if(a<b)
         std::swap(a,b);
     R q,tmp;
-    while(b!=0)
+    while(!is_zero(b))
     {
         q=a/b;
         tmp=b;
@@ -80,7 +97,7 @@ egcd_t<R> egcd(R a,R b)
         return e;
     }
     R q,s1=1,s2=0,t1=0,t2=1,tmp;
-    while(b!=0)
+    while(!is_zero(b))
     {
         q=a/b;
         tmp=s2;

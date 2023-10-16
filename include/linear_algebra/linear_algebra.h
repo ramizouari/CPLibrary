@@ -7,292 +7,8 @@
 #include <array>
 #include "algebra/abstract_algebra.h"
 #include "polynomial/polynomial.h"
+#include "vector.h"
 
-struct v_shape
-{
-    int n;
-};
-
-/**
- * @brief Dynamic Vector
- * @detail Dynamic Vector is a vector in the mathematical sense,
- * @formal It is the union of R^k for all k, where k is the dimension of the vector.
- * <ul>
- * <li> Addition between 2 vectors are defined with respect to the first vector's shape <br>
- * <li> for all k, the set of all vectors of shape k is a vector space
- * </ul>
- * @Requirements
- * R is a commutative ring
- * */
-template<typename R>
-class d_vector
-{
-    std::vector<R> u;
-public:
-    using base_field=R;
-    using base_ring=R;
-    inline static int n=0;
-    d_vector():u(n){}
-    d_vector(std::vector<R> _u):u(std::move(_u)){}
-    d_vector(v_shape shape):u(shape.n){}
-
-    bool operator==(const d_vector<R>& other) const
-    {
-        return u==other.u;
-    }
-    auto dim() const
-    {
-        return u.size();
-    }
-
-    auto& operator[](int k)
-    {
-        return u[k];
-    }
-
-    const auto& operator[](int k) const
-    {
-        return u[k];
-    }
-
-    auto& operator+=(const d_vector &o)
-    {
-        for(int i=0;i<dim();i++)
-            u[i]+=o.u[i];
-        return *this;
-    }
-
-    auto& operator-=(const d_vector &o)
-    {
-        for(int i=0;i<dim();i++)
-            u[i]-=o.u[i];
-        return *this;
-    }
-
-    auto& operator*=(R k)
-    {
-        for(auto &s:u)
-            s*=k;
-        return *this;
-    }
-
-    auto operator+(const d_vector &o) const
-    {
-        auto v=*this;
-        return v+=o;
-    }
-
-    auto operator-(const d_vector &o) const
-    {
-        auto v=*this;
-        return v-=o;
-    }
-
-    auto operator-() const
-    {
-        auto v=*this;
-        for(auto &s:v.u)
-            s=-s;
-        return v;
-    }
-
-    auto& operator/=(R k)
-    {
-        for(auto &s:u)
-            s/=k;
-        return *this;
-    }
-
-    auto operator/(R k) const
-    {
-        auto v=*this;
-        return v/=k;
-    }
-
-    auto begin() {
-        return u.begin();
-    }
-
-    auto begin() const
-    {
-        return u.cbegin();
-    }
-
-    auto end()
-    {
-        return u.end();
-    }
-
-    auto end() const
-    {
-        return u.cend();
-    }
-};
-
-template<typename R>
-auto operator*(const R&k,const d_vector<R>& u)
-{
-    auto v=u;
-    return v*=k;
-}
-
-/**
- * @brief Static Vector:
- * @tparam R is the base field
- * @tparam n is the dimension of the vector space
- * @details It is a member of an R-vector space E where dim(E)= n
- * @Requirements
- * <strong>R</strong> is a commutative ring. <br>
- * @Formal <strong>E</strong> is an <strong>R</strong>-module, and it is a vector space only if <strong>R</strong> is a field. <br>
- * In fact, the name s_vector is used for consistency with the computer science's name.
- */
-
-template<typename R,int n>
-class s_vector
-{
-    std::array<R,n> u;
-public:
-    using base_field=R;
-    using base_ring=R;
-    inline static constexpr int dim()
-    {
-        return n;
-    }
-
-    s_vector()
-    {
-        for(int i=0;i<n;i++)
-            u[i]=0;
-    }
-
-    s_vector(std::array<R,n>_u):u(std::move(_u)){}
-
-    bool operator==(const s_vector&) const = default;
-
-    auto& operator[](int k)
-    {
-        return u[k];
-    }
-
-    const auto& operator[](int k) const
-    {
-        return u[k];
-    }
-
-    auto& operator+=(const s_vector &o)
-    {
-        auto r=std::min(dim(),o.dim());
-        for(int i=0;i<r;i++)
-            u[i]+=o.u[i];
-        return *this;
-    }
-
-    auto& operator-=(const s_vector &o)
-    {
-        auto r=std::min(dim(),o.dim());
-        for(int i=0;i<r;i++)
-            u[i]-=o.u[i];
-        return *this;
-    }
-
-    auto& operator*=(R k)
-    {
-        for(auto &s:u)
-            s*=k;
-        return *this;
-    }
-
-    auto operator+(const s_vector &o) const
-    {
-        auto v=*this;
-        return v+=o;
-    }
-
-    auto operator-(const s_vector &o) const
-    {
-        auto v=*this;
-        return v-=o;
-    }
-
-    auto operator-() const
-    {
-        auto v=*this;
-        for(auto &s:v.u)
-            s=-s;
-        return v;
-    }
-
-    auto& operator/=(R k)
-    {
-        for(auto &s:u)
-            s/=k;
-        return *this;
-    }
-
-    auto operator/(R k) const
-    {
-        auto v=*this;
-        return v/=k;
-    }
-
-    auto begin()
-    {
-        return u.begin();
-    }
-
-    auto begin() const
-    {
-        return u.cbegin();
-    }
-
-    auto end()
-    {
-        return u.end();
-    }
-
-    auto end() const
-    {
-        return u.cend();
-    }
-
-    template <size_t k>
-    auto& get()& {
-        return u[k];
-    }
-
-    template <size_t k>
-    const auto& get() const& {
-        return u[k];
-    }
-
-    template <size_t k>
-    auto&& get() const&& {
-        return u[k];
-    }
-
-    template <size_t k>
-    auto&& get() && {
-        return u[k];
-    }
-};
-
-template<typename R,int n>
-auto operator*(const R&k,const s_vector<R,n>& u)
-{
-    auto v=u;
-    return v*=k;
-}
-
-namespace std
-{
-    template<typename R,int n>
-    struct tuple_size<s_vector<R, n>> : std::integral_constant<size_t, n>{};
-    template<size_t k,typename R,int n>
-    struct tuple_element<k, s_vector<R, n>>
-    {
-        using type = R;
-    };
-}
 
 struct m_shape
 {
@@ -308,9 +24,10 @@ struct m_shape
  * In fact, It is the union of L(R^a,R^b) over all a and b where L(E,F) is the set of matrices acting on E with values over F
 */
 template<typename R>
-class d_matrix
+struct d_matrix
 {
     std::vector<std::vector<R>> M;
+
 public:
     using base_field=R;
     using base_ring=R;
@@ -321,7 +38,7 @@ public:
             M[i][i]=k;
     }
     d_matrix(std::vector<std::vector<R>> &&_M):M(std::move(_M)){}
-    d_matrix(std::vector<std::vector<R>> _M) :M(std::move(_M)) {}
+    d_matrix(const std::vector<std::vector<R>> &_M) :M(_M) {}
     auto row_dim() const
     {
         return M.size();
@@ -360,7 +77,7 @@ public:
         int m = col_dim(), n = row_dim();
         d_matrix P(0, m_shape{ m,n });
         for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
-            P.M[j][i] = conj(M[i][j]);
+            P.M[j][i] = conj<R,R>(M[i][j]);
         return P;
     }
 
@@ -377,11 +94,19 @@ public:
         return *this;
     }
 
+    auto &operator-=(const R &O)
+    {
+        int r=std::min(row_dim(),col_dim());
+        for(int i=0;i<r;i++)
+                M[i][i]-=O;
+        return *this;
+    }
+
     auto &operator-=(const d_matrix &O)
     {
         int r1=std::min(row_dim(),O.row_dim()),r2=std::min(col_dim(),O.col_dim());
         for(int i=0;i<r1;i++) for(int j=0;j<r2;j++)
-                M[i][j]+=O.M[i][j];
+                M[i][j]-=O.M[i][j];
         return *this;
     }
 
@@ -392,6 +117,12 @@ public:
     }
 
     auto operator-(const d_matrix &O) const
+    {
+        auto N=*this;
+        return N-=O;
+    }
+
+    auto operator-(const R &O) const
     {
         auto N=*this;
         return N-=O;
@@ -488,7 +219,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=s;
-            while(p<n && P.M[p][i]==0)
+            while(p<n && is_zero(P.M[p][i]))
                 p++;
             if(p==n)
                 continue;
@@ -500,6 +231,7 @@ public:
                 for (int k = i; k < m; k++)
                     P.M[j][k]-=r*P.M[i][k];
             }
+            s++;
         }
         return P;
     }
@@ -510,7 +242,7 @@ public:
         int r=0;
         int n=row_dim(),m=col_dim();
         for(int i=0,j=0;i<n&&j<m;j++)
-            if(E.M[i][j]!=0)
+            if(!is_zero(E.M[i][j]))
             {
                 r++;
                 i++;
@@ -531,7 +263,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n && P.M[p][i]==0)
+            while(p<n && is_zero(P.M[p][i]))
                 p++;
             if(p==n)
                 return 0;
@@ -562,7 +294,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n && P.M[p][i]==R(0))
+            while(p<n && is_zero(P.M[p][i]))
                 p++;
             if(p==n)
                 continue;
@@ -601,7 +333,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n && P.M[p][i]==R(0))
+            while(p<n && is_zero(P.M[p][i]))
                 p++;
             if(p==n)
                 continue;
@@ -610,7 +342,7 @@ public:
             R w=P.M[i][i];
             for(int j=i+1;j<n;j++)
             {
-                if(w==R(0))
+                if(is_zero(w))
                     continue;
                 R r=P.M[j][i]/w;
                 for (int k = 0; k < m; k++)
@@ -621,7 +353,7 @@ public:
         for(int i=n-1;i>=0;i--)
         {
             R w=P.M[i][i];
-            if(w==R(0))
+            if(is_zero(w))
                 continue;
             A[i]/=w;
             for(int k=i-1;k>=0;k--)
@@ -633,16 +365,6 @@ public:
         return A;
     }
 };
-
-/*
- * It is the union of L(R^a,R^b) over all a and b where L(E,F) is the set of matrices acting on E with values over F
- * - Addition between 2 matrices are defined with respect to the first matrix's shape
- * - Multiplication between 2 matrices is defined if the shapes are compatible
- * - Multiplication between a matrix and a vector is defined if the shapes are compatible
- * - for all (a,b), the set of all vectors of shape (a,b) is an R-vector space
- * - for all a, the set of all matrices of shape (a,a) is an associative algebra over R
- * */
-
 
 template<typename R>
 d_matrix<R> operator*(const R&a,const d_matrix<R> &M)
@@ -849,7 +571,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=s;
-            while(p<n && P.M[p][i]==0)
+            while(p<n && is_zero(P.M[p][i]))
                 p++;
             if(p==n)
                 continue;
@@ -871,7 +593,7 @@ public:
         auto E=row_echelon_form();
         int r=0;
         for(int i=0,j=0;i<n&&j<m;j++)
-            if(E.M[i][j]!=0)
+            if(! is_zero(E.M[i][j]))
             {
                 r++;
                 i++;
@@ -892,7 +614,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n &&P.M[p][i]==0)
+            while(p<n && is_zero(P.M[p][i]))
                 p++;
             if(p==n)
                 continue;
@@ -922,7 +644,7 @@ public:
         for(int i=0;i<n;i++)
         {
             int p=i;
-            while(p<n &&P.M[p][i]==R(0))
+            while(p<n && is_zero(P.M[p][i]))
                 p++;
             if(p==n)
                 continue;
@@ -970,7 +692,7 @@ public:
             R w=P.M[i][i];
             for(int j=i+1;j<n;j++)
             {
-                if(w==R(0))
+                if(is_zero(w))
                     continue;
                 R r=P.M[j][i]/w;
                 for (int k = 0; k < m; k++)
@@ -1000,68 +722,6 @@ s_matrix<R,n,m> operator*(const R&a,const s_matrix<R,n,m> &M)
 {
     auto N=M;
     return N*=a;
-}
-
-template<typename R>
-polynomial<R> faddev_lerrier_characteristic_polynomial(const d_matrix<R>&A)
-{
-    int n=A.row_dim();
-    std::vector<R> S(n + 1);
-    S[n] = 1;
-    d_matrix<R> C(0,m_shape{n,n});
-    for (int i = n - 1; i >= 0; i--)
-    {
-        for (int j = 0; j < n; j++)
-            C[j][j] += S[i + 1];
-        C = A * C;
-        S[i] = -C.tr() / R(n - i);
-    }
-    return S;
-}
-
-template<typename R,int n>
-polynomial<R> faddev_lerrier_characteristic_polynomial(const s_matrix<R,n,n>&A)
-{
-    std::vector<R> S(n + 1);
-    S[n] = 1;
-    s_matrix<R,n,n> C;
-    for (int i = n - 1; i >= 0; i--)
-    {
-        for (int j = 0; j < n; j++)
-            C[j][j] += S[i + 1];
-        C = A * C;
-        S[i] = -C.tr() / R(n - i);
-    }
-    return S;
-}
-
-template<typename R>
-polynomial<R> interpolation_characteristic_polynomial(d_matrix<R> M)
-{
-    int n=M.row_dim();
-    std::vector<R> X(n+1), Y(n+1);
-    for (int i = 0; i <= n; i++)
-    {
-        X[i] = i;
-        Y[i] = M.det();
-        for (int j = 0; j < n; j++)
-            M[j][j] = M[j][j] - 1;
-    }
-    return newton_interpolation(X, Y);
-}
-
-template<typename R,int n>
-polynomial<R> interpolation_characteristic_polynomial(s_matrix<R,n,n> M)
-{
-    std::vector<R> X(n+1), Y(n+1);
-    for (int i = 0; i <= n; i++)
-    {
-        X[i] = i;
-        Y[i] = M.det();
-        for (int j = 0; j < n; j++)
-            M[j][j] = M[j][j] - 1;
-    }
-    return newton_interpolation(X, Y);
 }
 
 template<int n=-1>

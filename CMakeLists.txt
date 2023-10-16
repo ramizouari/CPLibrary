@@ -13,13 +13,13 @@ set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arit
         include/polynomial/ring_extension.h include/polynomial/polynomial.h include/polynomial/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/data_structures.h include/algebra/binary_operation.h
         include/topology/topology.h include/data_structures/statistic_tree.h include/nt/primality.h include/formal_verification/node.h include/formal_verification/abstract_decision_tree.h
         include/formal_verification/dynamic_decision_tree.h include/formal_verification/abstract_printer.h
-        include/formal_verification/decision_tree.h include/graph/graph.h include/graph/union_find.h include/graph/2sat.h)
+        include/formal_verification/decision_tree.h include/graph/graph.h include/graph/union_find.h include/graph/2sat.h include/linear_algebra/decomposition.h include/linear_algebra/special_matrices.h include/linear_algebra/special_polynomials.h include/linear_algebra/vector.h include/linear_algebra/hilbert_geometry.h)
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp src/parser/LR0ParserBuilder.cpp
         src/formal_verification/abstract_decision_tree.cpp src/formal_verification/abstract_printer.cpp src/formal_verification/dynamic_decision_tree.cpp src/formal_verification/node.cpp)
 
 add_executable(GrammarSupport main.cpp ${HEADER_FILES})
-add_executable(CustomProblem local/sol2.cpp ${HEADER_FILES} ${SOURCE_FILES})
+add_executable(CustomProblem local/WinterCupExpectedIterations.cpp ${HEADER_FILES} ${SOURCE_FILES} local/WinterCupGrundy.cpp)
 
 
 add_executable(CPLibrary main.cpp ${HEADER_FILES} ${SOURCE_FILES})

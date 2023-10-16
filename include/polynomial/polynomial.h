@@ -5,6 +5,7 @@
 #define __POLYNOMIAL__H__
 #include <vector>
 #include <map>
+#include "algebra/abstract_algebra.h"
 
 /**
 * @brief Polynomial class
@@ -21,9 +22,9 @@ struct polynomial
     std::vector<R> p;
 
 public:
-    bool operator==(R a) const
+    bool operator==(const R& a) const
     {
-        if (a == R(0))
+        if (is_zero(a))
             return p.empty();
         else return degree() == 0 && p.front() == a;
     }
@@ -32,7 +33,7 @@ public:
 
     void reduce()
     {
-        while(!p.empty() && p.back()==R(0))
+        while(!p.empty() && is_zero(p.back()))
             p.pop_back();
     }
     polynomial(R k):p(1,k)
@@ -122,7 +123,7 @@ public:
 
     auto operator*=(R a)
     {
-        if(a==R(0))
+        if(is_zero(a))
             p.clear();
         else for(auto& s:p)
             s*=a;
@@ -344,7 +345,7 @@ class sparse_polynomial
     {
         std::vector<int> to_del;
         for(auto [k,x]:p)
-            if(x==R(0))
+            if(is_zero(x))
                 to_del.push_back(k);
         for(auto k:to_del)
             p.erase(k);
@@ -372,7 +373,7 @@ public:
         for(const auto& [k,s]:O.p)
         {
             p[k] += O.p[k];
-            if(p[k]==R(0))
+            if(is_zero(p[k]))
                 p.erase(k);
         }
         return *this;
@@ -383,7 +384,7 @@ public:
         for(const auto& [k,s]:O.p)
         {
             p[k] -= O.p[k];
-            if(p[k]==R(0))
+            if(is_zero(p[k]))
                 p.erase(k);
         }
         return *this;
@@ -396,7 +397,7 @@ public:
         for(auto [i,u]:p) for(auto [j,v]:O.p)
         {
             q.p[i+j]+=u*v;
-            if(q.p[i+j]==R(0))
+            if(is_zero(q.p[i+j]))
                 q.p.erase(i+j);
         }
         return q;
@@ -431,7 +432,7 @@ public:
 
     auto operator*=(R a)
     {
-        if(a==R(0))
+        if(is_zero(a))
             p.clear();
         else for(auto& s:p)
                 s*=a;

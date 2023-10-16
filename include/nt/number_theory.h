@@ -22,7 +22,7 @@ class factoriser
     std::vector<std::vector<integer>> d_list;
     std::vector<std::vector<couple>> p_dec;
 
-    void divisors_list_rec(int n,std::vector<integer> &D,const std::vector<integer> &P, int o=0)
+    void divisors_list_rec(integer n,std::vector<integer> &D,const std::vector<integer> &P, int o=0)
     {
         auto r=P.size();
         for(int i=o;i<r;i++) if(n%P[i]==0)
@@ -167,7 +167,7 @@ public:
         return m;
     }
 
-    [[nodiscard]] bool is_prime(int m) const
+    [[nodiscard]] bool is_prime(integer m) const
     {
         if(m<n)
             return m>1 && smallest_d[m]==m;
@@ -232,7 +232,7 @@ public:
 
     integer divisor_function(integer n,integer s)
     {
-        if(n==0)
+        if(s==0)
             return divisors_count(n);
         integer R=1;
         for(auto [p,m]: prime_decomposition(n))
