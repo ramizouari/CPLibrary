@@ -19,7 +19,7 @@ class cyclic
 public:
     inline static bool assume_prime=true;
     inline static constexpr integer m = mod;
-    cyclic(int o=0):n((o+m)%m){}
+    cyclic(integer o=0):n((o+m)%m){}
     bool operator==(int O) const
     {
         return n==(m+O)%m;
@@ -155,7 +155,7 @@ class d_cyclic
 public:
     inline static integer m=1;
     inline static bool assume_prime=true;
-    d_cyclic(int o=0):n((o+m)%m){}
+    d_cyclic(integer o=0):n((o+m)%m){}
     bool operator==(int O) const
     {
         return n==(m+O)%m;

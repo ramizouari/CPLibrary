@@ -49,12 +49,12 @@ bool is_zero(const R&a)
     return a==R{};
 }
 
-bool is_zero(const IC&a)
+inline bool is_zero(const IC&a)
 {
     return std::abs(a) < epsilon;
 }
 
-bool is_zero(const real &a)
+inline bool is_zero(const real &a)
 {
     return std::abs(a) < epsilon;
 }

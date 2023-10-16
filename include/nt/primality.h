@@ -95,6 +95,23 @@ public:
             return n;
         return smallest_divisor(rho_divisor_method(n,P,x0));
     }
+
+    [[nodiscard]] std::vector<std::pair<integer,integer>> prime_decomposition(integer n) const
+    {
+        std::map<integer,integer> M;
+        while(n>1)
+        {
+            auto d=smallest_divisor(n);
+            int s=0;
+            while(n%d==0)
+            {
+                n/=d;
+                s++;
+            }
+            M.emplace(d,s);
+        }
+        return {M.begin(),M.end()};
+    }
 };
 
 class randomized_fast_factoriser
@@ -114,6 +131,23 @@ public:
         if(rabin_miller(n,iters))
             return n;
         return smallest_divisor(rho_divisor_method(n,P,x0));
+    }
+
+    [[nodiscard]] std::vector<std::pair<integer,integer>> prime_decomposition(integer n)
+    {
+        std::map<integer,integer> M;
+        while(n>1)
+        {
+            auto d=smallest_divisor(n);
+            int s=0;
+            while(n%d==0)
+            {
+                n/=d;
+                s++;
+            }
+            M.emplace(d,s);
+        }
+        return {M.begin(),M.end()};
     }
 };
 

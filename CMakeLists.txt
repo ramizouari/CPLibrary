@@ -17,7 +17,9 @@ set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arit
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp src/parser/LR0ParserBuilder.cpp
         src/formal_verification/abstract_decision_tree.cpp src/formal_verification/abstract_printer.cpp src/formal_verification/dynamic_decision_tree.cpp src/formal_verification/node.cpp)
-
+add_executable(SourceCombiner source_combiner.cpp ${HEADER_FILES})
+find_package(Boost COMPONENTS iostreams program_options)
+target_link_libraries(SourceCombiner Boost::program_options)
 add_executable(GrammarSupport main.cpp ${HEADER_FILES})
 add_executable(CustomProblem local/WinterCupExpectedIterations.cpp ${HEADER_FILES} ${SOURCE_FILES} local/WinterCupGrundy.cpp)
 
