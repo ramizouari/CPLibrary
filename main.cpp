@@ -3,6 +3,9 @@
 #include "nt/number_theory.h"
 #include "nt/modular_arithmetic.h"
 #include "nt/primality.h"
+#include "boost/multiprecision/cpp_int.hpp"
+
+using big_integer = boost::multiprecision::cpp_int;
 
 constexpr integer L=2e6, M=998244353;
 using IK=cyclic<M>;
@@ -46,5 +49,6 @@ int main()
     if(m%2 == 1 && !square_free)
         d--;
     d/=2;
-    std::cout << static_cast<integer>(d) << '\n';
+    big_integer x=85;
+    std::cout << static_cast<integer>(d)+x << '\n';
 }
