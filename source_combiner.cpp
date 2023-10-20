@@ -352,6 +352,11 @@ class Combiner
         return {false,""};
     };
 
+    bool is_white_listed(const std::string &X)
+    {
+        return !white_list_regex.has_value() || std::regex_match(X,*white_list_regex);
+    }
+
     using equivalent_file_set_t = FileSet;
     using equal_representation_set_t = std::set<std::filesystem::path>;
 
@@ -362,7 +367,7 @@ class Combiner
         while(std::getline(in,line))
         {
             auto [is_include,file] = match_include_directive(line);
-            if(is_include)
+            if(is_include && is_white_listed(file))
             {
                 std::filesystem::path filePath;
                 if(ignore_not_exists)
@@ -390,6 +395,7 @@ class Combiner
     }
     bool accept_angle;
     bool ignore_not_exists;
+    std::optional<std::regex> white_list_regex;
 public:
     enum Flags : unsigned int
     {
@@ -413,6 +419,12 @@ public:
             exclusion_trie.insert(s);
         for(auto &s:additional_excluded_files)
             exclusion_trie.insert(s);
+    }
+
+    void set_white_list_regex(const std::string& regex)
+    {
+        if(regex.empty()) white_list_regex=std::nullopt;
+        else white_list_regex.emplace(regex);
     }
 
     void combine(std::istream &in, std::ostream &out, PathEquivalenceCriteria criteria=SameRepresentation)
@@ -470,6 +482,7 @@ int main(int argc,char **argv)
             ("ignore",po::value<std::string>()->default_value(""), "Ignore files matching this regex")
             ("brackets,b",po::bool_switch(),"Accept bracket includes. This is not recommended")
             ("ignore-not-exists",po::bool_switch(),"Ignore files that were not found")
+            ("white-list,w",po::value<std::string>()->default_value(""),"White list regex")
             ("equivalent,e",po::bool_switch(), "File equivalence criteria");
     po::variables_map vm;
     po::store(parse_command_line(argc, argv, desc), vm);
@@ -532,6 +545,7 @@ int main(int argc,char **argv)
     if(vm["ignore-not-exists"].as<bool>())
         combiner_flags|=Combiner::Flags::IgnoreNotExists;
     Combiner combiner(paths,combiner_flags,ignored_files);
+    combiner.set_white_list_regex(vm["white-list"].as<std::string>());
     std::set<std::filesystem::path> visitedFiles;
     if(vm["equivalent"].as<bool>())
         combiner.combine(*inputStream,*outputStream,Combiner::SameFile);

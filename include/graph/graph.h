@@ -18,6 +18,7 @@
  * @details Each Graph is a couple G=(V,E) where V={0,...,n-1} are nodes, and E is a subset of VxV
  * @param n the size of the Graph
  * */
+
 struct Graph
 {
     int n;
@@ -366,6 +367,122 @@ public:
     }
 };
 
+
+/**
+ * @brief This the class of directed Graphs
+ * @details Each Graph is a couple G=(V,E) where V={0,...,n-1} are nodes, and E is a subset of VxV
+ * @param n the size of the Graph
+ * */
+template<typename ...Weights>
+struct WeightedGraph
+{
+    using WeightType=std::tuple<Weights...>;
+    int n;
+    using AdjacentType=std::pair<int,WeightType>;
+    std::vector<std::vector<AdjacentType>> adjacencyList,reverseList;
+protected:
+
+    void topologicalSort(int r,std::vector<int> &L,std::vector<bool> &visited)
+    {
+        if(!visited[r])
+        {
+            visited[r]=true;
+            for(auto s:adjacencyList[r])
+                topologicalSort(s,L,visited);
+            L.push_back(r);
+        }
+    }
+
+    void assignComponents(int a,int u,UnionFind& C,std::vector<bool> &visited)
+    {
+        if(!visited[a])
+        {
+            visited[a]=true;
+            C.connect(a,u);
+            for(const auto& [s,_]:reverseList[a])
+                assignComponents(s,u,C,visited);
+        }
+    }
+
+public:
+    explicit WeightedGraph(int _n):n(_n),adjacencyList(n),reverseList(n){}
+    void connect(int a,int b, Weights... weights)
+    {
+        adjacencyList[a].emplace_back(b,std::make_tuple(weights...));
+        reverseList[b].emplace_back(a,std::make_tuple(weights...));
+    }
+
+    std::vector<int> topologicalSort()
+    {
+        std::vector<bool> visited(n);
+        std::vector<int> L;
+        for(int i=0;i<n;i++)
+            topologicalSort(i,L,visited);
+        std::reverse(L.begin(),L.end());
+        return L;
+    }
+
+    struct ConnectedComponentMetaData
+    {
+        std::vector<std::vector<int>> components;
+        std::vector<int> componentId;
+        UnionFind classes;
+        std::vector<int> topologicalOrder;
+        ConnectedComponentMetaData(std::vector<std::vector<int>> && A,std::vector<int> &&B, UnionFind&&C, std::vector<int> &&D):components(std::move(A)),
+                                                                                                                                componentId(std::move(B)), classes(std::move(C)),topologicalOrder(std::move(D)){}
+    };
+
+
+    ConnectedComponentMetaData getConnectedComponentsWithMetaData()
+    {
+
+        std::vector<bool> componentAssigned(n);
+        UnionFind C(n);
+        std::vector<int> topologicalOrder;
+        for(auto l: topologicalSort())
+        {
+            assignComponents(l, l, C, componentAssigned);
+            if(l==C.representative(l))
+                topologicalOrder.push_back(l);
+        }
+        std::vector<bool> idAssigned(n);
+        std::vector<int> componentId(n);
+        std::vector<std::vector<int>> components;
+        for(int i=0;i<n;i++)
+        {
+            auto r=C.representative(i);
+            if(!idAssigned[r])
+            {
+                idAssigned[r]=true;
+                componentId[r]=components.size();
+                components.emplace_back();
+            }
+            componentId[i]=componentId[r];
+            components[componentId[r]].push_back(i);
+        }
+        return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+    }
+
+    std::pair<Graph,std::vector<int>> condensationGraph()
+    {
+        auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+        Graph DAG(components.size());
+        std::vector<std::set<int>> S(components.size());
+        for(int i=0;i<n;i++) for(auto j:adjacencyList[i])
+                if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
+                {
+                    auto u=componentId[i],v=componentId[j];
+                    S[u].insert(v);
+                    DAG.connect(u,v);
+                }
+        return std::make_pair(DAG,componentId);
+    }
+
+    std::vector<std::vector<int>> getConnectedComponents()
+    {
+        return getConnectedComponentsWithMetaData().components;
+    }
+};
 
 
 #endif //CPLIBRARY_GRAPH_H

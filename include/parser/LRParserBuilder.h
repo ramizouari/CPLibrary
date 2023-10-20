@@ -82,13 +82,13 @@ namespace parser {
 
     class ShiftReduceParser :public StringParser<char>
     {
-    protected:
-        using Action=LRFamily::Action;
-        std::unordered_map<std::pair<std::uint64_t,std::uint64_t>,Action> gotoIds;
     public:
+        using Action=LRFamily::Action;
         void printTable(std::ostream &H) const;
         bool parse(const std::string &s) override;
         //bool parse(std::uint64_t symbolId);
+    protected:
+        std::unordered_map<std::pair<std::uint64_t,std::uint64_t>,Action> gotoIds;
     };
 
     class LR0ParserBuilder final: public ShiftReduceParser
