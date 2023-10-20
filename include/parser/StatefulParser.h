@@ -5,7 +5,6 @@
 #ifndef CPLIBRARY_STATEFULPARSER_H
 #define CPLIBRARY_STATEFULPARSER_H
 #include "Grammar.h"
-#include "LRParserBuilder.h"
 
 namespace parser
 {
@@ -100,38 +99,6 @@ namespace parser
 
         //virtual void addRule(std::basic_string<CharType,Traits> &&line) = 0;
         virtual std::shared_ptr<Variable> evaluate(const std::basic_string<CharType,Traits> &line)=0;
-    };
-
-    class StatefulShiftReduceParser : virtual public StatefulStringParser<char>
-    {
-    public:
-        using Action=LRFamily::Action;
-        void printTable(std::ostream &H) const;
-        std::shared_ptr<Variable> evaluate(const std::string &s) override;
-        using IdsMapType = std::unordered_map<std::pair<std::uint64_t,std::uint64_t>,Action>;
-        explicit StatefulShiftReduceParser(IdsMapType &gotoIds);
-    protected:
-        IdsMapType& gotoIds;
-    };
-
-    struct StatefulLR0ParserBuilder: public LR0ParserBuilder , public StatefulShiftReduceParser
-    {
-        StatefulLR0ParserBuilder();
-    };
-
-    struct StatefulSLRParserBuilder: public SLRParserBuilder , public StatefulShiftReduceParser
-    {
-        StatefulSLRParserBuilder();
-    };
-
-    struct StatefulLALRParserBuilder: virtual public LALRParserBuilder , virtual public StatefulShiftReduceParser
-    {
-        StatefulLALRParserBuilder();
-    };
-
-    struct StatefulLRParserBuilder: virtual public LRParserBuilder , virtual public StatefulShiftReduceParser
-    {
-        StatefulLRParserBuilder();
     };
 }
 

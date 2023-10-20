@@ -5,6 +5,7 @@
 #ifndef UTF8_LRPARSER_H
 #define UTF8_LRPARSER_H
 #include "Grammar.h"
+#include "StatefulParser.h"
 /*
  * This header contains the implementations of LR(1) family parsers.
  * The implementation is based on the theory of the LR(1) parser.
@@ -149,6 +150,37 @@ namespace parser {
     {
 
     public:
+    };
+
+    class StatefulShiftReduceParser : virtual public StatefulStringParser<char>
+    {
+    public:
+        using Action=LRFamily::Action;
+        std::shared_ptr<Variable> evaluate(const std::string &s) override;
+        using IdsMapType = std::unordered_map<std::pair<std::uint64_t,std::uint64_t>,Action>;
+        explicit StatefulShiftReduceParser(IdsMapType &gotoIds);
+    protected:
+        IdsMapType& gotoIds;
+    };
+
+    struct StatefulLR0ParserBuilder: public LR0ParserBuilder , public StatefulShiftReduceParser
+    {
+        StatefulLR0ParserBuilder();
+    };
+
+    struct StatefulSLRParserBuilder: public SLRParserBuilder , public StatefulShiftReduceParser
+    {
+        StatefulSLRParserBuilder();
+    };
+
+    struct StatefulLALRParserBuilder: virtual public LALRParserBuilder , virtual public StatefulShiftReduceParser
+    {
+        StatefulLALRParserBuilder();
+    };
+
+    struct StatefulLRParserBuilder: virtual public LRParserBuilder , virtual public StatefulShiftReduceParser
+    {
+        StatefulLRParserBuilder();
     };
 
 } // parser

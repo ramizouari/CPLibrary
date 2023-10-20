@@ -2,6 +2,7 @@
 // Created by ramizouari on 20/10/23.
 //
 #include "parser/StatefulParser.h"
+#include "parser/LRParserBuilder.h"
 #include <iostream>
 #include <cmath>
 
@@ -109,33 +110,66 @@ struct NumberExponentiation: public parser::VariableReducer
     }
 };
 
-int main()
+int main(int argc, char** argv)
 {
     using namespace parser;
-    StatefulSLRParserBuilder LR;
-    LR.addRuleList(std::make_shared<Identity>(),"Start","E");
-    LR.addRuleList(std::make_shared<NumberAddition>(),"E","E","+","M");
-    LR.addRuleList(std::make_shared<NumberSubtraction>(),"E","E","-","M");
-    LR.addRuleList(std::make_shared<Identity>(),"E","M");
-    LR.addRuleList(std::make_shared<NumberMultiplication>(),"M","M","*","P");
-    LR.addRuleList(std::make_shared<NumberEuclideanDivision>(),"M","M","/","P");
-    LR.addRuleList(std::make_shared<NumberModulo>(),"M","M","%","P");
-    LR.addRuleList(std::make_shared<Identity>(),"M","P");
-    LR.addRuleList(std::make_shared<NumberExponentiation>(),"P","P","^","N");
-    LR.addRuleList(std::make_shared<Identity>(),"P","N");
-
-    LR.addRuleList(std::make_shared<Projection>(1),"N","(","B",")");
-    LR.addRuleList(std::make_shared<Inverse>(),"B","-","E");
-    LR.addRuleList(std::make_shared<Identity>(),"B","E");
-
-    for(int i=0;i<10;i++)
+    StatefulLALRParserBuilder LR;
+    if(argc>=2)
     {
-        LR.addRuleList(std::make_shared<NumberConcatenation>(), "N", "N","D");
-        LR.addRuleList(std::make_shared<Identity>(), "N","D");
-        LR.addRuleList(std::make_shared<NumberGenerator>(i), "D",std::to_string(i));
+        auto grammar=std::string_view(argv[1]);
+        if(grammar == "minimal")
+        {
+
+            LR.addRuleList(std::make_shared<Identity>(),"Start","E");
+            LR.addRuleList(std::make_shared<Projection>(1),"E","(","E",")");
+            LR.addRuleList(std::make_shared<NumberGenerator>(1),"E","1");
+        }
+        else if(grammar=="example")
+        {
+            LR.addRuleList(std::make_shared<Identity>(),"S","E");
+            LR.addRuleList(std::make_shared<Identity>(),"E","T");
+            LR.addRuleList(std::make_shared<Identity>(),"E","(","E",")");
+            LR.addRuleList(std::make_shared<Identity>(),"T","n");
+            LR.addRuleList(std::make_shared<Identity>(),"T","+","T");
+            LR.addRuleList(std::make_shared<Identity>(),"T","T","+","n");
+
+        }
+        else
+        {
+            LR.addRuleList(std::make_shared<Identity>(),"Start","E");
+            LR.addRuleList(std::make_shared<NumberAddition>(),"E","E","+","D");
+            LR.addRuleList(std::make_shared<Identity>(),"E","D");
+            LR.addRuleList(std::make_shared<Projection>(1),"D","(","E",")");
+            LR.addRuleList(std::make_shared<NumberGenerator>(1),"D","1");
+        }
+    }
+    else
+    {
+        LR.addRuleList(std::make_shared<Identity>(),"Start","E");
+        LR.addRuleList(std::make_shared<NumberAddition>(),"E","E","+","M");
+        LR.addRuleList(std::make_shared<NumberSubtraction>(),"E","E","-","M");
+        LR.addRuleList(std::make_shared<Identity>(),"E","M");
+        LR.addRuleList(std::make_shared<NumberMultiplication>(),"M","M","*","P");
+        LR.addRuleList(std::make_shared<NumberEuclideanDivision>(),"M","M","/","P");
+        LR.addRuleList(std::make_shared<NumberModulo>(),"M","M","%","P");
+        LR.addRuleList(std::make_shared<Identity>(),"M","P");
+        LR.addRuleList(std::make_shared<NumberExponentiation>(),"P","P","^","N");
+        LR.addRuleList(std::make_shared<Identity>(),"P","N");
+
+        LR.addRuleList(std::make_shared<Projection>(1),"N","(","B",")");
+        LR.addRuleList(std::make_shared<Inverse>(),"B","-","E");
+        LR.addRuleList(std::make_shared<Identity>(),"B","E");
+
+        for(int i=0;i<10;i++)
+        {
+            LR.addRuleList(std::make_shared<NumberConcatenation>(), "N", "N","D");
+            LR.addRuleList(std::make_shared<Identity>(), "N","D");
+            LR.addRuleList(std::make_shared<NumberGenerator>(i), "D",std::to_string(i));
+        }
     }
     LR.build();
-    auto result=LR.evaluate("5+(3*2)+50^2");
+    LR.printTable(std::cout);
+    auto result=LR.evaluate("1+(1+1)");
     auto R=std::dynamic_pointer_cast<Number>(result);
     if(R)
         std::cout << R->v;

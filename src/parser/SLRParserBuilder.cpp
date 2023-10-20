@@ -44,12 +44,12 @@ namespace parser
             }
         } while(++k<n);
         for(int i=0;i<n;i++) for(const auto &item: lr0Items[i]) if(rules[item.ruleId].right.size()==item.dot)
-                    for(auto &F:followIds[rules[item.ruleId].left.id])
-                    {
-                        if (item.ruleId == augmentedRuleId)
-                            gotoIds.emplace(std::make_pair(i,SpecialCharacter::EndOfString),Action(Action::Accept,0));
-                        else    gotoIds.emplace(std::make_pair(i,F),Action(Action::Reduce,item.ruleId));
-                    }
+            for(auto &F:followIds[rules[item.ruleId].left.id])
+            {
+                if (item.ruleId == augmentedRuleId)
+                    gotoIds.emplace(std::make_pair(i,SpecialCharacter::EndOfString),Action(Action::Accept,0));
+                else    gotoIds.emplace(std::make_pair(i,F),Action(Action::Reduce,item.ruleId));
+            }
         return *this;
     }
 
@@ -80,5 +80,11 @@ namespace parser
         }
         return newItems;
     }
+
+    StatefulSLRParserBuilder::StatefulSLRParserBuilder() : StatefulShiftReduceParser(ShiftReduceParser::gotoIds)
+    {
+
+    }
+
 
 }

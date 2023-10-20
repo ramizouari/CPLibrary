@@ -40,7 +40,6 @@ namespace parser
         auto augmentedRuleId=rules.size()-1;
         ruleIdsBySymbolId.resize(symbols.size());
         isTerminal.resize(symbols.size(),true);
-
         for(const auto & rule : rules)
             isTerminal[rule.left.id]=false;
         LR0Item I0{rules.size()-1,0};
@@ -69,12 +68,22 @@ namespace parser
             }
         } while(++k<n);
         for(int i=0;i<n;i++) for(const auto &item: lr0Items[i]) if(rules[item.ruleId].right.size()==item.dot)
-                    for(auto &F:symbols) if(isTerminal[F.id])
-                        {
-                            if (item.ruleId == augmentedRuleId)
-                                gotoIds.emplace(std::make_pair(i,SpecialCharacter::EndOfString),Action(Action::Accept,0));
-                            else    gotoIds.emplace(std::make_pair(i,F.id),Action(Action::Reduce,item.ruleId));
-                        }
+        {
+            for (auto &F: symbols) if (isTerminal[F.id])
+            {
+                if (item.ruleId == augmentedRuleId)
+                    gotoIds.emplace(std::make_pair(i, SpecialCharacter::EndOfString),
+                                    Action(Action::Accept, 0));
+                else gotoIds.emplace(std::make_pair(i, F.id), Action(Action::Reduce, item.ruleId));
+            }
+            gotoIds.emplace(std::make_pair(i, SpecialCharacter::EndOfString), Action(Action::Reduce, item.ruleId));
+        }
         return *this;
     }
+
+    StatefulLR0ParserBuilder::StatefulLR0ParserBuilder() : StatefulShiftReduceParser(ShiftReduceParser::gotoIds)
+    {
+
+    }
+
 }
