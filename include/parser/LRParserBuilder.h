@@ -80,7 +80,7 @@ namespace parser {
         };
     }
 
-    class ShiftReduceParser :public StringParser<char>
+    class ShiftReduceParser :virtual public StringParser<char>
     {
     public:
         using Action=LRFamily::Action;
@@ -91,7 +91,12 @@ namespace parser {
         std::unordered_map<std::pair<std::uint64_t,std::uint64_t>,Action> gotoIds;
     };
 
-    class LR0ParserBuilder final: public ShiftReduceParser
+    class LRFamilyBuilder
+    {
+        virtual LRFamilyBuilder& build() & = 0;
+    };
+
+    class LR0ParserBuilder: public ShiftReduceParser, public LRFamilyBuilder
     {
 
         std::unordered_map<std::unordered_set<LR0Item>,int> lr0ItemsIds;
@@ -102,7 +107,7 @@ namespace parser {
         LR0ParserBuilder& build() &;
     };
 
-    class SLRParserBuilder final: protected  GrammarWithFirstFollow, public ShiftReduceParser
+    class SLRParserBuilder: protected  GrammarWithFirstFollow, public ShiftReduceParser, public LRFamilyBuilder
     {
 
         using Action=LRFamily::Action;
@@ -114,7 +119,7 @@ namespace parser {
         SLRParserBuilder& build() &;
     };
 
-    class LRParserBuilder: protected  GrammarWithFirstFollow, public ShiftReduceParser
+    class LRParserBuilder: virtual protected  GrammarWithFirstFollow, virtual public ShiftReduceParser, public LRFamilyBuilder
     {
 
         using Action=LRFamily::Action;
@@ -127,7 +132,7 @@ namespace parser {
         LRParserBuilder& build() &;
     };
 
-    class LALRParserBuilder final: protected  GrammarWithFirstFollow, public ShiftReduceParser
+    class LALRParserBuilder: virtual protected  GrammarWithFirstFollow, virtual public ShiftReduceParser, public LRFamilyBuilder
     {
 
         using Action=LRFamily::Action;

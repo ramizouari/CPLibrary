@@ -1,7 +1,7 @@
 //
 // Created by ramizouari on 20/10/23.
 //
-#include "parser/LRLogic.h"
+#include "parser/StatefulParser.h"
 #include <iostream>
 #include <cmath>
 
@@ -9,6 +9,7 @@ namespace parser
 {
 
 }
+
 
 struct Number : public parser::Variable
 {
@@ -111,28 +112,30 @@ struct NumberExponentiation: public parser::VariableReducer
 int main()
 {
     using namespace parser;
-    LRLogic LR;
-    LR.addFunctionalRuleList(std::make_shared<Identity>(),"S","Exp");
-    LR.addFunctionalRuleList(std::make_shared<NumberExponentiation>(),"Exp","Exp","^","M");
-    LR.addFunctionalRuleList(std::make_shared<Identity>(),"Exp","M");
-    LR.addFunctionalRuleList(std::make_shared<NumberMultiplication>(),"M","M","*","E");
-    LR.addFunctionalRuleList(std::make_shared<NumberEuclideanDivision>(),"M","M","/","E");
-    LR.addFunctionalRuleList(std::make_shared<NumberModulo>(),"M","M","%","E");
-    LR.addFunctionalRuleList(std::make_shared<Identity>(),"M","E");
-    LR.addFunctionalRuleList(std::make_shared<NumberAddition>(),"E","E","+","N");
-    LR.addFunctionalRuleList(std::make_shared<NumberSubtraction>(),"E","E","-","N");
-    LR.addFunctionalRuleList(std::make_shared<Identity>(),"E","N");
-    LR.addFunctionalRuleList(std::make_shared<Projection>(1),"N","(","B",")");
-    LR.addFunctionalRuleList(std::make_shared<Inverse>(),"B","-","Exp");
-    LR.addFunctionalRuleList(std::make_shared<Identity>(),"B","Exp");
+    StatefulSLRParserBuilder LR;
+    LR.addRuleList(std::make_shared<Identity>(),"Start","E");
+    LR.addRuleList(std::make_shared<NumberAddition>(),"E","E","+","M");
+    LR.addRuleList(std::make_shared<NumberSubtraction>(),"E","E","-","M");
+    LR.addRuleList(std::make_shared<Identity>(),"E","M");
+    LR.addRuleList(std::make_shared<NumberMultiplication>(),"M","M","*","P");
+    LR.addRuleList(std::make_shared<NumberEuclideanDivision>(),"M","M","/","P");
+    LR.addRuleList(std::make_shared<NumberModulo>(),"M","M","%","P");
+    LR.addRuleList(std::make_shared<Identity>(),"M","P");
+    LR.addRuleList(std::make_shared<NumberExponentiation>(),"P","P","^","N");
+    LR.addRuleList(std::make_shared<Identity>(),"P","N");
+
+    LR.addRuleList(std::make_shared<Projection>(1),"N","(","B",")");
+    LR.addRuleList(std::make_shared<Inverse>(),"B","-","E");
+    LR.addRuleList(std::make_shared<Identity>(),"B","E");
 
     for(int i=0;i<10;i++)
     {
-        LR.addFunctionalRuleList(std::make_shared<NumberGenerator>(i), "N", std::to_string(i));
-        LR.addFunctionalRuleList(std::make_shared<NumberConcatenation>(), "N", "N",std::to_string(i));
+        LR.addRuleList(std::make_shared<NumberConcatenation>(), "N", "N","D");
+        LR.addRuleList(std::make_shared<Identity>(), "N","D");
+        LR.addRuleList(std::make_shared<NumberGenerator>(i), "D",std::to_string(i));
     }
     LR.build();
-    auto result=LR.calculate("5+((3-4)*0)+8+(5*2)+(((-3)*(-3))^2)");
+    auto result=LR.evaluate("5+(3*2)+50^2");
     auto R=std::dynamic_pointer_cast<Number>(result);
     if(R)
         std::cout << R->v;

@@ -5,37 +5,16 @@
 #ifndef CPLIBRARY_LRLOGIC_H
 #define CPLIBRARY_LRLOGIC_H
 #include "LRParserBuilder.h"
+#include "StatefulParser.h"
 
 namespace parser
 {
-    struct Variable
-    {
-        virtual ~Variable() = default;
-    };
 
-    struct VariableGenerator
-    {
-        std::shared_ptr<Variable> generate(Symbol &symbol) const;
-    };
-
-    struct VariableReducer
-    {
-        virtual ~VariableReducer() = default;
-        virtual std::shared_ptr<Variable> combine(const std::vector<std::shared_ptr<Variable>>& symbols) const = 0;
-    };
-
-    struct NullReducer : public VariableReducer
-    {
-        std::shared_ptr<Variable> combine(const std::vector<std::shared_ptr<Variable>>& symbols) const
-        {
-            return nullptr;
-        }
-    };
 
     class LRLogic : public LRParserBuilder
     {
         std::vector<std::shared_ptr<VariableReducer>> reducers;
-        inline static std::shared_ptr<VariableReducer> nullReducer = std::make_shared<NullReducer>();
+        inline static std::shared_ptr<VariableReducer> nullReducer = reducers::NullReducer::instance;
         std::shared_ptr<Variable> result;
     public:
         using Action=LRFamily::Action;
