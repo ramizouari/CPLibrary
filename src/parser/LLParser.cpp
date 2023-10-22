@@ -4,7 +4,8 @@
 
 #include "parser/LLParser.h"
 
-namespace parser {
+namespace parser
+{
     bool LLParser::parse(const std::string &S)
     {
 

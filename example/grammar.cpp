@@ -113,7 +113,7 @@ struct NumberExponentiation: public parser::VariableReducer
 int main(int argc, char** argv)
 {
     using namespace parser;
-    StatefulLALRParserBuilder LR;
+    StatefulLRParserBuilder LR;
     if(argc>=2)
     {
         auto grammar=std::string_view(argv[1]);
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
     }
     LR.build();
     LR.printTable(std::cout);
-    auto result=LR.evaluate("1+(1+1)");
+    auto result=LR.evaluate("6+1+(2*31)-8^2");
     auto R=std::dynamic_pointer_cast<Number>(result);
     if(R)
         std::cout << R->v;

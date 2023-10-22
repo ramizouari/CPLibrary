@@ -45,7 +45,7 @@ namespace parser
         struct Identity : public Projection
         {
             Identity(): Projection(0){}
-            inline static std::shared_ptr<VariableReducer> instance = std::make_shared<NullReducer>();
+            inline static std::shared_ptr<VariableReducer> instance = std::make_shared<Identity>();
         };
 
         struct IdentityOrNull : public VariableReducer

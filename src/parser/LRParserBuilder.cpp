@@ -244,7 +244,11 @@ namespace parser {
         }
         std::vector<std::string> symbolNames(symbolMap.size());
         for(auto &[symbol,id]:symbolMap)
-            symbolNames[id]=symbol;
+        {
+            symbolNames[id] = symbol;
+            if(symbol == "\n")
+                symbolNames[id] = "\\n";
+        }
         symbolNames.back()="$";
         H << std::setw(5) << "" <<"\t";
         for(const auto& name:symbolNames)

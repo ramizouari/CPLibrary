@@ -9,7 +9,7 @@ find_package(Boost COMPONENTS unit_test_framework)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arithmetic.h include/nt/number_theory.h include/parser/LRLogic.h
+set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arithmetic.h include/nt/number_theory.h
         include/parser/StatefulParser.h
         include/polynomial/ring_extension.h include/polynomial/polynomial.h include/polynomial/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/data_structures.h include/algebra/binary_operation.h
         include/topology/topology.h include/data_structures/statistic_tree.h include/nt/primality.h include/formal_verification/node.h include/formal_verification/abstract_decision_tree.h
@@ -18,12 +18,14 @@ set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arit
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp
         src/parser/StatefulParser.cpp
-        src/parser/LR0ParserBuilder.cpp src/parser/LRLogic.cpp  src/formal_verification/abstract_decision_tree.cpp src/formal_verification/abstract_printer.cpp
+        src/parser/LR0ParserBuilder.cpp src/formal_verification/abstract_decision_tree.cpp src/formal_verification/abstract_printer.cpp
         src/formal_verification/dynamic_decision_tree.cpp src/formal_verification/node.cpp)
 add_executable(SourceCombiner source_combiner.cpp ${HEADER_FILES})
 find_package(Boost COMPONENTS iostreams program_options)
 target_link_libraries(SourceCombiner Boost::program_options)
 add_executable(GrammarSupport example/grammar.cpp ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Parser example/parser.cpp ${SOURCE_FILES} ${HEADER_FILES})
+
 add_executable(CustomProblem local/WinterCupExpectedIterations.cpp ${HEADER_FILES} ${SOURCE_FILES} local/WinterCupGrundy.cpp)
 
 
