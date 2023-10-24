@@ -38,9 +38,16 @@ class Paths
 {
     std::vector<std::filesystem::path> paths;
 public:
-    explicit Paths(std::vector<std::string> paths) : paths(paths.begin(),paths.end())
+    explicit Paths(const std::vector<std::string>& _paths)
     {
         paths.emplace_back(std::filesystem::current_path());
+        for(const auto& representation :_paths)
+        {
+            std::stringstream ss(representation);
+            std::string path;
+            while(std::getline(ss,path,':'))
+                paths.emplace_back(path);
+        }
     }
 
     explicit Paths(const std::string& representation) : Paths()
@@ -466,6 +473,53 @@ Combiner::Flags& operator&=(Combiner::Flags &a,Combiner::Flags b)
     return a;
 }
 
+/*
+ * This class is used to combine multiple files into one stream
+ * */
+class multi_files_stream : private std::streambuf, public std::istream
+{
+    std::vector<std::ifstream> streams;
+    std::vector<std::filesystem::path> paths;
+    size_t current_file;
+    std::string buffer;
+    char delimiter;
+public:
+    explicit multi_files_stream(const std::vector<std::filesystem::path> &paths,size_t buffer=4096, char delimiter='\n');
+    ~multi_files_stream() override = default;
+    int underflow() override
+    {
+        if(gptr()== egptr())
+        {
+            long extracted=streams[current_file].readsome(buffer.data(),buffer.size());
+            if(extracted==0)
+            {
+                if(current_file==paths.size()-1)
+                    return std::char_traits<char>::eof();
+                else
+                {
+                    current_file++;
+                    streams[current_file].seekg(0);
+                    //Uses delimiter between files
+                    if(delimiter) setg(&delimiter,&delimiter,&delimiter+1);
+                    return underflow();
+                }
+            }
+            setg(buffer.data(),buffer.data(),buffer.data()+extracted);
+        }
+        return std::char_traits<char>::to_int_type(*gptr());
+    }
+
+};
+
+multi_files_stream::multi_files_stream(const std::vector<std::filesystem::path> &paths,
+                                       size_t buffer_size,char delimiter): paths(paths), std::istream(this), current_file(0), delimiter(delimiter),
+                                                                           buffer(buffer_size,'\0')
+{
+    for(auto &p:paths)
+        streams.emplace_back(p);
+    setg(buffer.data(),buffer.data()+buffer.size(),buffer.data()+buffer.size());
+}
+
 int main(int argc,char **argv)
 {
 
@@ -475,9 +529,9 @@ int main(int argc,char **argv)
     desc.add_options()
             ("help,h", "produce help message")
             ("output,o", po::value<std::filesystem::path>(), "Output file for the results")
-            ("input,i", po::value<std::filesystem::path>(), "Input source file")
+            ("input,i", po::value<std::vector<std::filesystem::path>>()->multitoken(), "Input source file")
             ("verbose,v", po::bool_switch(), "Verbose output")
-            ("paths,p", po::value<std::string>()->default_value(""), "Path to search for files")
+            ("paths,p", po::value<std::vector<std::string>>()->multitoken(), "Path to search for files")
             ("use-cpath,c", po::bool_switch(), "Use CPATH environment variable")
             ("ignore",po::value<std::string>()->default_value(""), "Ignore files matching this regex")
             ("brackets,b",po::bool_switch(),"Accept bracket includes. This is not recommended")
@@ -493,9 +547,11 @@ int main(int argc,char **argv)
 
     std::ostream* outputStream;
     std::unique_ptr<std::ofstream> outFileStream;
-    std::unique_ptr<std::ifstream> inFileStream;
+    std::unique_ptr<multi_files_stream> inFileStream;
     std::istream *inputStream;
-    Paths paths(vm["paths"].as<std::string>());
+    if(!vm.count("paths"))
+        vm.emplace("paths",po::variable_value(std::vector<std::string>{},false));
+    Paths paths(vm["paths"].as<std::vector<std::string>>());
     if(vm["use-cpath"].as<bool>())
     {
         auto cpath=std::getenv("CPATH");
@@ -515,11 +571,11 @@ int main(int argc,char **argv)
         inputStream = &std::cin;
     else
     {
-        auto file=vm["input"].as<std::filesystem::path>();
-        inFileStream = std::make_unique<std::ifstream>(file);
-        inputStream = inFileStream.get();
-        if(verbose) std::cout << "Input file: " << file << std::endl;
 
+        inFileStream = std::make_unique<multi_files_stream>(vm["input"].as<std::vector<std::filesystem::path>>());
+        inputStream = inFileStream.get();
+        if(verbose) for(const auto& file : vm["input"].as<std::vector<std::filesystem::path>>())
+            std::cout << "Input file: " << file << std::endl;
     }
 
     if (!vm.count("output"))
@@ -552,3 +608,6 @@ int main(int argc,char **argv)
     else
         combiner.combine(*inputStream,*outputStream,Combiner::SameRepresentation);
 }
+
+
+

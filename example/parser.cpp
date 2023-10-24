@@ -8,13 +8,9 @@
 #include "parser/LRParserBuilder.h"
 #define NO_ASSIGNMENT ""
 #define OUTPUT_CODE "output"
-#define OUTPUT_SYMBOL "@"
-
-struct Function : public parser::VariableReducer
-{
-    size_t parameters;
-};
-
+#define OUTPUT_SYMBOL "#"
+#define RETURN_CODE "return"
+#define RETURN_SYMBOL "@"
 
 template<typename T>
 struct Type : public parser::Variable
@@ -47,11 +43,6 @@ struct NameConcat : public parser::VariableReducer
         name->value.push_back(suffix);
         return name;
     }
-};
-
-struct ProgramState : public parser::Variable
-{
-    std::map<std::string, int> variables;
 };
 
 struct LastProjection : public parser::VariableReducer
@@ -129,8 +120,48 @@ struct FnDefGenerator : public parser::VariableReducer
 class ExpressionTree;
 struct Context
 {
-    std::map<std::string, std::int64_t> variables;
+    std::vector<std::map<std::string, std::int64_t>> variables_stack;
+    std::map<std::string,std::vector<std::int64_t>> variables_index;
     std::map<std::string, std::shared_ptr<FunctionDefinition>> functions;
+
+    Context() : variables_stack(1) {}
+
+    void push()
+    {
+        variables_stack.emplace_back();
+    }
+    void pop()
+    {
+        for(auto &x: variables_stack.back())
+        {
+            variables_index[x.first].pop_back();
+            if(variables_index[x.first].empty())
+                variables_index.erase(x.first);
+        }
+        variables_stack.pop_back();
+    }
+
+    std::int64_t& get_variable(const std::string &name)
+    {
+        return variables_stack[variables_index.at(name).back()].at(name);
+    }
+
+    std::int64_t& upsert_variable(const std::string &name, std::int64_t value=0)
+    {
+        if(variables_index.find(name)==variables_index.end())
+            variables_index[name]=std::vector<std::int64_t>(1,variables_stack.size()-1);
+        else if(variables_index.at(name).back()!=variables_stack.size()-1)
+            variables_index.at(name).push_back(variables_stack.size()-1);
+        variables_stack.back()[name]=value;
+        return variables_stack.back().at(name);
+    }
+
+    std::int64_t& get_variable(const std::string &name, int index)
+    {
+        return variables_stack[variables_index.at(name).at(index)].at(name);
+    }
+
+
 };
 
 class FunctionCall;
@@ -171,7 +202,7 @@ std::int64_t power(std::int64_t a, std::int64_t n)
         return 1;
     else if(n==1)
         return a;
-    auto s=pow(a,n/2);
+    auto s=power(a,n/2);
     return n%2?s*s*a:s*s;
 }
 
@@ -196,16 +227,28 @@ std::int64_t ExpressionNode::evaluate(Context &context)
         case Number:
             return std::get<std::int64_t>(value);
         case Variable:
-            return context.variables.at(std::get<std::string>(value));
+            return context.get_variable(std::get<std::string>(value));
         case FunCall:
         {
-            Context new_context;
-            new_context.functions = context.functions;
-            auto fn_call = std::get<FunctionCall>(value);
-            auto fn = new_context.functions.at(fn_call.name);
-            for(int i=0;i<fn->formal_parameters->value.size();i++)
-                new_context.variables[fn->formal_parameters->value[i]] = fn_call.parameters[i]->evaluate(context);
-            return fn->evaluate(new_context);
+//            Context new_context;
+//            new_context.functions = context.functions;
+//            auto fn_call = std::get<FunctionCall>(value);
+//            auto fn = new_context.functions.at(fn_call.name);
+//            for(int i=0;i<fn->formal_parameters->value.size();i++)
+//                new_context.variables[fn->formal_parameters->value[i]] = fn_call.parameters[i]->evaluate(context);
+//            return fn->evaluate(new_context);
+                auto fn_call = std::get<FunctionCall>(value);
+                auto fn = context.functions.at(fn_call.name);
+                std::vector<std::int64_t> parameters;
+                parameters.reserve(fn_call.parameters.size());
+                for(auto &x:fn_call.parameters)
+                    parameters.push_back(x->evaluate(context));
+                context.push();
+                for(int i=0;i<fn->formal_parameters->value.size();i++)
+                    context.upsert_variable(fn->formal_parameters->value[i],parameters[i]);
+                auto result = fn->evaluate(context);
+                context.pop();
+                return result;
         }
     }
 }
@@ -229,9 +272,13 @@ struct Statement : public parser::Variable
 {
     std::string lhs;
     std::shared_ptr<ExpressionTree> rhs;
-    int evaluate(Context &context)
+    std::int64_t evaluate(Context &context)
     {
-        return context.variables[lhs] = rhs->evaluate(context);
+//        auto result=context.variables[lhs] = rhs->evaluate(context);
+        auto result=context.upsert_variable(lhs) = rhs->evaluate(context);
+        if(lhs==OUTPUT_SYMBOL)
+            std::cout << result << '\n';
+        return result;
     }
 };
 
@@ -245,7 +292,7 @@ std::int64_t FunctionDefinition::evaluate(Context &context)
 {
     std::int64_t result;
     for(auto statement : graph->statements)
-        result=statement->evaluate(context);
+        result = statement->evaluate(context);
     return result;
 }
 
@@ -379,11 +426,14 @@ struct FunctionsBlockBuilder : public parser::VariableReducer
 
 struct MainProgram : public parser::Variable
 {
-    std::shared_ptr<Statement> main;
+    std::shared_ptr<ExecutionGraph> main;
     std::shared_ptr<Context> context;
-    [[nodiscard]] int evaluate()
+    std::int64_t evaluate()
     {
-        return main->evaluate(*context);
+        std::int64_t result;
+        for(auto statement : main->statements)
+            result = statement->evaluate(*context);
+        return result;
     }
 };
 
@@ -392,16 +442,13 @@ struct PrepareExecution : public parser::VariableReducer
     [[nodiscard]] std::shared_ptr<parser::Variable> combine(const std::vector<std::shared_ptr<parser::Variable>> &v) const override
     {
         auto x= std::make_shared<MainProgram>();
-        x->main = std::make_shared<Statement>();
-        x->main->lhs=NO_ASSIGNMENT;
         x->context = std::make_shared<Context>();
-        if(v.size()>2)
+        if(v.size()==3)
         {
-            x->main->rhs=std::dynamic_pointer_cast<ExpressionTree>(v.at(2));
+            x->main = std::dynamic_pointer_cast<ExecutionGraph>(v.at(2));
             x->context->functions = std::move(std::dynamic_pointer_cast<FunctionsBlock>(v.at(0))->functions);
         }
-        else
-            x->main->rhs=std::dynamic_pointer_cast<ExpressionTree>(v.at(0));
+        else x->main = std::dynamic_pointer_cast<ExecutionGraph>(v.at(0));
         return x;
     }
 };
@@ -440,6 +487,17 @@ struct ToListStatement : public parser::VariableReducer
     }
 };
 
+struct OutputBuilder : public parser::VariableReducer
+{
+    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const std::vector<std::shared_ptr<parser::Variable>> &v) const override
+    {
+        auto x= std::make_shared<Statement>();
+        x->lhs=OUTPUT_SYMBOL;
+        x->rhs=std::dynamic_pointer_cast<ExpressionTree>(v.at(1));
+        return x;
+    }
+};
+
 struct ToCallParams : public parser::VariableReducer
 {
     [[nodiscard]] std::shared_ptr<parser::Variable> combine(const std::vector<std::shared_ptr<parser::Variable>> &v) const override
@@ -463,6 +521,7 @@ public:
             alphabet_map[alphabet[i]]=i;
         mapper[""]="";
         mapper[OUTPUT_CODE] = OUTPUT_SYMBOL;
+        mapper[RETURN_CODE] = RETURN_SYMBOL;
     }
     std::string encode(const std::string &x)
     {
@@ -529,7 +588,22 @@ public:
     }
 };
 
-constexpr char alphabet[]="abcd";
+constexpr std::string_view alphabet="abcd";
+
+/*
+ * This is a simple interpreter for the VC language that supports the following features:
+ * 1- Function definition
+ * 2- Function call
+ * 3- Variable assignment
+ * 4- Output
+ * 5- Return
+ * 6- Arithmetic operations
+ *
+ * The VC language is composed of a potentially empty list of function definitions followed by a potentially empty list of output statements.
+ * A function definition is composed of a function name, a list of formal parameters, and a function body.
+ * A function body is composed of a potentially empty list of statements followed by a return statement.
+ * A statement is either an assignment statement or an output statement.
+ * */
 
 int main(int argc, char** argv)
 {
@@ -539,24 +613,28 @@ int main(int argc, char** argv)
     std::string scope;
 
     G->addRuleList(std::make_shared<LastProjection>(),"Start","Program");
-    G->addRuleList(std::make_shared<PrepareExecution>(),"Program","FunDefBlock","EOL", "Output");
-    G->addRuleList(std::make_shared<LastProjection>(),"Output",OUTPUT_SYMBOL,"Expression");
-    G->addRuleList(std::make_shared<PrepareExecution>(),"Program", "Output");
-    G->addRuleList(std::make_shared<FunctionsBlockBuilder>(),"FunDefBlock","FunDef");
+    G->addRuleList(std::make_shared<PrepareExecution>(),"Program","FunDefBlock","EOL", "Outputs");
+    G->addRuleList(std::make_shared<PrepareExecution>(),"Program", "Outputs");
+    G->addRuleList(std::make_shared<StatementConcat>(),"Outputs", "Outputs","EOL","Output");
+    G->addRuleList(std::make_shared<ToListStatement>(),"Outputs", "Output");
+    G->addRuleList(std::make_shared<OutputBuilder>(),"Output",OUTPUT_SYMBOL,"Expression");
     G->addRuleList(std::make_shared<FunctionsBlockConcat>(),"FunDefBlock","FunDefBlock","EOL","FunDef");
-    G->addRuleList(reducers::Identity::instance,"EOL","EOL","\n");
-    G->addRuleList(reducers::Identity::instance,"EOL","\n");
+    G->addRuleList(std::make_shared<FunctionsBlockBuilder>(),"FunDefBlock","FunDef");
     G->addRuleList(std::make_shared<FnDefGenerator>(),"FunDef","Name","FunParams","FunBody");
     G->addRuleList(std::make_shared<Projection>(1),"FunParams","(","FunParamGroup",")","EOL");
     G->addRuleList(std::make_shared<DefaultGenerator<Type<std::vector<std::string>>>>(),"FunParams","(",")","EOL");
     G->addRuleList(std::make_shared<ListNames>(),"FunParamGroup","FunParamGroup","Comma","Name");
     G->addRuleList(std::make_shared<ToList<std::string>>(),"FunParamGroup","Name");
-    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","StatementsBlock","EOL","Expression");
-    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","Expression");
-    G->addRuleList(std::make_shared<ToListStatement>(), "StatementsBlock","Statement");
+    G->addRuleList(reducers::Identity::instance,"EOL","EOL","\n");
+    G->addRuleList(reducers::Identity::instance,"EOL","\n");
+    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","StatementsBlock","EOL","Return");
+    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","Return");
+    G->addRuleList(std::make_shared<LastProjection>(),"Return",RETURN_SYMBOL,"Expression");
     G->addRuleList(std::make_shared<StatementConcat>(), "StatementsBlock","StatementsBlock","EOL","Statement");
+    G->addRuleList(std::make_shared<ToListStatement>(), "StatementsBlock","Statement");
     G->addRuleList(parser::reducers::Identity::instance, "Comma",",");
     G->addRuleList(std::make_shared<StatementBuilder>(), "Statement","Name","=","Expression");
+    G->addRuleList(reducers::Identity::instance, "Statement","Output");
     G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Add), "Expression","Expression","+","Term");
     G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Sub), "Expression","Expression","-","Term");
     G->addRuleList(parser::reducers::Identity::instance, "Expression","Term");
@@ -586,7 +664,7 @@ int main(int argc, char** argv)
     G->printTable(std::cout);
     Tokenizer T;
     T.builder = G;
-    T.encoder = std::make_shared<Encoder>(alphabet);
+    T.encoder = std::make_shared<Encoder>(alphabet.data());
     std::string inputs;
     std::string source_code;
     int n;
@@ -602,7 +680,7 @@ int main(int argc, char** argv)
     if(result)
     {
         auto main = std::dynamic_pointer_cast<MainProgram>(result);
-        std::cout << main->evaluate() << '\n';
+        main->evaluate();
     }
     else
     {

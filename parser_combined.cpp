@@ -524,12 +524,10 @@ namespace parser {
 
 #endif //UTF8_LRPARSER_H
 #define NO_ASSIGNMENT ""
-
-struct Function : public parser::VariableReducer
-{
-    size_t parameters;
-};
-
+#define OUTPUT_CODE "output"
+#define OUTPUT_SYMBOL "#"
+#define RETURN_CODE "return"
+#define RETURN_SYMBOL "@"
 
 template<typename T>
 struct Type : public parser::Variable
@@ -539,7 +537,7 @@ struct Type : public parser::Variable
     Type() = default;
 };
 using StringValue = Type<std::string>;
-using IntValue = Type<int>;
+using IntValue = Type<std::int64_t>;
 
 struct CharacterGenerator : public parser::VariableReducer
 {
@@ -562,11 +560,6 @@ struct NameConcat : public parser::VariableReducer
         name->value.push_back(suffix);
         return name;
     }
-};
-
-struct ProgramState : public parser::Variable
-{
-    std::map<std::string, int> variables;
 };
 
 struct LastProjection : public parser::VariableReducer
@@ -620,7 +613,7 @@ struct FunctionDefinition : public parser::Variable
     std::shared_ptr<StringValue> fn_name;
     std::shared_ptr<Type<std::vector<std::string>>> formal_parameters;
     std::shared_ptr<ExecutionGraph> graph;
-    int evaluate(class  Context & context);
+    std::int64_t evaluate(class  Context & context);
 };
 
 struct FunctionCall : public parser::Variable
@@ -644,8 +637,48 @@ struct FnDefGenerator : public parser::VariableReducer
 class ExpressionTree;
 struct Context
 {
-    std::map<std::string, int> variables;
+    std::vector<std::map<std::string, std::int64_t>> variables_stack;
+    std::map<std::string,std::vector<std::int64_t>> variables_index;
     std::map<std::string, std::shared_ptr<FunctionDefinition>> functions;
+
+    Context() : variables_stack(1) {}
+
+    void push()
+    {
+        variables_stack.emplace_back();
+    }
+    void pop()
+    {
+        for(auto &x: variables_stack.back())
+        {
+            variables_index[x.first].pop_back();
+            if(variables_index[x.first].empty())
+                variables_index.erase(x.first);
+        }
+        variables_stack.pop_back();
+    }
+
+    std::int64_t& get_variable(const std::string &name)
+    {
+        return variables_stack[variables_index.at(name).back()].at(name);
+    }
+
+    std::int64_t& upsert_variable(const std::string &name, std::int64_t value=0)
+    {
+        if(variables_index.find(name)==variables_index.end())
+            variables_index[name]=std::vector<std::int64_t>(1,variables_stack.size()-1);
+        else if(variables_index.at(name).back()!=variables_stack.size()-1)
+            variables_index.at(name).push_back(variables_stack.size()-1);
+        variables_stack.back()[name]=value;
+        return variables_stack.back().at(name);
+    }
+
+    std::int64_t& get_variable(const std::string &name, int index)
+    {
+        return variables_stack[variables_index.at(name).at(index)].at(name);
+    }
+
+
 };
 
 class FunctionCall;
@@ -659,6 +692,7 @@ struct ExpressionNode
         Mul,
         Div,
         Mod,
+        Pow,
         Concat,
         Number,
         Variable,
@@ -666,20 +700,30 @@ struct ExpressionNode
     };
     Operation op;
     std::shared_ptr<ExpressionNode> lhs,rhs;
-    std::variant<std::string, int,FunctionCall> value;
-    int evaluate(Context &context);
+    std::variant<std::string, std::int64_t,FunctionCall> value;
+    std::int64_t evaluate(Context &context);
 };
 
 struct ExpressionTree : public parser::Variable
 {
     std::shared_ptr<ExpressionNode> root;
-    int evaluate(Context &context)
+    std::int64_t evaluate(Context &context)
     {
         return root->evaluate(context);
     }
 };
 
-int ExpressionNode::evaluate(Context &context)
+std::int64_t power(std::int64_t a, std::int64_t n)
+{
+    if(n==0)
+        return 1;
+    else if(n==1)
+        return a;
+    auto s=power(a,n/2);
+    return n%2?s*s*a:s*s;
+}
+
+std::int64_t ExpressionNode::evaluate(Context &context)
 {
     switch(op)
     {
@@ -695,19 +739,33 @@ int ExpressionNode::evaluate(Context &context)
             return lhs->evaluate(context)%rhs->evaluate(context);
         case Concat:
             return lhs->evaluate(context)*std::pow(10,rhs->evaluate(context));
+        case Pow:
+            return power(lhs->evaluate(context),rhs->evaluate(context));
         case Number:
-            return std::get<int>(value);
+            return std::get<std::int64_t>(value);
         case Variable:
-            return context.variables.at(std::get<std::string>(value));
+            return context.get_variable(std::get<std::string>(value));
         case FunCall:
         {
-            Context new_context;
-            new_context.functions = context.functions;
+//            Context new_context;
+//            new_context.functions = context.functions;
+//            auto fn_call = std::get<FunctionCall>(value);
+//            auto fn = new_context.functions.at(fn_call.name);
+//            for(int i=0;i<fn->formal_parameters->value.size();i++)
+//                new_context.variables[fn->formal_parameters->value[i]] = fn_call.parameters[i]->evaluate(context);
+//            return fn->evaluate(new_context);
             auto fn_call = std::get<FunctionCall>(value);
-            auto fn = new_context.functions.at(fn_call.name);
+            auto fn = context.functions.at(fn_call.name);
+            std::vector<std::int64_t> parameters;
+            parameters.reserve(fn_call.parameters.size());
+            for(auto &x:fn_call.parameters)
+                parameters.push_back(x->evaluate(context));
+            context.push();
             for(int i=0;i<fn->formal_parameters->value.size();i++)
-                new_context.variables[fn->formal_parameters->value[i]] = fn_call.parameters[i]->evaluate(context);
-            return fn->evaluate(new_context);
+                context.upsert_variable(fn->formal_parameters->value[i],parameters[i]);
+            auto result = fn->evaluate(context);
+            context.pop();
+            return result;
         }
     }
 }
@@ -731,9 +789,13 @@ struct Statement : public parser::Variable
 {
     std::string lhs;
     std::shared_ptr<ExpressionTree> rhs;
-    int evaluate(Context &context)
+    std::int64_t evaluate(Context &context)
     {
-        return context.variables[lhs] = rhs->evaluate(context);
+//        auto result=context.variables[lhs] = rhs->evaluate(context);
+        auto result=context.upsert_variable(lhs) = rhs->evaluate(context);
+        if(lhs==OUTPUT_SYMBOL)
+            std::cout << result << '\n';
+        return result;
     }
 };
 
@@ -743,15 +805,15 @@ struct ExecutionGraph : public parser::Variable
     std::vector<std::shared_ptr<Statement>> statements;
 };
 
-int FunctionDefinition::evaluate(Context &context)
+std::int64_t FunctionDefinition::evaluate(Context &context)
 {
-    int result;
+    std::int64_t result;
     for(auto statement : graph->statements)
-        result=statement->evaluate(context);
+        result = statement->evaluate(context);
     return result;
 }
 
-using Number = Type<int>;
+using Number = Type<std::int64_t>;
 
 struct NumberGenerator : public parser::VariableReducer
 {
@@ -881,11 +943,14 @@ struct FunctionsBlockBuilder : public parser::VariableReducer
 
 struct MainProgram : public parser::Variable
 {
-    std::shared_ptr<Statement> main;
+    std::shared_ptr<ExecutionGraph> main;
     std::shared_ptr<Context> context;
-    [[nodiscard]] int evaluate()
+    std::int64_t evaluate()
     {
-        return main->evaluate(*context);
+        std::int64_t result;
+        for(auto statement : main->statements)
+            result = statement->evaluate(*context);
+        return result;
     }
 };
 
@@ -894,11 +959,13 @@ struct PrepareExecution : public parser::VariableReducer
     [[nodiscard]] std::shared_ptr<parser::Variable> combine(const std::vector<std::shared_ptr<parser::Variable>> &v) const override
     {
         auto x= std::make_shared<MainProgram>();
-        x->main = std::make_shared<Statement>();
-        x->main->lhs=NO_ASSIGNMENT;
-        x->main->rhs=std::dynamic_pointer_cast<ExpressionTree>(v.at(2));
         x->context = std::make_shared<Context>();
-        x->context->functions = std::move(std::dynamic_pointer_cast<FunctionsBlock>(v.at(0))->functions);
+        if(v.size()==3)
+        {
+            x->main = std::dynamic_pointer_cast<ExecutionGraph>(v.at(2));
+            x->context->functions = std::move(std::dynamic_pointer_cast<FunctionsBlock>(v.at(0))->functions);
+        }
+        else x->main = std::dynamic_pointer_cast<ExecutionGraph>(v.at(0));
         return x;
     }
 };
@@ -937,6 +1004,17 @@ struct ToListStatement : public parser::VariableReducer
     }
 };
 
+struct OutputBuilder : public parser::VariableReducer
+{
+    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const std::vector<std::shared_ptr<parser::Variable>> &v) const override
+    {
+        auto x= std::make_shared<Statement>();
+        x->lhs=OUTPUT_SYMBOL;
+        x->rhs=std::dynamic_pointer_cast<ExpressionTree>(v.at(1));
+        return x;
+    }
+};
+
 struct ToCallParams : public parser::VariableReducer
 {
     [[nodiscard]] std::shared_ptr<parser::Variable> combine(const std::vector<std::shared_ptr<parser::Variable>> &v) const override
@@ -947,10 +1025,57 @@ struct ToCallParams : public parser::VariableReducer
     }
 };
 
+class Encoder
+{
+    std::map<std::string,std::string> mapper;
+    std::string alphabet;
+    std::map<char,int> alphabet_map;
+    std::string last_encoded;
+public:
+    explicit Encoder(std::string alphabet):alphabet(std::move(alphabet))
+    {
+        for(int i=0;i<this->alphabet.size();i++)
+            alphabet_map[alphabet[i]]=i;
+        mapper[""]="";
+        mapper[OUTPUT_CODE] = OUTPUT_SYMBOL;
+        mapper[RETURN_CODE] = RETURN_SYMBOL;
+    }
+    std::string encode(const std::string &x)
+    {
+        if(mapper.find(x)==mapper.end())
+        {
+            if(std::all_of(last_encoded.begin(),last_encoded.end(),[&alphabet=alphabet](auto x){return x==alphabet.back();}))
+            {
+                std::fill(last_encoded.begin(),last_encoded.end(),alphabet.front());
+                last_encoded.push_back(alphabet.front());
+                mapper[x]=last_encoded;
+            }
+            else
+            {
+                auto it=last_encoded.begin();
+                while(*it==alphabet.back())
+                {
+                    *it=alphabet.front();
+                    it++;
+                }
+                *it=alphabet[alphabet_map[*it]+1];
+                mapper[x]=last_encoded;
+            }
+        }
+        return mapper[x];
+    }
+};
+
+bool isliteral(char x)
+{
+    return std::isalpha(x) || x == '_';
+}
+
 class Tokenizer
 {
 public:
     std::shared_ptr<parser::StatefulShiftReduceParser> builder;
+    std::shared_ptr<Encoder> encoder;
 
     std::string tokenize(const std::string &source)
     {
@@ -959,10 +1084,18 @@ public:
         int start,end;
         for(start=0;start<source.size() && std::isspace(source[start]);start++);
         for(end=source.size(); end > start && std::isspace(source[end-1]);end--);
+        std::string word;
         for(int i=start;i< end; i++)
         {
-            if(!std::isspace(source[i]) || source[i]=='\n')
-                result.push_back(source[i]);
+            if(isliteral(source[i]))
+                word.push_back(source[i]);
+            else
+            {
+                result+=(encoder?encoder->encode(word):word);
+                if(!std::isspace(source[i]) || source[i]=='\n')
+                    result.push_back(source[i]);
+                word.clear();
+            }
         }
         return result;
     }
@@ -972,6 +1105,23 @@ public:
     }
 };
 
+constexpr std::string_view alphabet="abcd";
+
+/*
+ * This is a simple interpreter for the VC language that supports the following features:
+ * 1- Function definition
+ * 2- Function call
+ * 3- Variable assignment
+ * 4- Output
+ * 5- Return
+ * 6- Arithmetic operations
+ *
+ * The VC language is composed of a potentially empty list of function definitions followed by a potentially empty list of output statements.
+ * A function definition is composed of a function name, a list of formal parameters, and a function body.
+ * A function body is composed of a potentially empty list of statements followed by a return statement.
+ * A statement is either an assignment statement or an output statement.
+ * */
+
 int main(int argc, char** argv)
 {
     using namespace parser;
@@ -980,31 +1130,37 @@ int main(int argc, char** argv)
     std::string scope;
 
     G->addRuleList(std::make_shared<LastProjection>(),"Start","Program");
-    G->addRuleList(std::make_shared<PrepareExecution>(),"Program","FunDefBlock","EOL", "Expression");
-    G->addRuleList(std::make_shared<FunctionsBlockBuilder>(),"FunDefBlock","FunDef");
+    G->addRuleList(std::make_shared<PrepareExecution>(),"Program","FunDefBlock","EOL", "Outputs");
+    G->addRuleList(std::make_shared<PrepareExecution>(),"Program", "Outputs");
+    G->addRuleList(std::make_shared<StatementConcat>(),"Outputs", "Outputs","EOL","Output");
+    G->addRuleList(std::make_shared<ToListStatement>(),"Outputs", "Output");
+    G->addRuleList(std::make_shared<OutputBuilder>(),"Output",OUTPUT_SYMBOL,"Expression");
     G->addRuleList(std::make_shared<FunctionsBlockConcat>(),"FunDefBlock","FunDefBlock","EOL","FunDef");
-    G->addRuleList(reducers::Identity::instance,"EOL","EOL","\n");
-    G->addRuleList(reducers::Identity::instance,"EOL","\n");
+    G->addRuleList(std::make_shared<FunctionsBlockBuilder>(),"FunDefBlock","FunDef");
     G->addRuleList(std::make_shared<FnDefGenerator>(),"FunDef","Name","FunParams","FunBody");
-    G->addRuleList(std::make_shared<NameConcat>('f'),"Name","Name","f");
-    G->addRuleList(std::make_shared<NameConcat>('g'),"Name","Name","g");
     G->addRuleList(std::make_shared<Projection>(1),"FunParams","(","FunParamGroup",")","EOL");
     G->addRuleList(std::make_shared<DefaultGenerator<Type<std::vector<std::string>>>>(),"FunParams","(",")","EOL");
     G->addRuleList(std::make_shared<ListNames>(),"FunParamGroup","FunParamGroup","Comma","Name");
     G->addRuleList(std::make_shared<ToList<std::string>>(),"FunParamGroup","Name");
-    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","StatementsBlock","EOL","Expression");
-    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","Expression");
-    G->addRuleList(std::make_shared<ToListStatement>(), "StatementsBlock","Statement");
+    G->addRuleList(reducers::Identity::instance,"EOL","EOL","\n");
+    G->addRuleList(reducers::Identity::instance,"EOL","\n");
+    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","StatementsBlock","EOL","Return");
+    G->addRuleList(std::make_shared<PrepareFunctionBody>(),"FunBody","Return");
+    G->addRuleList(std::make_shared<LastProjection>(),"Return",RETURN_SYMBOL,"Expression");
     G->addRuleList(std::make_shared<StatementConcat>(), "StatementsBlock","StatementsBlock","EOL","Statement");
+    G->addRuleList(std::make_shared<ToListStatement>(), "StatementsBlock","Statement");
     G->addRuleList(parser::reducers::Identity::instance, "Comma",",");
     G->addRuleList(std::make_shared<StatementBuilder>(), "Statement","Name","=","Expression");
+    G->addRuleList(reducers::Identity::instance, "Statement","Output");
     G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Add), "Expression","Expression","+","Term");
     G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Sub), "Expression","Expression","-","Term");
     G->addRuleList(parser::reducers::Identity::instance, "Expression","Term");
-    G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Mul), "Term","Term","*","Factor");
-    G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Div), "Term","Term","/","Factor");
-    G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Mod), "Term","Term","%","Factor");
-    G->addRuleList(parser::reducers::Identity::instance, "Term","Factor");
+    G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Mul), "Term","Term","*","Exponent");
+    G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Div), "Term","Term","/","Exponent");
+    G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Mod), "Term","Term","%","Exponent");
+    G->addRuleList(parser::reducers::Identity::instance, "Term","Exponent");
+    G->addRuleList(parser::reducers::Identity::instance, "Exponent","Factor");
+    G->addRuleList(std::make_shared<ExpressionTreeBuilder>(ExpressionNode::Pow), "Exponent","Factor","^","Exponent");
     G->addRuleList(std::make_shared<NumberToLeaf>(), "Factor","Number");
     G->addRuleList(std::make_shared<VariableToLeaf>(), "Factor","Name");
     G->addRuleList(std::make_shared<FunctionCallBuilder>(), "Factor","Name","(","CallParams",")");
@@ -1016,14 +1172,16 @@ int main(int argc, char** argv)
     G->addRuleList(parser::reducers::Identity::instance, "Number","Digit");
     for(int i=0;i<10;i++)
         G->addRuleList(std::make_shared<NumberGenerator>(i), "Digit",std::to_string(i));
-    for(char x='a';x<='z';x++)
-        G->addRuleList(std::make_shared<CharacterGenerator>(x),"Name",std::string(1,x));
-    for(char x='A';x<='Z';x++)
-        G->addRuleList(std::make_shared<CharacterGenerator>(x),"Name",std::string(1,x));
+    for(auto x:alphabet)
+    {
+        G->addRuleList(std::make_shared<CharacterGenerator>(x), "Name", std::string(1, x));
+        G->addRuleList(std::make_shared<NameConcat>(x),"Name","Name",std::string(1, x));
+    }
     G->build();
-//    G->printTable(std::cout);
+    G->printTable(std::cout);
     Tokenizer T;
     T.builder = G;
+    T.encoder = std::make_shared<Encoder>(alphabet.data());
     std::string inputs;
     std::string source_code;
     int n;
@@ -1039,15 +1197,13 @@ int main(int argc, char** argv)
     if(result)
     {
         auto main = std::dynamic_pointer_cast<MainProgram>(result);
-        std::cout << main->evaluate() << '\n';
+        main->evaluate();
     }
     else
     {
         std::cout << "error\n";
     }
 }
-
-
 
 std::uint64_t Symbol::initHash() {
     return hasher(id);
@@ -1177,8 +1333,6 @@ void GrammarWithFirstFollow::buildFollow()
         }
     } while(insertion);
 }
-
-#include <queue>
 
 namespace parser
 {
@@ -1341,92 +1495,11 @@ namespace parser
     }
 }
 
+//
+// Created by ramizouari on 26/05/22.
+//
 
-namespace parser
-{
-    std::unordered_set<LR0Item> LR0ParserBuilder::closure(const std::unordered_set<LR0Item> &items) {
-        std::unordered_set<LR0Item> newItems;
-        std::stack<std::uint64_t> stack;
-        for(const auto& item:items)
-        {
-            newItems.insert(item);
-            if(item.dot < rules[item.ruleId].right.size())
-            {
-                if(isTerminal[rules[item.ruleId].right[item.dot].id])
-                    continue;
-                stack.push(rules[item.ruleId].right[item.dot].id);
-            }
-            while(!stack.empty())
-            {
-                auto id=stack.top();
-                stack.pop();
-                for(const auto & ruleId : ruleIdsBySymbolId[id])
-                {
-                    auto [_,inserted]=newItems.insert(LR0Item{ruleId,0});
-                    if(inserted && !rules[ruleId].right.empty() && !isTerminal[rules[ruleId].right.front().id])
-                        stack.push(rules[ruleId].right.front().id);
-                }
-            }
-        }
-        return newItems;
-    }
-
-    LR0ParserBuilder &LR0ParserBuilder::build() &
-    {
-        Symbol augmentedSymbol=addSymbol("");
-        Grammar::addRule(Rule(augmentedSymbol,{axiom}));
-        setAxiom(augmentedSymbol);
-        auto augmentedRuleId=rules.size()-1;
-        ruleIdsBySymbolId.resize(symbols.size());
-        isTerminal.resize(symbols.size(),true);
-        for(const auto & rule : rules)
-            isTerminal[rule.left.id]=false;
-        LR0Item I0{rules.size()-1,0};
-        lr0Items.push_back(std::move(closure({I0})));
-        lr0ItemsIds.emplace(lr0Items.back(),lr0Items.size()-1);
-        int k=0,n=1;
-        do
-        {
-            std::unordered_map<std::uint64_t,std::unordered_set<LR0Item>> nextItemsSets;
-            for(const auto & item : lr0Items[k])
-            {
-                if(item.dot<rules[item.ruleId].right.size())
-                    nextItemsSets[rules[item.ruleId].right[item.dot].id].emplace(item.ruleId,item.dot+1);
-            }
-            for(auto &[symbolId,itemsSet]: nextItemsSets)
-            {
-                itemsSet = std::move(closure(itemsSet));
-                auto it=lr0ItemsIds.find(itemsSet);
-                if(it==lr0ItemsIds.end())
-                {
-                    lr0Items.push_back(std::move(itemsSet));
-                    std::tie(it,std::ignore)=lr0ItemsIds.emplace(lr0Items.back(),lr0Items.size()-1);
-                    n++;
-                }
-                gotoIds.emplace(std::make_pair(k,symbolId),Action(Action::Shift,it->second));
-            }
-        } while(++k<n);
-        for(int i=0;i<n;i++) for(const auto &item: lr0Items[i]) if(rules[item.ruleId].right.size()==item.dot)
-                {
-                    for (auto &F: symbols) if (isTerminal[F.id])
-                        {
-                            if (item.ruleId == augmentedRuleId)
-                                gotoIds.emplace(std::make_pair(i, SpecialCharacter::EndOfString),
-                                                Action(Action::Accept, 0));
-                            else gotoIds.emplace(std::make_pair(i, F.id), Action(Action::Reduce, item.ruleId));
-                        }
-                    gotoIds.emplace(std::make_pair(i, SpecialCharacter::EndOfString), Action(Action::Reduce, item.ruleId));
-                }
-        return *this;
-    }
-
-    StatefulLR0ParserBuilder::StatefulLR0ParserBuilder() : StatefulShiftReduceParser(ShiftReduceParser::gotoIds)
-    {
-
-    }
-
-}
-
+#include <iomanip>
 
 namespace parser {
 
@@ -1788,6 +1861,7 @@ namespace parser {
 } // parser
 
 
+
 namespace parser
 {
     SLRParserBuilder& SLRParserBuilder::build() &
@@ -1871,5 +1945,92 @@ namespace parser
 
     }
 
+
+}
+
+
+
+namespace parser
+{
+    std::unordered_set<LR0Item> LR0ParserBuilder::closure(const std::unordered_set<LR0Item> &items) {
+        std::unordered_set<LR0Item> newItems;
+        std::stack<std::uint64_t> stack;
+        for(const auto& item:items)
+        {
+            newItems.insert(item);
+            if(item.dot < rules[item.ruleId].right.size())
+            {
+                if(isTerminal[rules[item.ruleId].right[item.dot].id])
+                    continue;
+                stack.push(rules[item.ruleId].right[item.dot].id);
+            }
+            while(!stack.empty())
+            {
+                auto id=stack.top();
+                stack.pop();
+                for(const auto & ruleId : ruleIdsBySymbolId[id])
+                {
+                    auto [_,inserted]=newItems.insert(LR0Item{ruleId,0});
+                    if(inserted && !rules[ruleId].right.empty() && !isTerminal[rules[ruleId].right.front().id])
+                        stack.push(rules[ruleId].right.front().id);
+                }
+            }
+        }
+        return newItems;
+    }
+
+    LR0ParserBuilder &LR0ParserBuilder::build() &
+    {
+        Symbol augmentedSymbol=addSymbol("");
+        Grammar::addRule(Rule(augmentedSymbol,{axiom}));
+        setAxiom(augmentedSymbol);
+        auto augmentedRuleId=rules.size()-1;
+        ruleIdsBySymbolId.resize(symbols.size());
+        isTerminal.resize(symbols.size(),true);
+        for(const auto & rule : rules)
+            isTerminal[rule.left.id]=false;
+        LR0Item I0{rules.size()-1,0};
+        lr0Items.push_back(std::move(closure({I0})));
+        lr0ItemsIds.emplace(lr0Items.back(),lr0Items.size()-1);
+        int k=0,n=1;
+        do
+        {
+            std::unordered_map<std::uint64_t,std::unordered_set<LR0Item>> nextItemsSets;
+            for(const auto & item : lr0Items[k])
+            {
+                if(item.dot<rules[item.ruleId].right.size())
+                    nextItemsSets[rules[item.ruleId].right[item.dot].id].emplace(item.ruleId,item.dot+1);
+            }
+            for(auto &[symbolId,itemsSet]: nextItemsSets)
+            {
+                itemsSet = std::move(closure(itemsSet));
+                auto it=lr0ItemsIds.find(itemsSet);
+                if(it==lr0ItemsIds.end())
+                {
+                    lr0Items.push_back(std::move(itemsSet));
+                    std::tie(it,std::ignore)=lr0ItemsIds.emplace(lr0Items.back(),lr0Items.size()-1);
+                    n++;
+                }
+                gotoIds.emplace(std::make_pair(k,symbolId),Action(Action::Shift,it->second));
+            }
+        } while(++k<n);
+        for(int i=0;i<n;i++) for(const auto &item: lr0Items[i]) if(rules[item.ruleId].right.size()==item.dot)
+                {
+                    for (auto &F: symbols) if (isTerminal[F.id])
+                        {
+                            if (item.ruleId == augmentedRuleId)
+                                gotoIds.emplace(std::make_pair(i, SpecialCharacter::EndOfString),
+                                                Action(Action::Accept, 0));
+                            else gotoIds.emplace(std::make_pair(i, F.id), Action(Action::Reduce, item.ruleId));
+                        }
+                    gotoIds.emplace(std::make_pair(i, SpecialCharacter::EndOfString), Action(Action::Reduce, item.ruleId));
+                }
+        return *this;
+    }
+
+    StatefulLR0ParserBuilder::StatefulLR0ParserBuilder() : StatefulShiftReduceParser(ShiftReduceParser::gotoIds)
+    {
+
+    }
 
 }

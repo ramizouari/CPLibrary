@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <unordered_map>
 #include <map>
-#include "modular_arithmetic.h"
+#include "nt/modular_arithmetic.h"
 #include <compare>
 #include <tuple>
 #include <random>
