@@ -704,7 +704,7 @@ statistic_node<T, V, OrderStats>* median(statistic_node<T, V, OrderStats>* tree)
 template<typename V, typename O>
 struct sum_stats
 {
-    inline static constexpr O F = O();
+    inline static O F = O();
     int size;
     V sum;
     sum_stats() {}
@@ -813,7 +813,7 @@ V index_sum(statistic_node<T, V, SumStats>* tree, int a, int b)
 template<typename T, typename O>
 struct key_sum_stats
 {
-    inline static constexpr O F = O();
+    inline static O F = O();
     int size;
     T key_sum;
     key_sum_stats() {}

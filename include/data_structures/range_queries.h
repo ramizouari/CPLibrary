@@ -35,10 +35,39 @@ inline unsigned int bit_ceil(unsigned int n)
     return 1<<(bit_log(n)+1);
 }
 
+template<typename O>
+struct prefix_array
+{
+    using R=typename O::type;
+    using type=typename O::type;
+    std::vector<R> A;
+    std::vector<R> P;
+    inline static constexpr O F=O();
+    prefix_array(const std::vector<R> &_A):A(_A),P(_A.size()+1)
+    {
+        P[0]=O::neutral;
+        for(int i=0;i<A.size();i++)
+            P[i+1]=F(P[i],A[i]);
+    }
 
-template<typename R,typename O>
+    R query(int l,int r)
+    {
+        return F(F.inv(P[l]),P[r]);
+    }
+
+    void update(int i,R u)
+    {
+        A[i]=u;
+        for(int j=i+1;j<P.size();j++)
+            P[j]=F(P[j-1],A[j-1]);
+    }
+};
+
+template<typename O>
 struct segment_tree
 {
+    using R=typename O::type;
+    using type=R;
     std::vector<std::vector<R>> S;
     std::vector<R> A;
     int n,h;
@@ -78,7 +107,7 @@ struct segment_tree
         return query(std::max(l,0),std::min(r,n),0,n,0);
     }
 private:
-    inline static constexpr O F=O();
+    inline static O F=O();
     void build()
     {
         for(int i=0;i<n;i++)
@@ -102,10 +131,12 @@ private:
     }
 };
 
-template<typename T,typename O>
+template<typename O>
 struct sparse_array
 {
-    inline static constexpr O F=O();
+    using T=typename O::type;
+    using type = T;
+    inline static O F=O();
     int n,h;
     std::vector<std::vector<T>> S;
 public:
@@ -132,11 +163,13 @@ public:
     }
 };
 
-template<typename R,typename O>
+template<typename O>
 struct segment_matrix
 {
-    std::vector<std::vector<segment_tree<R,O>>> S;
-    std::vector<segment_tree<R,O>> segment_forest;
+    using R=typename O::type;
+    using type=R;
+    std::vector<std::vector<segment_tree<O>>> S;
+    std::vector<segment_tree<O>> segment_forest;
     std::vector<std::vector<R>> A;
     int n,h;
     segment_matrix(std::vector<std::vector<R>> &&_A):A(std::move(_A)),h(0)
@@ -185,7 +218,7 @@ struct segment_matrix
         return query(l,r,p,q,0,n,0);
     }
 private:
-    inline static constexpr O F=O();
+    inline static O F=O();
 
     R query(int l,int r,int p,int q,int a,int b,int depth)
     {
@@ -208,9 +241,14 @@ template<typename T,typename O>
 struct fenwick_tree {
     int n;
     std::vector<T> bit;
-    inline static constexpr O F = O();
+    inline static O F = O();
 
     fenwick_tree(int _n):n(_n),bit(n,O::neutral){}
+    fenwick_tree(const std::vector<T> &X) : fenwick_tree(X.size())
+    {
+        for(int i=0;i<n;i++)
+            update(i,X[i]);
+    }
     T sum(int x) {
         if(x<0)
             return O::neutral;
@@ -243,7 +281,7 @@ struct fenwick_tree {
 
 template<typename T,typename O>
 struct fenwick_matrix {
-    inline static constexpr O F=O();
+    inline static O F=O();
     int n, m;
     std::vector<std::vector<T>> bit;
 

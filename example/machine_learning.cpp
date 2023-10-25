@@ -5,7 +5,7 @@
 #include "data_structures/statistic_tree.h"
 #include "algebra/binary_operation.h"
 #include "functional/functional.h"
-#include "data_structures/data_structures.h"
+#include "data_structures/range_queries.h"
 #include <iostream>
 #include <utility>
 #include "algebra/order.h"

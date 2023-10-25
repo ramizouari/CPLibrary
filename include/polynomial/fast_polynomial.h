@@ -7,7 +7,7 @@
 #include "fft.h"
 #include "ring_extension.h"
 #include "algebra/binary_operation.h"
-#include "data_structures/data_structures.h"
+#include "data_structures/range_queries.h"
 
 
 template<typename R>

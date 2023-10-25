@@ -10,7 +10,7 @@
 #include <boost/test/data/monomorphic.hpp>
 #include <random>
 #include <chrono>
-#include "data_structures/data_structures.h"
+#include "data_structures/range_queries.h"
 #include "nt/modular_arithmetic.h"
 #include "linear_algebra/linear_algebra.h"
 constexpr std::int64_t M = 1000000007;

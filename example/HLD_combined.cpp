@@ -1,61 +1,27 @@
-﻿#include <bits/stdc++.h>
+#include <iostream>
+#include <optional>
+#include <stdexcept>
+#include <vector>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <unordered_set>
+#include <algorithm>
+#include <tuple>
+#include <numeric>
+#include <variant>
+#include <memory>
+#include <queue>
+#include <random>
+
 template<typename T>
 using VE=std::vector<T>;
-using pii=std::pair<int,int>;
-namespace cxx14
-{
-    constexpr class nullopt_t{} nullopt;
-    template<typename T>
-    class optional
-    {
-        std::unique_ptr<T> p;
-    public:
-        optional():p(nullptr){}
-        optional(nullopt_t):optional(){}
-        optional(const T& _p):p(std::make_unique<T>(_p)){}
-        optional(T&& _p):p(std::make_unique<T>(std::move(_p))){}
-        optional(const optional<T>& _p):p(_p?p?std::make_unique<T>(*_p):nullptr:nullptr){}
-        optional(optional<T>&& _p) noexcept:p(std::move(_p.p)){}
-        optional<T>& operator=(const optional<T>& _p)
-        {
-            if(_p)
-                p=std::make_unique<T>(*_p);
-            else
-                p=nullptr;
-            return *this;
-        }
-        operator bool() const
-        {
-            return p!=nullptr;
-        }
-        T& operator*()
-        {
-            return *p;
-        }
-        const T& operator*() const
-        {
-            return *p;
-        }
-        T* operator->()
-        {
-            return p.get();
-        }
-        const T* operator->() const
-        {
-            return p.get();
-        }
-        template<typename ...Z>
-        void emplace(Z&&... z)
-        {
-            p=std::make_unique<T>(std::forward<Z>(z)...);
-        }
-    };
-}
+
 template<typename W>
 struct G
 {
     int n;
-    using AdjT=pii;
+    using AdjT=std::pair<int,W>;
     VE<VE<AdjT>> adjacencyList,reverseList;
 public:
     explicit G(int _n):n(_n),adjacencyList(n),reverseList(n){}
@@ -64,8 +30,21 @@ public:
         adjacencyList[a].emplace_back(b,w);
         reverseList[b].emplace_back(a,w);
     }
+
+    VE<int> topologicalSort()
+    {
+        VE<bool> visited(n);
+        VE<int> L;
+        for(int i=0;i<n;i++)
+            topologicalSort(i,L,visited);
+        std::reverse(L.begin(),L.end());
+        return L;
+    }
 };
+using natural = std::uint64_t;
 using integer = std::int64_t;
+using real = long double;
+using IR=real;
 
 template<typename T>
 struct binary_operation
@@ -83,6 +62,20 @@ struct binary_operation
     {
         return T{};
     }
+};
+
+template<typename T>
+struct invertible_operation
+{
+    virtual T inv(const T& a) const = 0;
+};
+
+template<typename T>
+struct monoid_plus_t:public binary_operation<T> {
+    T reduce(const T &a, const T &b) const override {
+        return a + b;
+    }
+    inline static T neutral{};
 };
 
 template<typename T>
@@ -111,7 +104,7 @@ struct min_t:public binary_operation<T>
     min_t(): min_t(neutral){}
     T reduce(const T&a,const T&b) const override
     {
-        return std::min(a,b);
+        return std::max(a,b);
     }
 
     inline static T neutral{};
@@ -217,6 +210,7 @@ private:
             return F(query(l,mid,a,mid,depth+1),query(mid,r,mid,b,depth+1));
     }
 };
+
 template<typename O>
 struct sparse_array
 {
@@ -274,10 +268,19 @@ template<typename W>
 struct HeavyLightDecomposition
 {
     VE<bool> is_heavy;
-    VE<pii> heavy_path_endpoints;
+    VE<std::pair<int,int>> heavy_path_endpoints;
     VE<int> component_size;
     VE<HLDIndex> HLD_mapper;
     VE<VE<W>> components;
+};
+
+template<>
+struct HeavyLightDecomposition<void>
+{
+    VE<bool> is_heavy;
+    VE<std::pair<int,int>> heavy_path_endpoints;
+    VE<int> component_size;
+    VE<HLDIndex> HLD_mapper;
 };
 
 enum class TreeStats
@@ -301,7 +304,7 @@ struct WT : public G<W>
     bool reversed=false;
     VE<int> subtree_size;
     using AdjT=typename G<W>::AdjT;
-    VE<cxx14::optional<AdjT>> parent;
+    VE<std::optional<AdjT>> parent;
     int root;
     HeavyLightDecomposition<W> HLD;
     WT(int n,int _root):G<W>(n),root(_root),subtree_size(n),parent(n)
@@ -330,6 +333,7 @@ struct WT : public G<W>
         if(stats & TreeStats::LCA) buildLCA();
         if(stats & TreeStats::HLD) buildHeavyLightDecomposition();
     }
+
     void reRoot(int new_root)
     {
         std::queue<int> Q;
@@ -342,30 +346,31 @@ struct WT : public G<W>
             auto u=Q.front();
             Q.pop();
             for(auto [v,w]:this->adjacencyList[u]) if(!visited[v])
-                {
-                    visited[v]=true;
-                    Q.emplace(v);
-                    newReverseList[u].emplace_back(v,w);
-                    newAdjacencyList[v].emplace_back(u,w);
-                }
+            {
+                visited[v]=true;
+                Q.emplace(v);
+                newReverseList[u].emplace_back(v,w);
+                newAdjacencyList[v].emplace_back(u,w);
+            }
             for(auto [v,w]:this->reverseList[u]) if(!visited[v])
-                {
-                    visited[v]=true;
-                    Q.emplace(v);
-                    newReverseList[u].emplace_back(v,w);
-                    newAdjacencyList[v].emplace_back(u,w);
-                }
+            {
+                visited[v]=true;
+                Q.emplace(v);
+                newReverseList[u].emplace_back(v,w);
+                newAdjacencyList[v].emplace_back(u,w);
+            }
         }
         this->adjacencyList=std::move(newAdjacencyList);
         this->reverseList=std::move(newReverseList);
         updateRoot();
     }
+
     int leastCommonAncestor(int u,int v)
     {
         if(lca_data)
         {
-            auto [a,b]=ete[u];
-            auto [c,d]=ete[v];
+            auto [a,b]=euler_tour_endpoints[u];
+            auto [c,d]=euler_tour_endpoints[v];
             if(a>c)
             {
                 std::swap(a,c);
@@ -397,14 +402,16 @@ struct WT : public G<W>
             subtree_size[u]+=subtree_size[v];
         }
     }
+
     void updateRoot()
     {
         for(int i=0;i<G<W>::n;i++)
-            parent[i]=this->adjacencyList[i].empty()?cxx14::optional<AdjT>{} : cxx14::optional<AdjT>(this->adjacencyList[i][0]);
+            parent[i]=this->adjacencyList[i].empty()?std::nullopt:std::make_optional(this->adjacencyList[i][0]);
         for(int i=0;i<G<W>::n;i++)
             if(!parent[i])
                 root=i;
     }
+
     void updateHeavyEdges(int u)
     {
         for(int i=0;i<children(u).size();i++)
@@ -417,11 +424,11 @@ struct WT : public G<W>
     }
     void buildLCA()
     {
-        VE<HD> A;
-        ete.resize(G<W>::n);
+        VE<HeightData> A;
+        euler_tour_endpoints.resize(G<W>::n);
         eulerTour(root,0,A);
-        min_t<HD>::neutral.first=std::numeric_limits<int>::max();
-        lca_data=std::make_unique<sparse_array<min_t<HD>>>(A);
+        min_t<HeightData>::neutral.first=std::numeric_limits<int>::max();
+        lca_data=std::make_unique<sparse_array<min_t<HeightData>>>(A);
     }
 
     void buildHeavyLightDecomposition()
@@ -459,20 +466,20 @@ struct WT : public G<W>
     }
 
 protected:
-    using HD=pii;
-    using ED = pii;
-    std::unique_ptr<sparse_array<min_t<HD>>> lca_data;
-    VE<ED> ete;
-    void eulerTour(int u,int height,VE<HD> &A)
+    using HeightData=std::pair<int,int>;
+    using EnpointsData = std::pair<int,int>;
+    std::unique_ptr<sparse_array<min_t<HeightData>>> lca_data;
+    VE<EnpointsData> euler_tour_endpoints;
+    void eulerTour(int u,int height,VE<HeightData> &A)
     {
-        ete[u].first=A.size();
+        euler_tour_endpoints[u].first=A.size();
         for(auto [v,_]: children(u))
         {
             A.emplace_back(height,u);
             eulerTour(v,height+1,A);
         }
         A.emplace_back(height,u);
-        ete[u].second=A.size();
+        euler_tour_endpoints[u].second=A.size();
     }
 };
 
@@ -523,6 +530,7 @@ public:
             R.update(HLD.HLD_mapper[v].index, w);
         }
     }
+
 protected:
     W query_with_lca(int u,int lca)
     {
@@ -547,7 +555,9 @@ protected:
         R=F(R,S[HLD.HLD_mapper[u].hld_id].query(a, b));
         return R;
     }
+
     VE<RMQ> S;
+
     void buildRangeStatistics()
     {
         for(auto &C:HLD.components)
@@ -562,46 +572,43 @@ protected:
 int main()
 {
     int T;
-    using namespace std;
-    std::ios_base::sync_with_stdio(false);
-    cin.tie(nullptr);
-    cin >> T;
+    std::cin >> T;
     for(int t=1;t<=T;t++)
     {
         int n;
-        cin >> n;
+        std::cin >> n;
         CHLT<max_t<int>,segment_tree<max_t<int>>> H(n);
         VE<std::pair<int,int>> edges;
         for(int i=0;i<n-1;i++)
         {
             int u,v,w;
-            cin >> u >> v >> w;
+            std::cin >> u >> v >> w;
             u--,v--;
             H.connect(u,v,w);
             edges.emplace_back(u,v);
         }
         H.reRoot(0);
         H.buildStatistics();
-        string query;
-        cin >> query;
+        std::string query;
+        std::cin >> query;
         while(query!="DONE")
         {
             if(query=="QUERY")
             {
                 int u,v;
-                cin >> u >> v;
+                std::cin >> u >> v;
                 u--,v--;
-                cout << H.query(u,v) << '\n';
+                std::cout << H.query(u,v) << std::endl;
             }
             else if(query=="CHANGE")
             {
                 int t,w;
-                cin >> t >> w;
+                std::cin >> t >> w;
                 t--;
                 auto [u,v]=edges[t];
                 H.update(u,v,w);
             }
-            cin >> query;
+            std::cin >> query;
         }
     }
 }

@@ -373,12 +373,11 @@ public:
  * @details Each Graph is a couple G=(V,E) where V={0,...,n-1} are nodes, and E is a subset of VxV
  * @param n the size of the Graph
  * */
-template<typename ...Weights>
+template<typename Weight>
 struct WeightedGraph
 {
-    using WeightType=std::tuple<Weights...>;
     int n;
-    using AdjacentType=std::pair<int,WeightType>;
+    using AdjacentType=std::pair<int,Weight>;
     std::vector<std::vector<AdjacentType>> adjacencyList,reverseList;
 protected:
 
@@ -406,10 +405,10 @@ protected:
 
 public:
     explicit WeightedGraph(int _n):n(_n),adjacencyList(n),reverseList(n){}
-    void connect(int a,int b, Weights... weights)
+    void connect(int a,int b, const Weight & w)
     {
-        adjacencyList[a].emplace_back(b,std::make_tuple(weights...));
-        reverseList[b].emplace_back(a,std::make_tuple(weights...));
+        adjacencyList[a].emplace_back(b,w);
+        reverseList[b].emplace_back(a,w);
     }
 
     std::vector<int> topologicalSort()

@@ -9,6 +9,7 @@
 template<typename T>
 struct binary_operation
 {
+    using type=T;
     template<typename H0,typename ...H>
     T operator()(const H0&a,const H&... b) const
     {
@@ -17,6 +18,10 @@ struct binary_operation
         else return reduce(a,this->operator()(b...));
     }
     virtual T reduce(const T& a, const T& b) const = 0;
+    virtual T neutral_element() const
+    {
+        return T{};
+    }
 };
 
 template<typename T>
@@ -51,6 +56,10 @@ struct multiplies_t:public binary_operation<T>
     }
 
     inline static T neutral=T(1);
+    T neutral_element() const override
+    {
+        return neutral;
+    }
 };
 
 template<typename T>
@@ -60,6 +69,7 @@ struct field_multiplies_t:public multiplies_t<T>,public invertible_operation<T>
     {
         return a.inv();
     }
+
 };
 
 template<>
@@ -83,23 +93,39 @@ struct field_multiplies_t<IC>:public multiplies_t<IC>,public invertible_operatio
 template<typename T>
 struct max_t:public binary_operation<T>
 {
+    T e;
+    explicit max_t(T _e):e(_e){}
+    max_t(): max_t(T{}){}
     T reduce(const T&a,const T&b) const override
     {
         return std::max(a,b);
     }
 
     inline static T neutral{0};
+    T neutral_element() const override
+    {
+        return e;
+    }
 };
 
 template<typename T>
 struct min_t:public binary_operation<T>
 {
+    T e;
+    explicit min_t(T _e):e(_e){}
+    min_t(): min_t(T{}){}
+
     T reduce(const T&a,const T&b) const override
     {
         return std::min(a,b);
     }
 
     inline static T neutral{};
+
+    T neutral_element() const override
+    {
+        return e;
+    }
 };
 
 template<typename T>
@@ -122,6 +148,10 @@ struct lcm_t:public binary_operation<T>
     }
 
     inline static T neutral{1};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
 };
 
 template<typename T>
@@ -149,6 +179,10 @@ struct and_t:public binary_operation<T>
     }
 
     inline static T neutral=static_cast<T>(-1);
+    T neutral_element() const override
+    {
+        return neutral;
+    }
 };
 
 template<typename T>
@@ -171,6 +205,10 @@ struct logical_and_t :public binary_operation<T>
     }
 
     inline static T neutral{true};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
 };
 
 template<typename T>
@@ -182,6 +220,10 @@ struct logical_or_t :public binary_operation<T>
     }
 
     inline static T neutral{false};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
 };
 
 template<typename T>
@@ -196,6 +238,10 @@ struct logical_xor_t :public binary_operation<T>,public invertible_operation<T>
         return !a;
     }
     inline static T neutral{false};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
 };
 
 #endif
