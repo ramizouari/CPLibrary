@@ -26,11 +26,14 @@ find_package(Boost COMPONENTS iostreams program_options)
 target_link_libraries(SourceCombiner Boost::program_options)
 add_executable(GrammarSupport example/grammar.cpp ${SOURCE_FILES} ${HEADER_FILES})
 add_executable(Parser example/parser.cpp ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(Expression example/expression.cpp ${SOURCE_FILES} ${HEADER_FILES})
+
 add_executable(HLD example/HLD.cpp ${SOURCE_FILES} ${HEADER_FILES})
 add_executable(PathQuery example/PathQuery.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 add_executable(CustomProblem local/WinterCupExpectedIterations.cpp ${HEADER_FILES} ${SOURCE_FILES} local/WinterCupGrundy.cpp)
 
+add_executable(GameTheory example/nim.cpp ${HEADER_FILES})
 
 add_executable(CPLibrary main.cpp ${HEADER_FILES} ${SOURCE_FILES})
 add_executable(MLExample example/machine_learning.cpp ${HEADER_FILES})

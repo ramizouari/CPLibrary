@@ -651,10 +651,10 @@ int main(int argc, char** argv)
     G->addRuleList(std::make_shared<ConcatenateCallParams>(), "CallParams","CallParams","Comma","Expression");
     G->addRuleList(std::make_shared<ToCallParams>(), "CallParams","Expression");
     G->addRuleList(std::make_shared<parser::reducers::Projection>(1), "Factor","(","Expression",")");
-    G->addRuleList(std::make_shared<NumberConcatenation>(), "Number","Number","Digit");
+    G->addRuleList(std::make_shared<NumberConcatenation>(), "Number","Number","Digit"); // Number -> Number Digit
     G->addRuleList(parser::reducers::Identity::instance, "Number","Digit");
     for(int i=0;i<10;i++)
-        G->addRuleList(std::make_shared<NumberGenerator>(i), "Digit",std::to_string(i));
+        G->addRuleList(std::make_shared<NumberGenerator>(i), "Digit",std::to_string(i)); // Digit -> i
     for(auto x:alphabet)
     {
         G->addRuleList(std::make_shared<CharacterGenerator>(x), "Name", std::string(1, x));
@@ -687,3 +687,8 @@ int main(int argc, char** argv)
         std::cout << "error\n";
     }
 }
+
+
+//int -> @
+//class -> °
+// "class x { int r;};" -> "° x { @ r;};"

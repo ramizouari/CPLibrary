@@ -1,3 +1,4 @@
+﻿#include <iostream>
 //
 // Created by ramizouari on 21/11/22.
 //
@@ -11,9 +12,175 @@
 #include <set>
 #include <unordered_set>
 #include <algorithm>
-#include <span>
-#include "union_find.h"
-#include "general.h"
+//
+// Created by ramizouari on 21/11/22.
+//
+
+#ifndef CPLIBRARY_UNION_FIND_H
+#define CPLIBRARY_UNION_FIND_H
+#include <vector>
+#include <map>
+#include <unordered_map>
+
+class UnionFind
+{
+    int n;
+    std::vector<int> parent,rank;
+public:
+    UnionFind(int n):n(n),rank(n),parent(n)
+    {
+        for(int i=0;i<n;i++)
+            parent[i]=i;
+    }
+
+    void connect(int a,int b)
+    {
+        auto u= representative(a),v= representative(b);
+        if(u==v)
+            return;
+        if(rank[u]<rank[u])
+            parent[u]=parent[v];
+        else if(rank[v]<rank[u])
+            parent[v]=parent[u];
+        else
+        {
+            parent[u]=parent[v];
+            rank[v]++;
+        }
+    }
+
+    int representative(int a)
+    {
+        if(parent[a]==a)
+            return a;
+        else return parent[a]= representative(parent[a]);
+    }
+
+    bool equivalent(int a,int b)
+    {
+        return representative(a)== representative(b);
+    }
+};
+
+template<typename OrderedSet>
+class OrderedUnionFind
+{
+    struct ParentData
+    {
+        const OrderedSet* parent;
+        int rank;
+    };
+    std::map<OrderedSet,ParentData> data{};
+public:
+    void connect(const OrderedSet& A,const OrderedSet&B)
+    {
+        if(equivalent(A,B))
+            return;
+        auto &[C,NodeData1]=get(representative(A));
+        auto &[D,NodeData2]=get(representative(B));
+        auto &[p1,r1]=NodeData1;
+        auto &[p2,r2]=NodeData2;
+        if(r1<r2)
+            p1=p2;
+        else if(r1>r2)
+            p2=p1;
+        else
+        {
+            p1=p2;
+            r2++;
+        }
+    }
+    std::pair<const OrderedSet,ParentData>& get(const OrderedSet &A)
+    {
+        if(!data.contains(A))
+        {
+            auto [it,_]=data.emplace(A,ParentData{nullptr,0});
+            auto &[B,NodeData]=*it;
+            NodeData.parent=&B;
+            return *it;
+        }
+        return *data.find(A);
+    }
+    const OrderedSet& representative(const OrderedSet&A)
+    {
+        auto &[B,NodeData]=get(A);
+        auto &C=NodeData.parent;
+        if(&B==C)
+            return B;
+        else {
+            NodeData.parent = &representative(*NodeData.parent);
+            return *NodeData.parent;
+        }
+    }
+
+    bool equivalent(const OrderedSet&A,const OrderedSet&B)
+    {
+        return &representative(get(A).first)== &representative(get(B).first);
+    }
+
+};
+
+template<typename UnorderedSet>
+class UnorderedUnionFind
+{
+    struct ParentData
+    {
+        const UnorderedSet* parent;
+        int rank;
+    };
+    std::unordered_map<UnorderedSet,ParentData> data{};
+public:
+    void connect(const UnorderedSet& A,const UnorderedSet&B)
+    {
+        if(equivalent(A,B))
+            return;
+        auto &[C,NodeData1]=get(representative(A));
+        auto &[D,NodeData2]=get(representative(B));
+        auto &[p1,r1]=NodeData1;
+        auto &[p2,r2]=NodeData2;
+        if(r1<r2)
+            p1=p2;
+        else if(r1>r2)
+            p2=p1;
+        else
+        {
+            p1=p2;
+            r2++;
+        }
+    }
+    std::pair<const UnorderedSet,ParentData>& get(const UnorderedSet &A)
+    {
+        if(!data.contains(A))
+        {
+            auto [it,_]=data.emplace(A,ParentData{nullptr,0});
+            auto &[B,NodeData]=*it;
+            NodeData.parent=&B;
+            return *it;
+        }
+        return *data.find(A);
+    }
+    const UnorderedSet& representative(const UnorderedSet&A)
+    {
+        auto &[B,NodeData]=get(A);
+        auto &C=NodeData.parent;
+        if(&B==C)
+            return B;
+        else {
+            NodeData.parent = &representative(*NodeData.parent);
+            return *NodeData.parent;
+        }
+    }
+
+    bool equivalent(const UnorderedSet&A,const UnorderedSet&B)
+    {
+        return &representative(get(A).first)== &representative(get(B).first);
+    }
+
+};
+
+
+
+#endif //CPLIBRARY_UNION_FIND_H
 
 /**
  * @brief This the class of directed Graphs
@@ -23,7 +190,7 @@
 
 namespace graph
 {
-    struct Graph : public AbstractGraph<int>
+    struct Graph
     {
         int n;
         std::vector<std::vector<int>> adjacencyList,reverseList;
@@ -115,43 +282,19 @@ namespace graph
             auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
             Graph DAG(components.size());
             std::vector<std::set<int>> S(components.size());
-            for(int i=0;i<n;i++) for(auto j:adjacencyList[i]) if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
-            {
-                auto u=componentId[i],v=componentId[j];
-                S[u].insert(v);
-                DAG.connect(u,v);
-            }
+            for(int i=0;i<n;i++) for(auto j:adjacencyList[i])
+                    if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
+                    {
+                        auto u=componentId[i],v=componentId[j];
+                        S[u].insert(v);
+                        DAG.connect(u,v);
+                    }
             return std::make_pair(DAG,componentId);
         }
 
         std::vector<std::vector<int>> getConnectedComponents()
         {
             return getConnectedComponentsWithMetaData().components;
-        }
-
-        int size() const override
-        {
-            return n;
-        }
-
-        view_or_value<int> adjacentNodes(const int&u, bool direction) const override
-        {
-            if(direction)
-                return std::span<const int>(adjacencyList[u].data(),adjacencyList[u].size());
-            return std::span<const int>(reverseList[u].data(),reverseList[u].size());
-        }
-
-        view_or_value<int> adjacentNodes(const int&u) const override
-        {
-            return adjacentNodes(u,true);
-        }
-
-        view_or_value<int> nodes() const override
-        {
-            std::vector<int> A(n);
-            for(int i=0;i<n;i++)
-                A[i]=i;
-            return A;
         }
     };
 
@@ -402,7 +545,7 @@ namespace graph
  * @param n the size of the Graph
  * */
     template<typename Weight>
-    struct WeightedGraph : public AbstractWeightedGraph<int,Weight>
+    struct WeightedGraph
     {
         int n;
         using AdjacentType=std::pair<int,Weight>;
@@ -509,33 +652,568 @@ namespace graph
         {
             return getConnectedComponentsWithMetaData().components;
         }
-
-        int size() const override
-        {
-            return n;
-        }
-
-        view_or_value<AdjacentType> adjacentNodes(const int&u, bool direction) const override
-        {
-            if(direction)
-                return std::span<const AdjacentType>(adjacencyList[u].data(),adjacencyList[u].size());
-            return std::span<const AdjacentType>(reverseList[u].data(),reverseList[u].size());
-        }
-
-        view_or_value<AdjacentType> adjacentNodes(const int&u) const override
-        {
-            return adjacentNodes(u,true);
-        }
-
-        view_or_value<int> nodes() const override
-        {
-            std::vector<int> A(n);
-            for(int i=0;i<n;i++)
-                A[i]=i;
-            return A;
-        }
     };
 
 }
 
 #endif //CPLIBRARY_GRAPH_H
+//
+// Created by ramizouari on 26/10/23.
+//
+
+#ifndef CPLIBRARY_GRAPH_ALGORITHMS_H
+#define CPLIBRARY_GRAPH_ALGORITHMS_H
+#ifndef __ORDER_H__
+#define __ORDER_H__
+//
+// Created by ramizouari on 01/12/2021.
+//
+
+#ifndef ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#define ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#include <complex>
+#include <functional>
+using natural = std::uint64_t;
+using integer = std::int64_t;
+using real = long double;
+using IR=real;
+using IC= std::complex<IR>;
+constexpr real epsilon=1e-7;
+
+template<typename R>
+R commutator(R a,R b)
+{
+    return a*b-b*a;
+}
+
+template<typename M,typename G=typename M::base_field>
+M conj(M a)
+{
+    if constexpr (std::is_same_v<G, IC>)
+    {
+        if constexpr (std::is_same_v<G, M>)
+            return std::conj(a);
+        else for (auto& s : a)
+            s = conj<typename std::remove_reference<decltype(s)>::type, G>(s);
+    }
+    return a;
+}
+
+template<typename R,typename ...StructureMetaData>
+R pow(R a, long long n,StructureMetaData ... meta_info)
+{
+    if(n==0)
+        return R(1,meta_info...);
+    else if(n==1)
+        return a;
+    auto s=pow(a,n/2);
+    return n%2?s*s*a:s*s;
+}
+
+template<typename R>
+bool is_zero(const R&a)
+{
+    return a==R{};
+}
+
+inline bool is_zero(const IC&a)
+{
+    return std::abs(a) < epsilon;
+}
+
+inline bool is_zero(const real &a)
+{
+    return std::abs(a) < epsilon;
+}
+
+template<typename R>
+R gcd(R a,R b)
+{
+    if(a<b)
+        std::swap(a,b);
+    R q,tmp;
+    while(!is_zero(b))
+    {
+        q=a/b;
+        tmp=b;
+        b=a-b*q;
+        a=tmp;
+    }
+    return a;
+}
+
+template<typename R>
+R lcm(const R &a,const R &b)
+{
+    return a*b/gcd(a,b);
+}
+
+template<typename R=integer>
+struct egcd_t
+{
+    R a,b,d;
+};
+
+template<typename R>
+egcd_t<R> egcd(R a,R b)
+{
+    if(a<b)
+    {
+        auto e = egcd(b, a);
+        std::swap(e.a,e.b);
+        return e;
+    }
+    R q,s1=1,s2=0,t1=0,t2=1,tmp;
+    while(!is_zero(b))
+    {
+        q=a/b;
+        tmp=s2;
+        s2=s1-q*s2;
+        s1=tmp;
+        tmp=t2;
+        t2=t1-q*t2;
+        t1=tmp;
+        tmp=b;
+        b=a-b*q;
+        a=tmp;
+    }
+    return {s1,t1,a};
+}
+
+template<typename R>
+std::pair<R,R> bezout(R a, R b)
+{
+    auto [u,v,_]=egcd(a,b);
+    return {u,v};
+}
+
+template<typename B>
+B next_gray(B n)
+{
+    return n^(n>>1);
+}
+
+template<typename F,typename R>
+std::pair<integer,integer> floyd_functional_cycle(F && f,R x0)
+{
+    /*
+     * Find a period
+     * */
+    R x=x0,y=x;
+    integer m=0;
+    do
+    {
+        x=f(x);
+        y=f(f(y));
+        m++;
+    }while(y!=x);
+    /*
+     * Find offset
+     * */
+    x=x0,y=x;
+    for(int i=0;i<m;i++)
+        y=f(y);
+    int offset=0;
+    while(x!=y)
+    {
+        x=f(x);
+        y=f(y);
+        offset++;
+    }
+
+    /*
+     * Find fundamental period
+     * */
+    y=f(x);
+    integer period=1;
+    while(x!=y) {
+        y = f(y);
+        period++;
+    }
+    return std::make_pair(period,offset);
+}
+
+
+template<typename F,typename R>
+integer functional_period(F &&f, R x)
+{
+    /*
+    * Find a period
+    * */
+    R y=x;
+    integer m=0;
+    do
+    {
+        x=f(x);
+        y=f(f(y));
+        m++;
+    }while(y!=x);
+    return m;
+}
+
+
+#endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#include <compare>
+#include <variant>
+
+/*
+* Let (S,<=) be a totally ordered set.
+* By definition, a closure order of (S,<=) is a totally ordered set (S',<=)
+* Where S'=S∪{a,b} where a,b are not members of S
+* Furthermore, we define:
+* 1. a<=s for all s in S
+* 2. s<=b for all s in S
+*/
+struct inf_minus_t;
+
+struct inf_t : public std::monostate
+{
+};
+
+constexpr struct inf_plus_t :public inf_t
+{
+    std::strong_ordering operator<=>(const inf_plus_t&) const = default;
+    bool operator==(const inf_plus_t&) const = default;
+    bool operator==(const inf_minus_t&) const
+    {
+        return false;
+    }
+
+    std::strong_ordering operator<=>(const inf_minus_t&) const
+    {
+        return 1 <=> 0;
+    }
+} inf, inf_plus;
+
+constexpr struct inf_minus_t: public inf_t
+{
+    bool operator==(const inf_plus_t&) const
+    {
+        return false;
+    }
+    std::strong_ordering operator<=>(const inf_plus_t&) const
+    {
+        return 0 <=> 1;
+    }
+    std::strong_ordering operator<=>(const inf_minus_t&) const = default;
+} inf_min;
+
+constexpr inf_minus_t operator-(const inf_plus_t&)
+{
+    return inf_min;
+}
+
+constexpr inf_plus_t operator-(const inf_minus_t&)
+{
+    return inf_plus;
+}
+
+template<typename S>
+using order_closure = std::variant<inf_minus_t, S, inf_plus_t>;
+using extended_real = order_closure<real>;
+using extended_integer = order_closure<integer>;
+
+/*
+* Algebraic Operations on an order closure
+* Formally, if S has also a group or ring like structure, we can augment the definition of addition, multiplication
+* on almost all elements of S'.
+* However, S' does not have the algebraic structure of S
+*/
+template<typename S>
+order_closure<S> operator-(const order_closure<S>& A)
+{
+    return std::visit([](const auto& B)->order_closure<S> {return -B; }, A);
+}
+
+template<typename S>
+order_closure<S> operator+(const order_closure<S>& A, const order_closure<S>& B)
+{
+    if (A.index() == 1 && B.index() != 1)
+        return B;
+    else if (A.index() != 1 && B.index() == 1)
+        return A;
+    else if (A.index() == 1 && B.index() == 1)
+        return std::get<S>(A) + std::get<S>(B);
+    else if (A.index() == B.index())
+        return A;
+    else return S{};
+}
+
+template<typename S>
+order_closure<S> operator-(const order_closure<S>& A, const order_closure<S>& B)
+{
+    if (A.index() == 1 && B.index() != 1)
+        return -B;
+    else if (A.index() != 1 && B.index() == 1)
+        return A;
+    else if (A.index() == 1 && B.index() == 1)
+        return std::get<S>(A) - std::get<S>(B);
+    else if (A.index() == B.index())
+        return S{};
+    else return A;
+}
+
+template<typename S>
+order_closure<S> operator-(const order_closure<S>& A, const S& k)
+{
+    if (A.index() == 1)
+        return std::get<S>(A) - k;
+    else return A;
+}
+
+template<typename S>
+order_closure<S> operator-(const S& k,const order_closure<S>& A)
+{
+    if (A.index() == 1)
+        return std::get<S>(A) - k;
+    else return -A;
+}
+
+template<typename S>
+order_closure<S> operator+(const order_closure<S>& A, const S& k)
+{
+    if (A.index() == 1)
+        return std::get<S>(A) + k;
+    else return A;
+}
+
+template<typename S>
+order_closure<S> operator+(const S& k, const order_closure<S>& A)
+{
+    return A + k;
+}
+
+template<typename S>
+order_closure<S> operator*(const order_closure<S>& A, const order_closure<S>& B)
+{
+    if (A.index() == 1 && B.index() != 1)
+    {
+        if (std::get<S>(A) == 0)
+            return 0;
+        else if (std::get<S>(A) > 0)
+            return B;
+        else return -B;
+    }
+    else if (A.index() != 1 && B.index() == 1)
+    {
+        if (std::get<S>(B) == 0)
+            return 0;
+        else if (std::get<S>(B) > 0)
+            return A;
+        else return -A;
+    }
+    else if (A.index() == 1 && B.index() == 1)
+        return std::get<S>(A) * std::get<S>(B);
+    return A.index() == B.index() ? order_closure<S>(inf) : order_closure<S>(-inf);
+}
+
+template<typename S>
+order_closure<S> operator*(const order_closure<S>& A, const S& k)
+{
+    if (A.index() == 1)
+        return std::get<S>(A) * k;
+    else if (k == 0)
+        return 0;
+    else if (k > 0)
+        return A;
+    else return -A;
+}
+
+template<typename S>
+order_closure<S> operator*(const S& k, const order_closure<S>& A)
+{
+    return operator*(A, k);
+}
+
+template<typename S>
+order_closure<S> operator/(const order_closure<S>& A, const order_closure<S>& B)
+{
+    if (A.index() == 1 && B.index() != 1)
+        return 0;
+    else if (A.index() != 1 && B.index() == 1)
+    {
+        if (std::get<S>(B) >= 0)
+            return A;
+        else return -A;
+    }
+    else if (A.index() == 1 && B.index() == 1)
+        return std::get<S>(A) / std::get<S>(B);
+    return A.index() == B.index() ? 1 : -1;
+}
+
+template<typename S>
+order_closure<S> operator/(const order_closure<S>& A, const S& k)
+{
+    if (A.index() == 1)
+        return std::get<S>(A) / k;
+    else if (k >= 0)
+        return A;
+    else return -A;
+}
+
+template<typename S>
+order_closure<S> operator/(const S& k, const order_closure<S>& A)
+{
+    if (A.index() != 1)
+        return 0;
+    else return k / std::get<S>(A);
+}
+
+template<typename S>
+order_closure<S>& operator+=(order_closure<S>& A, const order_closure<S>& B)
+{
+    return A = A + B;
+}
+
+template<typename S>
+order_closure<S>& operator-=(order_closure<S>& A, const order_closure<S>& B)
+{
+    return A = A - B;
+}
+
+template<typename S>
+order_closure<S>& operator*=(order_closure<S>& A, const order_closure<S>& B)
+{
+    return A = A * B;
+}
+
+template<typename S>
+order_closure<S>& operator/=(order_closure<S>& A, const order_closure<S>& B)
+{
+    return A = A / B;
+}
+
+template<typename S>
+order_closure<S>& operator+=(order_closure<S>& A, const S& B)
+{
+    return A = A + B;
+}
+
+template<typename S>
+order_closure<S>& operator-=(order_closure<S>& A, const S& B)
+{
+    return A = A - B;
+}
+
+template<typename S>
+order_closure<S>& operator*=(order_closure<S>& A, const S& B)
+{
+    return A = A * B;
+}
+
+template<typename S>
+order_closure<S>& operator/=(order_closure<S>& A, const S& B)
+{
+    return A = A / B;
+}
+
+template<typename S>
+using base_order_type = decltype(std::declval<S>() <=> std::declval<S>());
+
+template<typename S>
+base_order_type<S> operator<=>(const order_closure<S>& A, const S&B)
+{
+    using order_type=base_order_type<S>;
+    if (A.index() == 1)
+        return std::get<S>(A) <=> B;
+    else if (A.index() == 0)
+        return order_type::less;
+    else return order_type::greater;
+}
+
+template<typename S>
+bool operator==(const order_closure<S>& A, const S&B)
+{
+    return A <=> B == 0;
+}
+
+template<typename S>
+base_order_type<S> operator<=>(const order_closure<S>&A,inf_minus_t B)
+{
+    using order_type=base_order_type<S>;
+    return A.index() == 0 ? order_type::equivalent : order_type::greater;
+}
+
+template<typename S>
+base_order_type<S> operator<=>(const order_closure<S>&A,inf_plus_t B)
+{
+    using order_type=base_order_type<S>;
+    return A.index() == 2 ? order_type::equivalent : order_type::less;
+}
+
+template<typename S>
+bool operator==(const order_closure<S>&A,inf_minus_t B)
+{
+    return A <=> B == 0;
+}
+
+template<typename S>
+bool operator==(const order_closure<S>&A,inf_plus_t B)
+{
+    return A <=> B == 0;
+}
+
+template<typename S>
+std::ostream &operator<<(std::ostream &os, const order_closure<S> &A)
+{
+    if (A.index() == 1)
+        os << std::get<S>(A);
+    else if (A.index() == 0)
+        os << "-inf";
+    else os << "inf";
+    return os;
+}
+#endif
+#include <optional>
+
+namespace graph
+{
+
+    template<typename T>
+    auto bellman_ford(const WeightedGraph<T> &G,int u,int m)
+    {
+        using H=order_closure<T>;
+        std::vector<H> d(G.n,inf_plus);
+        std::vector<std::optional<int>> p(G.n,std::nullopt);
+        d[u]=T{};
+        for(int i=0;i<m;i++) for(int a=0;a<G.n;a++) for(auto [b,w]:G.adjacencyList[a]) if(d[b]>d[a]+w)
+        {
+            d[b]=d[a]+w;
+            p[b]=a;
+        }
+        for(int i=0;i<m;i++) for(int a=0;a<G.n;a++) for(auto [b,w]:G.adjacencyList[a]) if(d[b]>d[a]+w)
+                        d[b]= inf_min;
+        return d;
+    }
+
+    template<typename T>
+    auto bellman_ford(const WeightedGraph<T> &G,int u)
+    {
+        return bellman_ford(G,u,G.n-1);
+    }
+}
+
+#endif //CPLIBRARY_ALGORITHMS_H
+
+int main()
+{
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    int n,m;
+    std::cin >> n >> m;
+    graph::WeightedGraph<integer> G(n);
+    for(int i=0;i<m;i++)
+    {
+        int a,b,w;
+        std::cin >> a >> b >> w;
+        a--;
+        b--;
+        G.connect(a,b,-w);
+    }
+    auto d=graph::bellman_ford(G,0,n);
+    if(d[n-1]==inf_min)
+        std::cout << "-1\n";
+    else
+        std::cout << -d[n-1] << '\n';
+    //std::cerr << "dt: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << std::endl;
+}

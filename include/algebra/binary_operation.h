@@ -5,6 +5,7 @@
 #define __OPERATION_H__
 #include <numeric>
 #include "abstract_algebra.h"
+#include <memory>
 
 template<typename T>
 struct binary_operation
@@ -241,6 +242,39 @@ struct logical_xor_t :public binary_operation<T>,public invertible_operation<T>
     T neutral_element() const override
     {
         return neutral;
+    }
+};
+
+template<typename T>
+class binary_operation_ptr
+{
+    std::shared_ptr<binary_operation<T>> op;
+public:
+    binary_operation_ptr(std::shared_ptr<binary_operation<T>> value): op(value){}
+    template<typename ...H>
+    auto operator()(const H&... h) const
+    {
+        return op->operator()(h...);
+    }
+
+    auto neutral_element() const
+    {
+        return op->neutral_element();
+    }
+};
+
+template<typename T>
+class invertible_binary_operation_ptr : public binary_operation_ptr<T>
+{
+    std::shared_ptr<invertible_operation<T>> inverter;
+public:
+    invertible_binary_operation_ptr(std::shared_ptr<binary_operation<T>> b,
+                                    std::shared_ptr<invertible_operation<T>> I): binary_operation_ptr<T>(b),inverter(I){}
+    using binary_operation_ptr<T>::operator();
+    using binary_operation_ptr<T>::neutral_element;
+    auto inv(const T& a) const
+    {
+        return inverter->inv(a);
     }
 };
 
