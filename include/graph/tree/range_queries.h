@@ -73,26 +73,26 @@ namespace graph
                 auto [x,y]=HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id];
                 auto b=HLD.HLD_mapper[u].index;
                 auto a= HLD.HLD_mapper[x].index;
-                auto &S=S_right;
-                if(!invert)
-                    R=F(R,S[HLD.HLD_mapper[u].hld_id].query(a, b));
+                auto &S=invert?S_right:S_left;
+                if(invert)
+                    R=F(S[HLD.HLD_mapper[u].hld_id].query(a, b),R);
                 else
-                    R=F(S[HLD.HLD_mapper[u].hld_id].query(a, b), R);
+                    R=F(R,S[HLD.HLD_mapper[u].hld_id].query(a, b));
                 u=x;
                 while(u!=lca && !WeightedTree<Weight>::HLD.is_heavy[u])
                 {
-                    if(!invert) R=F(R,parent[u]->second);
-                    else R=F(parent[u]->second,R);
+                    if(invert) R=F(parent[u]->second,R);
+                    else R=F(R,parent[u]->second);
                     u=parent[u]->first;
                 }
             }
             auto b=HLD.HLD_mapper[u].index;
             auto a= HLD.HLD_mapper[lca].index;
-            auto &S=S_right;
-            if(!invert)
-                R=F(R,S[HLD.HLD_mapper[u].hld_id].query(a, b));
+            auto &S=invert?S_right:S_left;
+            if(invert)
+                R=F(S[HLD.HLD_mapper[u].hld_id].query(a, b),R);
             else
-                R=F(S[HLD.HLD_mapper[u].hld_id].query(a, b), R);
+                R=F(R,S[HLD.HLD_mapper[u].hld_id].query(a, b));
             return R;
         }
 
