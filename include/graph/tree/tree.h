@@ -482,6 +482,8 @@ namespace graph
                     }
                 }
             }
+            for(const auto &C:HLD.components)
+                HLD.component_size.push_back(C.size());
         }
 
         int distance(int a,int b)

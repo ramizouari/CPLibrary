@@ -71,13 +71,19 @@ namespace graph
             while(HLD.HLD_mapper[u].hld_id != HLD.HLD_mapper[lca].hld_id)
             {
                 auto [x,y]=HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id];
-                auto b=HLD.HLD_mapper[u].index;
-                auto a= HLD.HLD_mapper[x].index;
                 auto &S=invert?S_right:S_left;
                 if(invert)
-                    R=F(S[HLD.HLD_mapper[u].hld_id].query(a, b),R);
+                {
+                    auto b=HLD.HLD_mapper[u].index;
+                    auto a= HLD.HLD_mapper[x].index;
+                    R = F(S[HLD.HLD_mapper[u].hld_id].query(a, b), R);
+                }
                 else
-                    R=F(R,S[HLD.HLD_mapper[u].hld_id].query(a, b));
+                {
+                    auto a=HLD.component_size[HLD.HLD_mapper[u].hld_id] - HLD.HLD_mapper[u].index;
+                    auto b= HLD.component_size[HLD.HLD_mapper[x].hld_id]-HLD.HLD_mapper[x].index;
+                    R = F(R, S[HLD.HLD_mapper[u].hld_id].query(a, b));
+                }
                 u=x;
                 while(u!=lca && !WeightedTree<Weight>::HLD.is_heavy[u])
                 {
@@ -86,13 +92,20 @@ namespace graph
                     u=parent[u]->first;
                 }
             }
-            auto b=HLD.HLD_mapper[u].index;
-            auto a= HLD.HLD_mapper[lca].index;
+
             auto &S=invert?S_right:S_left;
             if(invert)
-                R=F(S[HLD.HLD_mapper[u].hld_id].query(a, b),R);
+            {
+                auto b=HLD.HLD_mapper[u].index;
+                auto a= HLD.HLD_mapper[lca].index;
+                R = F(S[HLD.HLD_mapper[u].hld_id].query(a, b), R);
+            }
             else
-                R=F(R,S[HLD.HLD_mapper[u].hld_id].query(a, b));
+            {
+                auto a=HLD.component_size[HLD.HLD_mapper[u].hld_id] - HLD.HLD_mapper[u].index;
+                auto b= HLD.component_size[HLD.HLD_mapper[lca].hld_id]-HLD.HLD_mapper[lca].index;
+                R = F(R, S[HLD.HLD_mapper[u].hld_id].query(a, b));
+            }
             return R;
         }
 
@@ -102,7 +115,6 @@ namespace graph
         {
             for(auto &C:HLD.components)
             {
-                HLD.component_size.push_back(C.size());
                 if(C.empty()) C.emplace_back(O::neutral);
                 S_right.emplace_back(C);
                 std::reverse(C.begin(),C.end());
