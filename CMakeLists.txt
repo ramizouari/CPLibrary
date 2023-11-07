@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arithmetic.h include/nt/number_theory.h
         include/parser/StatefulParser.h include/graph/tree/tree.h include/data_structures/dynamic_range_queries.h
-        include/graph/tree/range_queries.h
+        include/graph/tree/range_queries.h include/graph/tree/isomorphism.h
         include/polynomial/ring_extension.h include/polynomial/polynomial.h include/polynomial/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/range_queries.h include/algebra/binary_operation.h
         include/topology/topology.h include/data_structures/statistic_tree.h include/nt/primality.h include/formal_verification/node.h include/formal_verification/abstract_decision_tree.h
         include/formal_verification/dynamic_decision_tree.h include/formal_verification/abstract_printer.h
@@ -31,7 +31,7 @@ add_executable(Expression example/expression.cpp ${SOURCE_FILES} ${HEADER_FILES}
 add_executable(HLD example/HLD.cpp ${SOURCE_FILES} ${HEADER_FILES})
 add_executable(PathQuery example/PathQuery.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
-add_executable(CustomProblem local/WinterCupExpectedIterations.cpp ${HEADER_FILES} ${SOURCE_FILES} local/WinterCupGrundy.cpp)
+#add_executable(CustomProblem local/WinterCupExpectedIterations.cpp ${HEADER_FILES} ${SOURCE_FILES} local/WinterCupGrundy.cpp)
 
 add_executable(GameTheory example/nim.cpp ${HEADER_FILES})
 

@@ -1,5 +1,6 @@
 out
 cmake-*
+build
 .idea
 .vs
 local

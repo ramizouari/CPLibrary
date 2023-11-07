@@ -6,6 +6,7 @@
 #define ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
 #include <complex>
 #include <functional>
+#include <cstdint>
 using natural = std::uint64_t;
 using integer = std::int64_t;
 using real = long double;

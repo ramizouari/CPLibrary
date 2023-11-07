@@ -1,579 +1,12 @@
+//
+// Created by ramizouari on 24/10/23.
+//
+
+#ifndef CPLIBRARY_TREE_H
+#define CPLIBRARY_TREE_H
+
+#include <optional>
 #include <stdexcept>
-//
-// Created by ramizouari on 27/10/23.
-//
-
-#ifndef CPLIBRARY_GENERAL_H
-#define CPLIBRARY_GENERAL_H
-#include <span>
-#include <variant>
-#include <vector>
-
-template<typename T>
-struct view_or_value
-{
-    std::variant<std::vector<T>,std::span<T>> value;
-    view_or_value(std::vector<T> _value):value(std::move(_value)){}
-    view_or_value(std::span<T> _value):value(std::move(_value)){}
-    std::span<const T> get() const
-    {
-        if(value.index()==0) return std::span<const T>(std::get<0>(value).data(),std::get<0>(value).size());
-        return std::get<1>(value);
-    }
-    operator std::span<const T>() const
-    {
-        return get();
-    }
-
-    auto begin() const
-    {
-        return get().begin();
-    }
-    auto end() const
-    {
-        return get().end();
-    }
-
-};
-
-
-
-namespace graph
-{
-    template<typename T>
-    struct AbstractGraph
-    {
-        [[nodiscard]] virtual int size() const = 0;
-        virtual view_or_value<T> adjacentNodes(const T&u, bool direction) const =0;
-        virtual view_or_value<T> adjacentNodes(const T&u) const =0;
-        virtual view_or_value<T> nodes() const =0;
-    };
-
-    template<typename T,typename Weight>
-    struct AbstractWeightedGraph
-    {
-        [[nodiscard]] virtual int size() const = 0;
-        using AdjacentType=std::pair<T,Weight>;
-        virtual view_or_value<AdjacentType> adjacentNodes(const T&u, bool direction) const =0;
-        virtual view_or_value<AdjacentType> adjacentNodes(const T&u) const =0;
-        virtual view_or_value<T> nodes() const =0;
-    };
-}
-
-#endif //CPLIBRARY_GENERAL_H
-//
-// Created by ramizouari on 26/10/23.
-//
-
-#ifndef CPLIBRARY_GRAPH_ALGORITHMS_H
-#define CPLIBRARY_GRAPH_ALGORITHMS_H
-//
-// Created by ramizouari on 27/10/23.
-//
-
-#ifndef CPLIBRARY_BELLMAN_FORD_H
-#define CPLIBRARY_BELLMAN_FORD_H
-#ifndef __ORDER_H__
-#define __ORDER_H__
-//
-// Created by ramizouari on 01/12/2021.
-//
-
-#ifndef ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
-#define ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
-#include <complex>
-#include <functional>
-using natural = std::uint64_t;
-using integer = std::int64_t;
-using real = long double;
-using IR=real;
-using IC= std::complex<IR>;
-constexpr real epsilon=1e-7;
-
-template<typename R>
-R commutator(R a,R b)
-{
-    return a*b-b*a;
-}
-
-template<typename M,typename G=typename M::base_field>
-M conj(M a)
-{
-    if constexpr (std::is_same_v<G, IC>)
-    {
-        if constexpr (std::is_same_v<G, M>)
-            return std::conj(a);
-        else for (auto& s : a)
-            s = conj<typename std::remove_reference<decltype(s)>::type, G>(s);
-    }
-    return a;
-}
-
-template<typename R,typename ...StructureMetaData>
-R pow(R a, long long n,StructureMetaData ... meta_info)
-{
-    if(n==0)
-        return R(1,meta_info...);
-    else if(n==1)
-        return a;
-    auto s=pow(a,n/2);
-    return n%2?s*s*a:s*s;
-}
-
-template<typename R>
-bool is_zero(const R&a)
-{
-    return a==R{};
-}
-
-inline bool is_zero(const IC&a)
-{
-    return std::abs(a) < epsilon;
-}
-
-inline bool is_zero(const real &a)
-{
-    return std::abs(a) < epsilon;
-}
-
-template<typename R>
-R gcd(R a,R b)
-{
-    if(a<b)
-        std::swap(a,b);
-    R q,tmp;
-    while(!is_zero(b))
-    {
-        q=a/b;
-        tmp=b;
-        b=a-b*q;
-        a=tmp;
-    }
-    return a;
-}
-
-template<typename R>
-R lcm(const R &a,const R &b)
-{
-    return a*b/gcd(a,b);
-}
-
-template<typename R=integer>
-struct egcd_t
-{
-    R a,b,d;
-};
-
-template<typename R>
-egcd_t<R> egcd(R a,R b)
-{
-    if(a<b)
-    {
-        auto e = egcd(b, a);
-        std::swap(e.a,e.b);
-        return e;
-    }
-    R q,s1=1,s2=0,t1=0,t2=1,tmp;
-    while(!is_zero(b))
-    {
-        q=a/b;
-        tmp=s2;
-        s2=s1-q*s2;
-        s1=tmp;
-        tmp=t2;
-        t2=t1-q*t2;
-        t1=tmp;
-        tmp=b;
-        b=a-b*q;
-        a=tmp;
-    }
-    return {s1,t1,a};
-}
-
-template<typename R>
-std::pair<R,R> bezout(R a, R b)
-{
-    auto [u,v,_]=egcd(a,b);
-    return {u,v};
-}
-
-template<typename B>
-B next_gray(B n)
-{
-    return n^(n>>1);
-}
-
-template<typename F,typename R>
-std::pair<integer,integer> floyd_functional_cycle(F && f,R x0)
-{
-    /*
-     * Find a period
-     * */
-    R x=x0,y=x;
-    integer m=0;
-    do
-    {
-        x=f(x);
-        y=f(f(y));
-        m++;
-    }while(y!=x);
-    /*
-     * Find offset
-     * */
-    x=x0,y=x;
-    for(int i=0;i<m;i++)
-        y=f(y);
-    int offset=0;
-    while(x!=y)
-    {
-        x=f(x);
-        y=f(y);
-        offset++;
-    }
-
-    /*
-     * Find fundamental period
-     * */
-    y=f(x);
-    integer period=1;
-    while(x!=y) {
-        y = f(y);
-        period++;
-    }
-    return std::make_pair(period,offset);
-}
-
-
-template<typename F,typename R>
-integer functional_period(F &&f, R x)
-{
-    /*
-    * Find a period
-    * */
-    R y=x;
-    integer m=0;
-    do
-    {
-        x=f(x);
-        y=f(f(y));
-        m++;
-    }while(y!=x);
-    return m;
-}
-
-
-#endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
-#include <compare>
-#include <variant>
-
-/*
-* Let (S,<=) be a totally ordered set.
-* By definition, a closure order of (S,<=) is a totally ordered set (S',<=)
-* Where S'=S∪{a,b} where a,b are not members of S
-* Furthermore, we define:
-* 1. a<=s for all s in S
-* 2. s<=b for all s in S
-*/
-struct inf_minus_t;
-
-struct inf_t : public std::monostate
-{
-};
-
-constexpr struct inf_plus_t :public inf_t
-{
-    std::strong_ordering operator<=>(const inf_plus_t&) const = default;
-    bool operator==(const inf_plus_t&) const = default;
-    bool operator==(const inf_minus_t&) const
-    {
-        return false;
-    }
-
-    std::strong_ordering operator<=>(const inf_minus_t&) const
-    {
-        return 1 <=> 0;
-    }
-} inf, inf_plus;
-
-constexpr struct inf_minus_t: public inf_t
-{
-    bool operator==(const inf_plus_t&) const
-    {
-        return false;
-    }
-    std::strong_ordering operator<=>(const inf_plus_t&) const
-    {
-        return 0 <=> 1;
-    }
-    std::strong_ordering operator<=>(const inf_minus_t&) const = default;
-} inf_min;
-
-constexpr inf_minus_t operator-(const inf_plus_t&)
-{
-    return inf_min;
-}
-
-constexpr inf_plus_t operator-(const inf_minus_t&)
-{
-    return inf_plus;
-}
-
-template<typename S>
-using order_closure = std::variant<inf_minus_t, S, inf_plus_t>;
-using extended_real = order_closure<real>;
-using extended_integer = order_closure<integer>;
-
-/*
-* Algebraic Operations on an order closure
-* Formally, if S has also a group or ring like structure, we can augment the definition of addition, multiplication
-* on almost all elements of S'.
-* However, S' does not have the algebraic structure of S
-*/
-template<typename S>
-order_closure<S> operator-(const order_closure<S>& A)
-{
-    return std::visit([](const auto& B)->order_closure<S> {return -B; }, A);
-}
-
-template<typename S>
-order_closure<S> operator+(const order_closure<S>& A, const order_closure<S>& B)
-{
-    if (A.index() == 1 && B.index() != 1)
-        return B;
-    else if (A.index() != 1 && B.index() == 1)
-        return A;
-    else if (A.index() == 1 && B.index() == 1)
-        return std::get<S>(A) + std::get<S>(B);
-    else if (A.index() == B.index())
-        return A;
-    else return S{};
-}
-
-template<typename S>
-order_closure<S> operator-(const order_closure<S>& A, const order_closure<S>& B)
-{
-    if (A.index() == 1 && B.index() != 1)
-        return -B;
-    else if (A.index() != 1 && B.index() == 1)
-        return A;
-    else if (A.index() == 1 && B.index() == 1)
-        return std::get<S>(A) - std::get<S>(B);
-    else if (A.index() == B.index())
-        return S{};
-    else return A;
-}
-
-template<typename S>
-order_closure<S> operator-(const order_closure<S>& A, const S& k)
-{
-    if (A.index() == 1)
-        return std::get<S>(A) - k;
-    else return A;
-}
-
-template<typename S>
-order_closure<S> operator-(const S& k,const order_closure<S>& A)
-{
-    if (A.index() == 1)
-        return std::get<S>(A) - k;
-    else return -A;
-}
-
-template<typename S>
-order_closure<S> operator+(const order_closure<S>& A, const S& k)
-{
-    if (A.index() == 1)
-        return std::get<S>(A) + k;
-    else return A;
-}
-
-template<typename S>
-order_closure<S> operator+(const S& k, const order_closure<S>& A)
-{
-    return A + k;
-}
-
-template<typename S>
-order_closure<S> operator*(const order_closure<S>& A, const order_closure<S>& B)
-{
-    if (A.index() == 1 && B.index() != 1)
-    {
-        if (std::get<S>(A) == 0)
-            return 0;
-        else if (std::get<S>(A) > 0)
-            return B;
-        else return -B;
-    }
-    else if (A.index() != 1 && B.index() == 1)
-    {
-        if (std::get<S>(B) == 0)
-            return 0;
-        else if (std::get<S>(B) > 0)
-            return A;
-        else return -A;
-    }
-    else if (A.index() == 1 && B.index() == 1)
-        return std::get<S>(A) * std::get<S>(B);
-    return A.index() == B.index() ? order_closure<S>(inf) : order_closure<S>(-inf);
-}
-
-template<typename S>
-order_closure<S> operator*(const order_closure<S>& A, const S& k)
-{
-    if (A.index() == 1)
-        return std::get<S>(A) * k;
-    else if (k == 0)
-        return 0;
-    else if (k > 0)
-        return A;
-    else return -A;
-}
-
-template<typename S>
-order_closure<S> operator*(const S& k, const order_closure<S>& A)
-{
-    return operator*(A, k);
-}
-
-template<typename S>
-order_closure<S> operator/(const order_closure<S>& A, const order_closure<S>& B)
-{
-    if (A.index() == 1 && B.index() != 1)
-        return 0;
-    else if (A.index() != 1 && B.index() == 1)
-    {
-        if (std::get<S>(B) >= 0)
-            return A;
-        else return -A;
-    }
-    else if (A.index() == 1 && B.index() == 1)
-        return std::get<S>(A) / std::get<S>(B);
-    return A.index() == B.index() ? 1 : -1;
-}
-
-template<typename S>
-order_closure<S> operator/(const order_closure<S>& A, const S& k)
-{
-    if (A.index() == 1)
-        return std::get<S>(A) / k;
-    else if (k >= 0)
-        return A;
-    else return -A;
-}
-
-template<typename S>
-order_closure<S> operator/(const S& k, const order_closure<S>& A)
-{
-    if (A.index() != 1)
-        return 0;
-    else return k / std::get<S>(A);
-}
-
-template<typename S>
-order_closure<S>& operator+=(order_closure<S>& A, const order_closure<S>& B)
-{
-    return A = A + B;
-}
-
-template<typename S>
-order_closure<S>& operator-=(order_closure<S>& A, const order_closure<S>& B)
-{
-    return A = A - B;
-}
-
-template<typename S>
-order_closure<S>& operator*=(order_closure<S>& A, const order_closure<S>& B)
-{
-    return A = A * B;
-}
-
-template<typename S>
-order_closure<S>& operator/=(order_closure<S>& A, const order_closure<S>& B)
-{
-    return A = A / B;
-}
-
-template<typename S>
-order_closure<S>& operator+=(order_closure<S>& A, const S& B)
-{
-    return A = A + B;
-}
-
-template<typename S>
-order_closure<S>& operator-=(order_closure<S>& A, const S& B)
-{
-    return A = A - B;
-}
-
-template<typename S>
-order_closure<S>& operator*=(order_closure<S>& A, const S& B)
-{
-    return A = A * B;
-}
-
-template<typename S>
-order_closure<S>& operator/=(order_closure<S>& A, const S& B)
-{
-    return A = A / B;
-}
-
-template<typename S>
-using base_order_type = decltype(std::declval<S>() <=> std::declval<S>());
-
-template<typename S>
-base_order_type<S> operator<=>(const order_closure<S>& A, const S&B)
-{
-    using order_type=base_order_type<S>;
-    if (A.index() == 1)
-        return std::get<S>(A) <=> B;
-    else if (A.index() == 0)
-        return order_type::less;
-    else return order_type::greater;
-}
-
-template<typename S>
-bool operator==(const order_closure<S>& A, const S&B)
-{
-    return A <=> B == 0;
-}
-
-template<typename S>
-base_order_type<S> operator<=>(const order_closure<S>&A,inf_minus_t B)
-{
-    using order_type=base_order_type<S>;
-    return A.index() == 0 ? order_type::equivalent : order_type::greater;
-}
-
-template<typename S>
-base_order_type<S> operator<=>(const order_closure<S>&A,inf_plus_t B)
-{
-    using order_type=base_order_type<S>;
-    return A.index() == 2 ? order_type::equivalent : order_type::less;
-}
-
-template<typename S>
-bool operator==(const order_closure<S>&A,inf_minus_t B)
-{
-    return A <=> B == 0;
-}
-
-template<typename S>
-bool operator==(const order_closure<S>&A,inf_plus_t B)
-{
-    return A <=> B == 0;
-}
-
-template<typename S>
-std::ostream &operator<<(std::ostream &os, const order_closure<S> &A)
-{
-    if (A.index() == 1)
-        os << std::get<S>(A);
-    else if (A.index() == 0)
-        os << "-inf";
-    else os << "inf";
-    return os;
-}
-#endif
 //
 // Created by ramizouari on 21/11/22.
 //
@@ -757,6 +190,68 @@ public:
 
 
 #endif //CPLIBRARY_UNION_FIND_H
+//
+// Created by ramizouari on 27/10/23.
+//
+
+#ifndef CPLIBRARY_GENERAL_H
+#define CPLIBRARY_GENERAL_H
+#include <span>
+#include <variant>
+#include <vector>
+
+template<typename T>
+struct view_or_value
+{
+    std::variant<std::vector<T>,std::span<const T>> value;
+    view_or_value(std::vector<T> _value):value(std::move(_value)){}
+    view_or_value(std::span<const T> _value):value(std::move(_value)){}
+    std::span<const T> get() const
+    {
+        if(value.index()==0) return std::span<const T>(std::get<0>(value).data(),std::get<0>(value).size());
+        return std::get<1>(value);
+    }
+    operator std::span<const T>() const
+    {
+        return get();
+    }
+
+    auto begin() const
+    {
+        return get().begin();
+    }
+    auto end() const
+    {
+        return get().end();
+    }
+
+};
+
+
+
+namespace graph
+{
+    template<typename T>
+    struct AbstractGraph
+    {
+        [[nodiscard]] virtual int size() const = 0;
+        virtual view_or_value<T> adjacentNodes(const T&u, bool direction) const =0;
+        virtual view_or_value<T> adjacentNodes(const T&u) const =0;
+        virtual view_or_value<T> nodes() const =0;
+    };
+
+    template<typename T,typename Weight>
+    struct AbstractWeightedGraph
+    {
+        [[nodiscard]] virtual int size() const = 0;
+        using AdjacentType=std::pair<T,Weight>;
+        virtual view_or_value<AdjacentType> adjacentNodes(const T&u, bool direction) const =0;
+        virtual view_or_value<AdjacentType> adjacentNodes(const T&u) const =0;
+        virtual view_or_value<T> nodes() const =0;
+    };
+}
+
+#endif //CPLIBRARY_GENERAL_H
 
 /**
  * @brief This the class of directed Graphs
@@ -766,7 +261,7 @@ public:
 
 namespace graph
 {
-    struct Graph
+    struct Graph : public AbstractGraph<int>
     {
         int n;
         std::vector<std::vector<int>> adjacencyList,reverseList;
@@ -858,19 +353,43 @@ namespace graph
             auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
             Graph DAG(components.size());
             std::vector<std::set<int>> S(components.size());
-            for(int i=0;i<n;i++) for(auto j:adjacencyList[i])
-                    if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
-                    {
-                        auto u=componentId[i],v=componentId[j];
-                        S[u].insert(v);
-                        DAG.connect(u,v);
-                    }
+            for(int i=0;i<n;i++) for(auto j:adjacencyList[i]) if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
+            {
+                auto u=componentId[i],v=componentId[j];
+                S[u].insert(v);
+                DAG.connect(u,v);
+            }
             return std::make_pair(DAG,componentId);
         }
 
         std::vector<std::vector<int>> getConnectedComponents()
         {
             return getConnectedComponentsWithMetaData().components;
+        }
+
+        int size() const override
+        {
+            return n;
+        }
+
+        view_or_value<int> adjacentNodes(const int&u, bool direction) const override
+        {
+            if(direction)
+                return std::span<const int>(adjacencyList[u].data(),adjacencyList[u].size());
+            return std::span<const int>(reverseList[u].data(),reverseList[u].size());
+        }
+
+        view_or_value<int> adjacentNodes(const int&u) const override
+        {
+            return adjacentNodes(u,true);
+        }
+
+        view_or_value<int> nodes() const override
+        {
+            std::vector<int> A(n);
+            for(int i=0;i<n;i++)
+                A[i]=i;
+            return A;
         }
     };
 
@@ -1121,7 +640,7 @@ namespace graph
  * @param n the size of the Graph
  * */
     template<typename Weight>
-    struct WeightedGraph
+    struct WeightedGraph : public AbstractWeightedGraph<int,Weight>
     {
         int n;
         using AdjacentType=std::pair<int,Weight>;
@@ -1228,316 +747,1356 @@ namespace graph
         {
             return getConnectedComponentsWithMetaData().components;
         }
+
+        int size() const override
+        {
+            return n;
+        }
+
+        view_or_value<AdjacentType> adjacentNodes(const int&u, bool direction) const override
+        {
+            if(direction)
+                return std::span<const AdjacentType>(adjacencyList[u].data(),adjacencyList[u].size());
+            return std::span<const AdjacentType>(reverseList[u].data(),reverseList[u].size());
+        }
+
+        view_or_value<AdjacentType> adjacentNodes(const int&u) const override
+        {
+            return adjacentNodes(u,true);
+        }
+
+        view_or_value<int> nodes() const override
+        {
+            std::vector<int> A(n);
+            for(int i=0;i<n;i++)
+                A[i]=i;
+            return A;
+        }
     };
 
 }
 
 #endif //CPLIBRARY_GRAPH_H
-namespace graph::algorithms
+//
+// Created by ramizouari on 26/10/23.
+//
+
+#ifndef CPLIBRARY_DYN_SPARSE_ARRAY_H
+#define CPLIBRARY_DYN_SPARSE_ARRAY_H
+#include <vector>
+//
+// Created by ASUS on 01/12/2021.
+//
+#ifndef __OPERATION_H__
+#define __OPERATION_H__
+#include <numeric>
+//
+// Created by ramizouari on 01/12/2021.
+//
+
+#ifndef ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#define ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#include <complex>
+#include <functional>
+#include <cstdint>
+using natural = std::uint64_t;
+using integer = std::int64_t;
+using real = long double;
+using IR=real;
+using IC= std::complex<IR>;
+constexpr real epsilon=1e-7;
+
+template<typename R>
+R commutator(R a,R b)
 {
-    template<typename W>
-    auto iterative_bellman_ford(const WeightedGraph<W> &G,int u,int m)
-    {
-        using H=order_closure<W>;
-        std::vector<H> d(G.n,inf_plus);
-        d[u]=W{};
-        for(int i=0;i<m;i++) for(int a=0;a<G.n;a++) for(auto [b,w]:G.adjacencyList[a])
-                    d[b]=std::min(d[b],d[a]+w);
-        for(int i=0;i<m;i++) for(int a=0;a<G.n;a++) for(auto [b,w]:G.adjacencyList[a]) if(d[b]>d[a]+w)
-                        d[b]= inf_min;
-        return d;
-    }
-
-    template<typename W>
-    auto bellman_ford(const WeightedGraph<W> &G,int u)
-    {
-        return iterative_bellman_ford(G,u,G.n-1);
-    }
-
-    template<typename W>
-    auto bellman_ford(const WeightedGraph<W> &G,int u,int v)
-    {
-        return iterative_bellman_ford(G,u,G.n-1)[v];
-    }
-
-
-    template<typename Mapper,typename T,typename W>
-    auto iterative_bellman_ford(const AbstractWeightedGraph<T,W> &G,const T& u,int m)
-    {
-        using H=order_closure<W>;
-        Mapper d;
-        for(const auto& x:G.nodes())
-            d[x]=inf_plus;
-        d[u]=W{};
-        for(int i=0;i<m;i++) for(const auto& a:G.nodes()) for(const auto& [b,w]:G.adjacencyList[a])
-                    d[b]=std::min(d[b],d[a]+w);
-        for(int i=0;i<m;i++) for(const auto& a:G.nodes()) for(const auto& [b,w]:G.adjacencyList[a]) if(d[b]>d[a]+w)
-                        d[b]= inf_min;
-        return d;
-    }
-
-    template<typename Mapper,typename T,typename W>
-    auto bellman_ford(const AbstractWeightedGraph<T,W> &G,const T& u)
-    {
-        return iterative_bellman_ford<Mapper,T,W>(G,u,G.n-1);
-    }
-
-    template<typename Mapper,typename T,typename W>
-    auto bellman_ford(const AbstractWeightedGraph<T,W> &G,const T& u,const T& v)
-    {
-        return iterative_bellman_ford<Mapper,T,W>(G,u,G.n-1)[v];
-    }
+    return a*b-b*a;
 }
 
-#endif //CPLIBRARY_BELLMAN_FORD_H
-//
-// Created by ramizouari on 27/10/23.
-//
-
-#ifndef CPLIBRARY_DIJKSTRA_H
-#define CPLIBRARY_DIJKSTRA_H
-#include <queue>
-
-namespace graph::algorithms
+template<typename M,typename G=typename M::base_field>
+M conj(M a)
 {
-    template<typename T,typename W>
-    struct dijkstra_element
+    if constexpr (std::is_same_v<G, IC>)
     {
-        T node;
-        order_closure<W> distance;
-        dijkstra_element(T _node,order_closure<W> _distance):node(_node),distance(_distance){}
-        std::strong_ordering operator<=>(const dijkstra_element& other) const
-        {
-            return distance<=>other.distance;
-        }
-    };
-
-    template<typename W>
-    auto dijkstra(const WeightedGraph<W> &G,int u)
-    {
-        using H=order_closure<W>;
-        std::vector<H> d(G.n,inf_plus);
-        d[u]=W{};
-        std::priority_queue<dijkstra_element<int,W>> Q;
-        Q.emplace(u,W{});
-        while(!Q.empty())
-        {
-            auto [a,_]=Q.top();
-            Q.pop();
-            for(auto [b,w]:G.adjacencyList[a]) if(d[b]>d[a]+w)
-                {
-                    d[b]=d[a]+w;
-                    Q.push({-d[b],b});
-                }
-        }
-        return d;
+        if constexpr (std::is_same_v<G, M>)
+            return std::conj(a);
+        else for (auto& s : a)
+            s = conj<typename std::remove_reference<decltype(s)>::type, G>(s);
     }
-
-    template<typename W>
-    auto dijkstra(const WeightedGraph<W> &G,int u,int v)
-    {
-        return dijkstra(G,u)[v];
-    }
-
-    template<typename Mapper,typename T,typename W>
-    auto dijkstra(const AbstractWeightedGraph<T,W> &G,int u)
-    {
-        using H=order_closure<W>;
-        Mapper d;
-        for(const auto& x:G.nodes())
-            d[x]=inf_plus;
-        d[u]=W{};
-        std::priority_queue<dijkstra_element<T,W>> Q;
-        Q.emplace(u,W{});
-        while(!Q.empty())
-        {
-            auto [a,_]=Q.top();
-            Q.pop();
-            for(auto [b,w]:G.adjacentNodes(a)) if(d[b]>d[a]+w)
-                {
-                    d[b]=d[a]+w;
-                    Q.emplace(b,d[b]);
-                }
-        }
-        return d;
-    }
-
-    template<typename Mapper,typename T,typename W>
-    auto dijkstra(const AbstractWeightedGraph<T,W> &G,const T& u,const T& v)
-    {
-        using H=order_closure<W>;
-        Mapper d;
-        std::priority_queue<dijkstra_element<T,W>> Q;
-        Q.emplace(u,W{});
-        d[u]=W{};
-        while(!Q.empty())
-        {
-            auto [a,q]=Q.top();
-            Q.pop();
-            if(d[a]<q)
-                continue;
-            for(auto [b,w]:G.adjacentNodes(a))
-            {
-                //The second condition is to deal with default values of the mapper
-                if (d[b] > d[a] + w || d[b] < d[a])
-                {
-                    d[b] = d[a] + w;
-                    Q.emplace(b, d[b]);
-                }
-            }
-        }
-        return d[v];
-    }
+    return a;
 }
 
-#endif //CPLIBRARY_DIJKSTRA_H
-//
-// Created by ramizouari on 27/10/23.
-//
-
-#ifndef CPLIBRARY_BFS_H
-#define CPLIBRARY_BFS_H
-#include <queue>
-
-namespace graph::algorithms
+template<typename R,typename ...StructureMetaData>
+R pow(R a, long long n,StructureMetaData ... meta_info)
 {
-    template<typename Mapper,typename T>
-    auto bfs(const AbstractGraph<T> &G,const T& u)
-    {
-        Mapper d;
-        std::queue<T> Q;
-        Q.push(u);
-        d[u]=0;
-        while(!Q.empty())
-        {
-            auto a=Q.front();
-            Q.pop();
-            // d[b] <= 0 means that b has not been visited yet. This is because d[b] is initialized to 0 or -inf, depending on the mapper.
-            for(auto b:G.adjacentNodes(a)) if(d[b]<= 0)
-            {
-                d[b]=d[a]+1;
-                Q.push(b);
-            }
-        }
-        return d;
-    }
-
-    template<typename Mapper,typename T>
-    auto bfs(const AbstractGraph<T> &G,const T& u,const T& v)
-    {
-        return bfs<Mapper,T>(G,u)[v];
-    }
-
-    template<typename Set,typename T>
-    auto reachable_nodes(const AbstractGraph<T> &G,const T& u)
-    {
-        Set visited;
-        std::queue<T> Q;
-        Q.push(u);
-        visited.emplace(u);
-        std::vector<T> d;
-        while(!Q.empty())
-        {
-            auto a=Q.front();
-            d.push_back(a);
-            Q.pop();
-            // d[b] <= 0 means that b has not been visited yet. This is because d[b] is initialized to 0 or -inf, depending on the mapper.
-            for(auto b:G.adjacentNodes(a)) if(!visited.count(b))
-            {
-                Q.push(b);
-                visited.emplace(b);
-            }
-        }
-        return d;
-    }
-
-    template<typename Mapper,typename T,typename W>
-    auto bfs(const AbstractWeightedGraph<T,W> &G,const T& u)
-    {
-        Mapper d;
-        std::queue<T> Q;
-        Q.push(u);
-        d[u]=0;
-        while(!Q.empty())
-        {
-            auto a=Q.front();
-            Q.pop();
-            // d[b] <= 0 means that b has not been visited yet. This is because d[b] is initialized to 0 or -inf, depending on the mapper.
-            for(auto [b,_]:G.adjacentNodes(a)) if(d[b]<= 0)
-            {
-                d[b]=d[a]+1;
-                Q.push(b);
-            }
-        }
-        return d;
-    }
-
-    template<typename Mapper,typename T,typename W>
-    auto bfs(const AbstractWeightedGraph<T,W> &G,const T& u,const T& v)
-    {
-        return bfs<Mapper,T>(G,u)[v];
-    }
-
-    template<typename Set,typename T,typename W>
-    auto reachable_nodes(const AbstractWeightedGraph<T,W> &G,const T& u)
-    {
-        Set visited;
-        std::queue<T> Q;
-        Q.push(u);
-        visited.emplace(u);
-        std::vector<T> d;
-        while(!Q.empty())
-        {
-            auto a=Q.front();
-            d.push_back(a);
-            Q.pop();
-            // d[b] <= 0 means that b has not been visited yet. This is because d[b] is initialized to 0 or -inf, depending on the mapper.
-            for(auto [b,_]:G.adjacentNodes(a)) if(!visited.count(b))
-                {
-                    Q.push(b);
-                    visited.emplace(b);
-                }
-        }
-        return d;
-    }
+    if(n==0)
+        return R(1,meta_info...);
+    else if(n==1)
+        return a;
+    auto s=pow(a,n/2);
+    return n%2?s*s*a:s*s;
 }
 
-#endif //CPLIBRARY_BFS_H
-
-#endif //CPLIBRARY_ALGORITHMS_H
-#include <iostream>
-
-struct CollatzGraph:public graph::AbstractWeightedGraph<integer,integer>
+template<typename R>
+bool is_zero(const R&a)
 {
-    view_or_value<std::pair<integer,integer>> adjacentNodes(const integer &u, bool direction) const override
+    return a==R{};
+}
+
+inline bool is_zero(const IC&a)
+{
+    return std::abs(a) < epsilon;
+}
+
+inline bool is_zero(const real &a)
+{
+    return std::abs(a) < epsilon;
+}
+
+template<typename R>
+R gcd(R a,R b)
+{
+    if(a<b)
+        std::swap(a,b);
+    R q,tmp;
+    while(!is_zero(b))
     {
-        if(u==1) return std::vector<std::pair<integer,integer >>{};
-        if(u%2==0) return std::vector<std::pair<integer,integer>>{{u/2,1}};
-        return std::vector<std::pair<integer,integer>>{{3*u+1,1}};
+        q=a/b;
+        tmp=b;
+        b=a-b*q;
+        a=tmp;
+    }
+    return a;
+}
+
+template<typename R>
+R lcm(const R &a,const R &b)
+{
+    return a*b/gcd(a,b);
+}
+
+template<typename R=integer>
+struct egcd_t
+{
+    R a,b,d;
+};
+
+template<typename R>
+egcd_t<R> egcd(R a,R b)
+{
+    if(a<b)
+    {
+        auto e = egcd(b, a);
+        std::swap(e.a,e.b);
+        return e;
+    }
+    R q,s1=1,s2=0,t1=0,t2=1,tmp;
+    while(!is_zero(b))
+    {
+        q=a/b;
+        tmp=s2;
+        s2=s1-q*s2;
+        s1=tmp;
+        tmp=t2;
+        t2=t1-q*t2;
+        t1=tmp;
+        tmp=b;
+        b=a-b*q;
+        a=tmp;
+    }
+    return {s1,t1,a};
+}
+
+template<typename R>
+std::pair<R,R> bezout(R a, R b)
+{
+    auto [u,v,_]=egcd(a,b);
+    return {u,v};
+}
+
+template<typename B>
+B next_gray(B n)
+{
+    return n^(n>>1);
+}
+
+template<typename F,typename R>
+std::pair<integer,integer> floyd_functional_cycle(F && f,R x0)
+{
+    /*
+     * Find a period
+     * */
+    R x=x0,y=x;
+    integer m=0;
+    do
+    {
+        x=f(x);
+        y=f(f(y));
+        m++;
+    }while(y!=x);
+    /*
+     * Find offset
+     * */
+    x=x0,y=x;
+    for(int i=0;i<m;i++)
+        y=f(y);
+    int offset=0;
+    while(x!=y)
+    {
+        x=f(x);
+        y=f(y);
+        offset++;
     }
 
-    view_or_value<std::pair<integer,integer>> adjacentNodes(const integer&u) const override
-    {
-        return adjacentNodes(u,true);
+    /*
+     * Find fundamental period
+     * */
+    y=f(x);
+    integer period=1;
+    while(x!=y) {
+        y = f(y);
+        period++;
     }
+    return std::make_pair(period,offset);
+}
 
-    view_or_value<integer> nodes() const override
+
+template<typename F,typename R>
+integer functional_period(F &&f, R x)
+{
+    /*
+    * Find a period
+    * */
+    R y=x;
+    integer m=0;
+    do
     {
-        throw std::logic_error("Infinite graph");
+        x=f(x);
+        y=f(f(y));
+        m++;
+    }while(y!=x);
+    return m;
+}
+
+
+#endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#include <memory>
+
+template<typename T>
+struct binary_operation
+{
+    using type=T;
+    template<typename H0,typename ...H>
+    T operator()(const H0&a,const H&... b) const
+    {
+        if constexpr (sizeof...(b) == 0)
+            return a;
+        else return reduce(a,this->operator()(b...));
     }
-
-    int size() const override
+    virtual T reduce(const T& a, const T& b) const = 0;
+    virtual T neutral_element() const
     {
-        throw std::logic_error("Infinite graph");
+        return T{};
     }
 };
 
+template<typename T>
+struct invertible_operation
+{
+    virtual T inv(const T& a) const = 0;
+};
+
+template<typename T>
+struct monoid_plus_t:public binary_operation<T> {
+    T reduce(const T &a, const T &b) const override {
+        return a + b;
+    }
+    inline static T neutral{};
+};
+
+template<typename T>
+struct plus_t:public monoid_plus_t<T>,public invertible_operation<T>
+{
+    T inv(const T&a) const override
+    {
+        return -a;
+    }
+};
+
+template<typename T>
+struct multiplies_t:public binary_operation<T>
+{
+    T reduce(const T&a,const T&b) const override
+    {
+        return a*b;
+    }
+
+    inline static T neutral=T(1);
+    T neutral_element() const override
+    {
+        return neutral;
+    }
+};
+
+template<typename T>
+struct field_multiplies_t:public multiplies_t<T>,public invertible_operation<T>
+{
+    T inv(const T&a) const
+    {
+        return a.inv();
+    }
+
+};
+
+template<>
+struct field_multiplies_t<real>:public multiplies_t<real>,public invertible_operation<real>
+{
+    real inv(const real& a)const
+    {
+        return 1./a;
+    }
+};
+
+template<>
+struct field_multiplies_t<IC>:public multiplies_t<IC>,public invertible_operation<IC>
+{
+    IC inv(const IC& a)const
+    {
+        return IC(1)/a;
+    }
+};
+
+template<typename T>
+struct max_t:public binary_operation<T>
+{
+    T e;
+    explicit max_t(T _e):e(_e){}
+    max_t(): max_t(T{}){}
+    T reduce(const T&a,const T&b) const override
+    {
+        return std::max(a,b);
+    }
+
+    inline static T neutral{0};
+    T neutral_element() const override
+    {
+        return e;
+    }
+};
+
+template<typename T>
+struct min_t:public binary_operation<T>
+{
+    T e;
+    explicit min_t(T _e):e(_e){}
+    min_t(): min_t(T{}){}
+
+    T reduce(const T&a,const T&b) const override
+    {
+        return std::min(a,b);
+    }
+
+    inline static T neutral{};
+
+    T neutral_element() const override
+    {
+        return e;
+    }
+};
+
+template<typename T>
+struct gcd_t:public binary_operation<T>
+{
+    T reduce(const T&a,const T&b) const override
+    {
+        return gcd(a,b);
+    }
+
+    inline static T neutral{0};
+};
+
+template<typename T>
+struct lcm_t:public binary_operation<T>
+{
+    T reduce(const T&a,const T&b) const override
+    {
+        return lcm(a,b);
+    }
+
+    inline static T neutral{1};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
+};
+
+template<typename T>
+struct xor_t:public binary_operation<T>,public invertible_operation<T>
+{
+    T reduce(const T&a,const T&b) const
+    {
+        return a^b;
+    }
+
+    T inv(const T&a) const
+    {
+        return a;
+    }
+
+    inline static T neutral{};
+};
+
+template<typename T>
+struct and_t:public binary_operation<T>
+{
+    T reduce(const T&a,const T&b) const override
+    {
+        return a&b;
+    }
+
+    inline static T neutral=static_cast<T>(-1);
+    T neutral_element() const override
+    {
+        return neutral;
+    }
+};
+
+template<typename T>
+struct or_t:public binary_operation<T>
+{
+    T reduce(const T&a,const T&b) const override
+    {
+        return a|b;
+    }
+
+    inline static T neutral{};
+};
+
+template<typename T>
+struct logical_and_t :public binary_operation<T>
+{
+    T reduce(const T& a, const T& b) const override
+    {
+        return a && b;
+    }
+
+    inline static T neutral{true};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
+};
+
+template<typename T>
+struct logical_or_t :public binary_operation<T>
+{
+    T reduce(const T& a, const T& b) const override
+    {
+        return a || b;
+    }
+
+    inline static T neutral{false};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
+};
+
+template<typename T>
+struct logical_xor_t :public binary_operation<T>,public invertible_operation<T>
+{
+    T reduce(const T& a, const T& b) const override
+    {
+        return !a && b || a && !b;
+    }
+    T inv(const T&a) const
+    {
+        return !a;
+    }
+    inline static T neutral{false};
+    T neutral_element() const override
+    {
+        return neutral;
+    }
+};
+
+template<typename T>
+class binary_operation_ptr
+{
+    std::shared_ptr<binary_operation<T>> op;
+public:
+    binary_operation_ptr(std::shared_ptr<binary_operation<T>> value): op(value){}
+    template<typename ...H>
+    auto operator()(const H&... h) const
+    {
+        return op->operator()(h...);
+    }
+
+    auto neutral_element() const
+    {
+        return op->neutral_element();
+    }
+};
+
+template<typename T>
+class invertible_binary_operation_ptr : public binary_operation_ptr<T>
+{
+    std::shared_ptr<invertible_operation<T>> inverter;
+public:
+    invertible_binary_operation_ptr(std::shared_ptr<binary_operation<T>> b,
+                                    std::shared_ptr<invertible_operation<T>> I): binary_operation_ptr<T>(b),inverter(I){}
+    using binary_operation_ptr<T>::operator();
+    using binary_operation_ptr<T>::neutral_element;
+    auto inv(const T& a) const
+    {
+        return inverter->inv(a);
+    }
+};
+
+#endif
+#include <memory>
+//
+// Created by ramizouari on 26/10/23.
+//
+
+#ifndef CPLIBRARY_BITS_H
+#define CPLIBRARY_BITS_H
+
+inline unsigned int bit_log(unsigned int n)
+{
+    unsigned char a=0,b=30,r=0;
+    while(a<=b)
+    {
+        auto c=(a+b)/2;
+        if(n>>c)
+            a=c+1;
+        else
+        {
+            b=c-1;
+            r=c-1;
+        }
+    }
+    if(r && (1<<(r-1))==n)
+        return r-1;
+    return r;
+}
+
+inline unsigned int bit_floor(unsigned int n)
+{
+    return 1<<bit_log(n);
+}
+
+inline unsigned int bit_ceil(unsigned int n)
+{
+    return 1<<(bit_log(n)+1);
+}
+
+#endif //CPLIBRARY_BITS_H
+
+namespace data_structures::dynamic
+{
+    template<typename T>
+    struct sparse_array
+    {
+        int n,h;
+        std::vector<std::vector<T>> S;
+        binary_operation_ptr<T> F;
+    public:
+        sparse_array(const std::vector<T>&A, std::shared_ptr<binary_operation<T>> _F):n(bit_ceil(A.size())),h(bit_log(n)),S(h+1),F(_F)
+        {
+            int r=1;
+            for(int i=h;i>=0;i--,r*=2)
+                S[i].resize(n-r+1,F->neutral_element());
+            for(int i=0;i<A.size();i++)
+                S[h][i]=A[i];
+            r=1;
+            for(int i=h-1;i>=0;i--,r*=2) for(int j=0;j<=n-2*r;j++)
+                    S[i][j]=F(S[i+1][j],S[i+1][j+r]);
+        }
+
+        T query(int l,int r) const
+        {
+            if(l>=r)
+                return F->neutral_element();
+            auto d=r-l;
+            auto s=bit_floor(d);
+            auto b=bit_log(s);
+            return F(S[h-b][l],S[h-b][r-s]);
+        }
+    };
+}
+
+#endif //CPLIBRARY_SPARSE_ARRAY_H
+//
+// Created by ramizouari on 26/10/23.
+//
+
+#ifndef CPLIBRARY_FIXED_SPARSE_ARRAY_H
+#define CPLIBRARY_FIXED_SPARSE_ARRAY_H
+#include <vector>
+namespace data_structures::fixed
+{
+    template<typename O>
+    struct sparse_array
+    {
+        using T=typename O::type;
+        using type = T;
+        inline static O F=O();
+        int n,h;
+        std::vector<std::vector<T>> S;
+    public:
+        sparse_array(const std::vector<T>&A):n(bit_ceil(A.size())),h(bit_log(n)),S(h+1)
+        {
+            int r=1;
+            for(int i=h;i>=0;i--,r*=2)
+                S[i].resize(n-r+1,O::neutral);
+            for(int i=0;i<A.size();i++)
+                S[h][i]=A[i];
+            r=1;
+            for(int i=h-1;i>=0;i--,r*=2) for(int j=0;j<=n-2*r;j++)
+                    S[i][j]=F(S[i+1][j],S[i+1][j+r]);
+        }
+
+        T query(int l,int r) const
+        {
+            if(l>=r)
+                return O::neutral;
+            auto d=r-l;
+            auto s=bit_floor(d);
+            auto b=bit_log(s);
+            return F(S[h-b][l],S[h-b][r-s]);
+        }
+    };
+
+
+}
+#endif //CPLIBRARY_SPARSE_ARRAY_H
+#include <memory>
+#include <queue>
+#include <random>
+#include <chrono>
+
+namespace graph
+{
+
+    namespace ds= data_structures;
+
+    struct HLDIndex
+    {
+        int hld_id;
+        int index;
+        HLDIndex(int _hld_id, int _index): hld_id(_hld_id), index(_index){}
+    };
+
+    template<typename Weight>
+    struct HeavyLightDecomposition
+    {
+        std::vector<bool> is_heavy;
+        std::vector<std::pair<int,int>> heavy_path_endpoints;
+        std::vector<int> component_size;
+        std::vector<HLDIndex> HLD_mapper;
+        std::vector<std::vector<Weight>> components;
+    };
+
+    template<>
+    struct HeavyLightDecomposition<void>
+    {
+        std::vector<bool> is_heavy;
+        std::vector<std::pair<int,int>> heavy_path_endpoints;
+        std::vector<int> component_size;
+        std::vector<HLDIndex> HLD_mapper;
+    };
+
+    enum class TreeStats
+    {
+        NONE=0,
+        SIZE=0b00001,
+        HEAVY_EDGES=0b00011,
+        LCA=0b00100,
+        HLD=0b01111,
+        RANGE_QUERIES=0b11111,
+    };
+    bool operator &(TreeStats a,TreeStats b)
+    {
+        return static_cast<int>(a) & static_cast<int>(b);
+    }
+
+    struct Tree : Graph
+    {
+
+        bool reversed=false;
+        std::vector<int> subtree_size;
+        std::vector<std::optional<int>> parent;
+        int root;
+        HeavyLightDecomposition<void> HLD;
+        Tree(int n,int _root):Graph(n),root(_root),subtree_size(n),parent(n)
+        {
+            HLD.is_heavy.resize(n,false);
+        }
+        explicit Tree(int n):Tree(n,0){}
+
+        void setParent(int u,int v)
+        {
+            if(reversed) std::swap(u,v);
+            this->connect(u,v);
+            parent[u].emplace(v);
+        }
+
+        std::vector<int> &children(int u)
+        {
+            return reversed?this->adjacencyList[u] : this->reverseList[u] ;
+        }
+
+        [[nodiscard]] const std::vector<int> &children(int u) const
+        {
+            return reversed?this->adjacencyList[u] : this->reverseList[u] ;
+        }
+
+        void buildStatistics(TreeStats stats=TreeStats::HLD)
+        {
+            updateRoot();
+            if(stats & TreeStats::SIZE) updateSize(root);
+            //TODO: Optimize heavy edges
+            if(stats & TreeStats::HEAVY_EDGES) updateHeavyEdges(root);
+            if(stats & TreeStats::LCA) buildLCA();
+            auto t1=std::chrono::high_resolution_clock::now();
+            //TODO: Optimize HLD
+            if(stats & TreeStats::HLD) buildHeavyLightDecomposition();
+        }
+
+        void adjacentReRoot(int new_root)
+        {
+            if(parent[new_root] != root)
+                throw std::invalid_argument("new root must be adjacent to old root");
+            auto u=*parent[new_root];
+            parent[new_root]=std::nullopt;
+            parent[root].emplace(new_root);
+            auto delta=subtree_size[new_root];
+            subtree_size[new_root]=subtree_size[root];
+            subtree_size[root]-=delta;
+            root=new_root;
+        }
+
+        void reRoot(int new_root)
+        {
+            std::queue<int> Q;
+            std::vector<bool> visited(n);
+            Q.push(new_root);
+            visited[new_root]=true;
+            std::vector<std::vector<int>> newAdjacencyList(n),newReverseList(n);
+            while(!Q.empty())
+            {
+                auto u=Q.front();
+                Q.pop();
+                for(auto v:this->adjacencyList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.push(v);
+                        newReverseList[u].emplace_back(v);
+                        newAdjacencyList[v].emplace_back(u);
+                    }
+                for(auto v:this->reverseList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.push(v);
+                        newReverseList[u].emplace_back(v);
+                        newAdjacencyList[v].emplace_back(u);
+                    }
+            }
+            this->adjacencyList=std::move(newAdjacencyList);
+            this->reverseList=std::move(newReverseList);
+            updateRoot();
+        }
+
+        int leastCommonAncestor(int u,int v)
+        {
+            if(lca_data)
+            {
+                auto [a,b]=euler_tour_endpoints[u];
+                auto [c,d]=euler_tour_endpoints[v];
+                if(a>c)
+                {
+                    std::swap(a,c);
+                    std::swap(b,d);
+                }
+                if(b<d)
+                    return lca_data->query(a,c).second;
+                else
+                    return lca_data->query(a,d).second;
+            }
+            else
+            {
+                while(u!=v)
+                {
+                    if(subtree_size[u]>subtree_size[v])
+                        u=*parent[u];
+                    else
+                        v=*parent[v];
+                }
+                return u;
+            }
+        }
+        void updateSize(int u)
+        {
+            subtree_size[u]=1;
+            for(auto v:children(u))
+            {
+                updateSize(v);
+                subtree_size[u]+=subtree_size[v];
+            }
+        }
+
+        void updateRoot()
+        {
+            for(int i=0;i<n;i++)
+                parent[i]=this->adjacencyList[i].empty()?std::nullopt:std::make_optional(this->adjacencyList[i][0]);
+            for(int i=0;i< n;i++)
+                if(!parent[i])
+                    root=i;
+        }
+
+        void updateHeavyEdges(int u)
+        {
+            for(int i=0;i<children(u).size();i++)
+            {
+                auto v=children(u)[i];
+                if(subtree_size[v]>=(subtree_size[u]+1)/2)
+                    HLD.is_heavy[v]=true;
+                updateHeavyEdges(v);
+            }
+        }
+        void buildLCA()
+        {
+            std::vector<HeightData> A;
+            euler_tour_endpoints.resize(n);
+            eulerTour(root,0,A);
+            min_t<HeightData>::neutral.first=std::numeric_limits<int>::max();
+            lca_data=std::make_unique<ds::fixed::sparse_array<min_t<HeightData>>>(A);
+        }
+
+        void buildHeavyLightDecomposition()
+        {
+            std::vector<int> stack;
+            stack.push_back(root);
+            HLD.HLD_mapper.resize(n, HLDIndex(-1, -1));
+            HLD.HLD_mapper[root]={0, 0};
+            HLD.heavy_path_endpoints.emplace_back(root,root);
+            int components=1;
+            while(!stack.empty())
+            {
+                auto u=stack.back();
+                stack.pop_back();
+                for(auto v:children(u))
+                {
+                    if(HLD.is_heavy[v])
+                    {
+                        auto &[_,y] = HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id];
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]={HLD.HLD_mapper[u].hld_id, HLD.HLD_mapper[u].index + 1};
+                        y=v;
+                    }
+                    else
+                    {
+                        HLD.heavy_path_endpoints.emplace_back(v,v);
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]=HLDIndex(components, 0);
+                        components++;
+                    }
+                }
+            }
+        }
+
+        int distance(int a,int b)
+        {
+            auto lca=leastCommonAncestor(a,b);
+            return distance_with_lca(a,lca)+distance_with_lca(b,lca);
+        }
+
+        int distance_with_lca(int u,int lca)
+        {
+            int d=0;
+            while(HLD.HLD_mapper[u].hld_id != HLD.HLD_mapper[lca].hld_id)
+            {
+                if(HLD.is_heavy[u])
+                {
+                    d+=HLD.HLD_mapper[u].index;
+                    u=HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id].first;
+                }
+                else
+                {
+                    d++;
+                    u=*parent[u];
+                }
+            }
+            return d+= HLD.HLD_mapper[u].index - HLD.HLD_mapper[lca].index;
+        }
+
+        int centroid()
+        {
+            reRoot(centroid(root,root));
+            return root;
+        }
+
+    protected:
+        int centroid(int u,std::optional<int> p)
+        {
+            for(auto v:children(u)) if(v!= p && subtree_size[v]>=(subtree_size[u]+1)/2)
+                {
+                    adjacentReRoot(v);
+                    return centroid(v,u);
+                }
+            return u;
+        }
+        using HeightData=std::pair<int,int>;
+        using EnpointsData = std::pair<int,int>;
+        std::unique_ptr<ds::fixed::sparse_array<min_t<HeightData>>> lca_data;
+        std::vector<EnpointsData> euler_tour_endpoints;
+        void eulerTour(int u,int height,std::vector<HeightData> &A)
+        {
+            euler_tour_endpoints[u].first=A.size();
+            for(auto v: children(u))
+            {
+                A.emplace_back(height,u);
+                eulerTour(v,height+1,A);
+            }
+            A.emplace_back(height,u);
+            euler_tour_endpoints[u].second=A.size();
+        }
+    };
+
+    template<typename Weight>
+    struct WeightedTree : public WeightedGraph<Weight>
+    {
+
+        bool reversed=false;
+        std::vector<int> subtree_size;
+        using AdjacentType=WeightedGraph<Weight>::AdjacentType;
+        std::vector<std::optional<AdjacentType>> parent;
+        int root;
+        HeavyLightDecomposition<Weight> HLD;
+        WeightedTree(int n,int _root):WeightedGraph<Weight>(n),root(_root),subtree_size(n),parent(n)
+        {
+            HLD.is_heavy.resize(n);
+        }
+        explicit WeightedTree(int n):WeightedTree(n,0){}
+
+        void setParent(int u,int v,Weight w)
+        {
+            if(reversed) std::swap(u,v);
+            this->connect(u,v,w);
+            parent[u].emplace(v,w);
+        }
+
+        std::vector<AdjacentType> &children(int u)
+        {
+            return reversed?this->adjacencyList[u] : this->reverseList[u] ;
+        }
+
+        void buildStatistics(TreeStats stats=TreeStats::HLD)
+        {
+            updateRoot();
+            if(stats & TreeStats::SIZE) updateSize(root);
+            if(stats & TreeStats::HEAVY_EDGES) updateHeavyEdges(root);
+            if(stats & TreeStats::LCA) buildLCA();
+            if(stats & TreeStats::HLD) buildHeavyLightDecomposition();
+        }
+
+        void adjacentReRoot(int new_root)
+        {
+            if(!parent[new_root] || parent[new_root]->first != root)
+                throw std::invalid_argument("new root must be adjacent to old root");
+            auto [u,w]=*parent[new_root];
+            parent[new_root]=std::nullopt;
+            parent[root].emplace(new_root,w);
+            auto delta=subtree_size[new_root];
+            subtree_size[new_root]=subtree_size[root];
+            subtree_size[root]-=delta;
+        }
+
+        void reRoot(int new_root)
+        {
+            std::queue<int> Q;
+            std::vector<bool> visited(WeightedGraph<Weight>::n);
+            Q.emplace(new_root);
+            visited[new_root]=true;
+            std::vector<std::vector<AdjacentType>> newAdjacencyList(WeightedGraph<Weight>::n),newReverseList(WeightedGraph<Weight>::n);
+            while(!Q.empty())
+            {
+                auto u=Q.front();
+                Q.pop();
+                for(auto [v,w]:this->adjacencyList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.emplace(v);
+                        newReverseList[u].emplace_back(v,w);
+                        newAdjacencyList[v].emplace_back(u,w);
+                    }
+                for(auto [v,w]:this->reverseList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.emplace(v);
+                        newReverseList[u].emplace_back(v,w);
+                        newAdjacencyList[v].emplace_back(u,w);
+                    }
+            }
+            this->adjacencyList=std::move(newAdjacencyList);
+            this->reverseList=std::move(newReverseList);
+            updateRoot();
+        }
+
+        int leastCommonAncestor(int u,int v)
+        {
+            if(lca_data)
+            {
+                auto [a,b]=euler_tour_endpoints[u];
+                auto [c,d]=euler_tour_endpoints[v];
+                if(a>c)
+                {
+                    std::swap(a,c);
+                    std::swap(b,d);
+                }
+                if(b<d)
+                    return lca_data->query(a,c).second;
+                else
+                    return lca_data->query(a,d).second;
+            }
+            else
+            {
+                while(u!=v)
+                {
+                    if(subtree_size[u]>subtree_size[v])
+                        u=parent[u]->first;
+                    else
+                        v=parent[v]->first;
+                }
+                return u;
+            }
+        }
+        void updateSize(int u)
+        {
+            subtree_size[u]=1;
+            for(auto [v,_]:children(u))
+            {
+                updateSize(v);
+                subtree_size[u]+=subtree_size[v];
+            }
+        }
+
+        void updateRoot()
+        {
+            for(int i=0;i<WeightedGraph<Weight>::n;i++)
+                parent[i]=this->adjacencyList[i].empty()?std::nullopt:std::make_optional(this->adjacencyList[i][0]);
+            for(int i=0;i<WeightedGraph<Weight>::n;i++)
+                if(!parent[i])
+                    root=i;
+        }
+
+        void updateHeavyEdges(int u)
+        {
+            for(int i=0;i<children(u).size();i++)
+            {
+                auto [v,_]=children(u)[i];
+                if(subtree_size[v]>=(subtree_size[u]+1)/2)
+                    HLD.is_heavy[v]=true;
+                updateHeavyEdges(v);
+            }
+        }
+        void buildLCA()
+        {
+            std::vector<HeightData> A;
+            euler_tour_endpoints.resize(WeightedGraph<Weight>::n);
+            eulerTour(root,0,A);
+            min_t<HeightData>::neutral.first=std::numeric_limits<int>::max();
+            lca_data=std::make_unique<ds::fixed::sparse_array<min_t<HeightData>>>(A);
+        }
+
+        void buildHeavyLightDecomposition()
+        {
+            std::vector<int> stack;
+            stack.push_back(root);
+            HLD.HLD_mapper.resize(WeightedTree<Weight>::n, HLDIndex(-1, -1));
+            HLD.HLD_mapper[root]={0, 0};
+            HLD.components.emplace_back();
+            HLD.heavy_path_endpoints.emplace_back(root,root);
+            while(!stack.empty())
+            {
+                auto u=stack.back();
+                stack.pop_back();
+                for(auto [v,w]:children(u))
+                {
+                    if(HLD.is_heavy[v])
+                    {
+                        auto &C=HLD.components[HLD.HLD_mapper[u].hld_id];
+                        auto &[_,y] = HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id];
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]={HLD.HLD_mapper[u].hld_id, HLD.HLD_mapper[u].index + 1};
+                        y=v;
+                        C.push_back(w);
+                    }
+                    else
+                    {
+                        HLD.heavy_path_endpoints.emplace_back(v,v);
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]=HLDIndex(HLD.components.size(), 0);
+                        HLD.components.emplace_back();
+                    }
+                }
+            }
+            for(const auto &C:HLD.components)
+                HLD.component_size.push_back(C.size());
+        }
+
+        int distance(int a,int b)
+        {
+            auto lca=leastCommonAncestor(a,b);
+            return distance_with_lca(a,lca)+distance_with_lca(b,lca);
+        }
+
+        int distance_with_lca(int u,int lca)
+        {
+            int d=0;
+            while(HLD.HLD_mapper[u].hld_id != HLD.HLD_mapper[lca].hld_id)
+            {
+                if(WeightedTree<Weight>::HLD.is_heavy[u])
+                {
+                    d+=HLD.HLD_mapper[u].index;
+                    u=HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id].first;
+                }
+                else
+                {
+                    d++;
+                    u=parent[u]->first;
+                }
+            }
+            return d+= HLD.HLD_mapper[u].index - HLD.HLD_mapper[lca].index;
+        }
+
+
+    protected:
+        using HeightData=std::pair<int,int>;
+        using EnpointsData = std::pair<int,int>;
+        std::unique_ptr<ds::fixed::sparse_array<min_t<HeightData>>> lca_data;
+        std::vector<EnpointsData> euler_tour_endpoints;
+        void eulerTour(int u,int height,std::vector<HeightData> &A)
+        {
+            euler_tour_endpoints[u].first=A.size();
+            for(auto [v,_]: children(u))
+            {
+                A.emplace_back(height,u);
+                eulerTour(v,height+1,A);
+            }
+            A.emplace_back(height,u);
+            euler_tour_endpoints[u].second=A.size();
+        }
+    };
+
+}
+
+
+#endif //CPLIBRARY_TREE_H
+//
+// Created by ramizouari on 07/11/23.
+//
+
+#ifndef CPLIBRARY_ISOMORPHISM_H
+#define CPLIBRARY_ISOMORPHISM_H
+
+namespace graph
+{
+    using char_deque=std::deque<char>;
+
+    std::shared_ptr<char_deque> string_encode(const graph::Tree & T, int u)
+    {
+        std::vector<std::shared_ptr<char_deque>> X;
+        const auto &C=T.children(u);
+        if(C.empty())
+            return std::make_shared<char_deque>(char_deque{'(', ')'});
+        X.reserve(C.size());
+        for(auto v:C) X.push_back(string_encode(T,v));
+        std::sort(X.begin(),X.end(),[](const auto &x,const auto &y)
+        {
+            return *x < *y;
+        });
+        auto it=std::max_element(X.begin(),X.end(),[](const auto &x,const auto &y) {
+            return x->size() < y->size();
+        });
+        auto r=std::distance(X.begin(),it);
+        std::shared_ptr<char_deque> Z=X[r];
+        for(int i=r-1;i>=0;i--)
+            std::copy(X[i]->rbegin(),X[i]->rend(),std::front_inserter(*Z));
+        for(int i=r+1;i<X.size();i++)
+            std::copy(X[i]->begin(),X[i]->end(),std::back_inserter(*Z));
+        Z->push_back(')');
+        Z->push_front('(');
+        return Z;
+    }
+
+    std::string string_encode(const graph::Tree &T)
+    {
+        auto E=string_encode(T,T.root);
+        return std::string(E->begin(),E->end());
+    }
+
+    std::optional<int> second_centroid(graph::Tree & T)
+    {
+        auto u=T.root;
+        auto X=T.children(u);
+        for(auto v:X)
+        {
+            bool is_centroid=true;
+            T.adjacentReRoot(v);
+            if(T.subtree_size[u]>T.subtree_size[v]/2)
+                is_centroid=false;
+            T.adjacentReRoot(u);
+            if(is_centroid)
+                return v;
+        }
+        return std::nullopt;
+    }
+
+    std::vector<std::string> full_string_encoding(graph::Tree &T)
+    {
+        T.centroid();
+        T.buildStatistics(graph::TreeStats::SIZE);
+        std::vector<std::string> A;
+        A.push_back(string_encode(T));
+        auto p= second_centroid(T);
+        if(p.has_value())
+        {
+            T.reRoot(*p);
+            T.buildStatistics(graph::TreeStats::SIZE);
+            A.push_back(string_encode(T));
+            if(A[0] > A[1])
+                std::swap(A[0],A[1]);
+        }
+        return A;
+    }
+
+    struct TreeHolder
+    {
+        std::shared_ptr<Tree> tree;
+        TreeHolder(Tree&& t): tree(std::make_shared<Tree>(std::move(t))){}
+        TreeHolder(int n): tree(std::make_shared<Tree>(n)){}
+
+        Tree* operator->() const
+        {
+            return tree.get();
+        }
+        Tree& operator*() const
+        {
+            return *tree;
+        }
+    };
+
+
+    struct IsoTreeEq
+    {
+        bool operator()(Tree &a, Tree &b) const
+        {
+            if(a.size() != b.size())
+                return false;
+            a.centroid();
+            b.centroid();
+            auto M1= string_encode(a);
+            auto M2= string_encode(b);
+            if(M1==M2)
+                return true;
+            auto c= second_centroid(a);
+            if(c.has_value())
+            {
+                a.reRoot(*c);
+                auto M3= string_encode(a);
+                return M3==M2;
+            }
+            return false;
+        }
+
+        bool operator()(const TreeHolder &a, const TreeHolder &b) const
+        {
+            return (*this)(*a,*b);
+        }
+    };
+
+    struct IsoTreeCmp
+    {
+        bool operator()(Tree &a, Tree &b) const
+        {
+            if(a.size()!=b.size())
+                return a.size() < b.size();
+            auto X=full_string_encoding(a);
+            auto Y=full_string_encoding(b);
+            for(int i:{0,1}) for(int j:{0,1}) if(i<X.size() && j<Y.size() && X[i]==Y[j])
+            {
+                if(i!=0 || j!=0)
+                    throw std::runtime_error("?????????????????????????????????????");
+                else return false;
+            }
+            return X < Y;
+        }
+
+        bool operator()(const TreeHolder& a, const TreeHolder& b) const
+        {
+            return (*this)(*a,*b);
+        }
+    };
+
+    struct IsoTreeHash
+    {
+        std::hash<std::string> H;
+    public:
+        size_t operator()(Tree &a) const
+        {
+            auto A= full_string_encoding(a);
+            return std::accumulate(A.begin(),A.end(),0ULL,[&H=this->H](auto x,auto y){
+                return x^H(y);
+            });
+        }
+
+        size_t operator()(const TreeHolder& a) const
+        {
+            return (*this)(*a);
+        }
+    };
+}
+
+#endif //CPLIBRARY_ISOMORPHISM_H
+#include <iostream>
+
 int main()
 {
-    CollatzGraph G;
-    integer n;
-    std::cin >> n;
-    using Set=std::unordered_set<integer>;
-    for(auto x:graph::algorithms::reachable_nodes<Set>(G,n))
-        std::cout << x << " ";
+    std::ios_base::sync_with_stdio(false);
+    int T;
+    std::cin >> T;
+    graph::IsoTreeEq treeEq;
+    using TreesSet=std::set<graph::TreeHolder,graph::IsoTreeCmp>;
+    for(int t=1;t<=T;t++)
+    {
+        TreesSet Z;
+        int n;
+        std::cin >> n;
+        graph::TreeHolder T1(n), T2(n);
+        for(int i=0;i<n-1;i++)
+        {
+            int u,v;
+            std::cin >> u >> v;
+            u--;
+            v--;
+            T1->connect(u,v);
+        }
+        for(int i=0;i<n-1;i++)
+        {
+            int u,v;
+            std::cin >> u >> v;
+            u--;
+            v--;
+            T2->connect(u,v);
+        }
+        T1->reRoot(0);
+        T2->reRoot(0);
+        T1->buildStatistics(graph::TreeStats::SIZE);
+        T2->buildStatistics(graph::TreeStats::SIZE);
+        Z.emplace(std::move(T1));
+        Z.emplace(std::move(T2));
+        auto result=(Z.size()==1?"YES":"NO");
+        std::cout << result << '\n';
+    }
 }

@@ -19,7 +19,7 @@ The following list of topics are present on this library:
 	- Sparse Table over an assoviative idempotent binary operation
 	- Order Statistic Tree
 	- Statistic Trees with Statistic acting on keys and/or values (over an associative binary operation)
-2. String (To Be Completed):
+2. char_deque (To Be Completed):
 	- Rabin-Karp probabilistic string matching algorithm.
 	- ...
 3. Graph (To Be Done)
