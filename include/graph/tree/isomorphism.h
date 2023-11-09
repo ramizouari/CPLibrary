@@ -110,6 +110,7 @@ namespace graph
             if(c.has_value())
             {
                 a.reRoot(*c);
+                a.buildStatistics(graph::TreeStats::SIZE);
                 auto M3= string_encode(a);
                 return M3==M2;
             }
