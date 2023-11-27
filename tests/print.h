@@ -5,7 +5,7 @@
 #ifndef CPLIBRARY_PRINT_H
 #define CPLIBRARY_PRINT_H
 #include <ostream>
-#include "linear_algebra/linear_algebra.h"
+#include "linear_algebra/matrix.h"
 
 template<typename T,int n>
 std::ostream & operator<<(std::ostream & os,const s_vector<T,n> & v)

@@ -12,7 +12,7 @@
 #include <chrono>
 #include "data_structures/range_queries.h"
 #include "nt/modular_arithmetic.h"
-#include "linear_algebra/linear_algebra.h"
+#include "linear_algebra/matrix.h"
 constexpr std::int64_t M = 1000000007;
 constexpr int N = 100;
 using IF=cyclic<M>;

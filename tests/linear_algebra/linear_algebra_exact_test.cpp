@@ -3,7 +3,7 @@
 //
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE LINEAR_ALGEBRA_TEST
-#include "linear_algebra/linear_algebra.h"
+#include "linear_algebra/matrix.h"
 #include <boost/test/unit_test.hpp>
 #include <boost/mpl/list.hpp>
 #include "nt/modular_arithmetic.h"

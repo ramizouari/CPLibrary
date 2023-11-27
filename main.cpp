@@ -1,10 +1,11 @@
 ﻿#include "graph/tree/range_queries.h"
 #include "data_structures/fixed/segment_tree.h"
 #include <iostream>
-using namespace data_structures::fixed;
-using namespace graph;
+using namespace cp::data_structures::fixed;
+using namespace cp::graph;
 int main()
 {
+    using namespace cp;
     std::ios::sync_with_stdio(false);
     std::cin.tie(nullptr);
     int n,q;

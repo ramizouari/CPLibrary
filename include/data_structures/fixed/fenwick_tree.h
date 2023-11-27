@@ -5,7 +5,7 @@
 #ifndef CPLIBRARY_FIXED_FENWICK_TREE_H
 #define CPLIBRARY_FIXED_FENWICK_TREE_H
 #include <vector>
-namespace data_structures::fixed
+namespace cp::data_structures::fixed
 {
     template<typename T,typename O>
     struct fenwick_tree {

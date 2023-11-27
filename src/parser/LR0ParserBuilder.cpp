@@ -3,7 +3,7 @@
 //
 #include "parser/LRParserBuilder.h"
 
-namespace parser
+namespace cp::parser
 {
     std::unordered_set<LR0Item> LR0ParserBuilder::closure(const std::unordered_set<LR0Item> &items) {
         std::unordered_set<LR0Item> newItems;

@@ -4,7 +4,7 @@
 #include <queue>
 #include "parser/LRParserBuilder.h"
 
-namespace parser
+namespace cp::parser
 {
     std::unordered_set<LALR1Item> LALRParserBuilder::closure(const std::unordered_set<LALR1Item> &items)
     {

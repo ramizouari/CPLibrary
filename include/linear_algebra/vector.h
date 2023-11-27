@@ -9,10 +9,12 @@
 #include <cstddef>
 #include <array>
 
-struct v_shape
+namespace linalg
 {
-    int n;
-};
+    struct v_shape
+    {
+        int n;
+    };
 
 /**
  * @brief Dynamic Vector
@@ -25,117 +27,117 @@ struct v_shape
  * @Requirements
  * R is a commutative ring
  * */
-template<typename R>
-class d_vector
-{
-    std::vector<R> u;
-public:
-    using base_field=R;
-    using base_ring=R;
-    inline static int n=0;
-    d_vector():u(n){}
-    d_vector(std::vector<R> _u):u(std::move(_u)){}
-    d_vector(v_shape shape):u(shape.n){}
-
-    bool operator==(const d_vector<R>& other) const
+    template<typename R>
+    class d_vector
     {
-        return u==other.u;
-    }
-    auto dim() const
+        std::vector<R> u;
+    public:
+        using base_field=R;
+        using base_ring=R;
+        inline static int n=0;
+        d_vector():u(n){}
+        d_vector(std::vector<R> _u):u(std::move(_u)){}
+        d_vector(v_shape shape):u(shape.n){}
+
+        bool operator==(const d_vector<R>& other) const
+        {
+            return u==other.u;
+        }
+        auto dim() const
+        {
+            return u.size();
+        }
+
+        auto& operator[](int k)
+        {
+            return u[k];
+        }
+
+        const auto& operator[](int k) const
+        {
+            return u[k];
+        }
+
+        auto& operator+=(const d_vector &o)
+        {
+            for(int i=0;i<dim();i++)
+                u[i]+=o.u[i];
+            return *this;
+        }
+
+        auto& operator-=(const d_vector &o)
+        {
+            for(int i=0;i<dim();i++)
+                u[i]-=o.u[i];
+            return *this;
+        }
+
+        auto& operator*=(R k)
+        {
+            for(auto &s:u)
+                s*=k;
+            return *this;
+        }
+
+        auto operator+(const d_vector &o) const
+        {
+            auto v=*this;
+            return v+=o;
+        }
+
+        auto operator-(const d_vector &o) const
+        {
+            auto v=*this;
+            return v-=o;
+        }
+
+        auto operator-() const
+        {
+            auto v=*this;
+            for(auto &s:v.u)
+                s=-s;
+            return v;
+        }
+
+        auto& operator/=(R k)
+        {
+            for(auto &s:u)
+                s/=k;
+            return *this;
+        }
+
+        auto operator/(R k) const
+        {
+            auto v=*this;
+            return v/=k;
+        }
+
+        auto begin() {
+            return u.begin();
+        }
+
+        auto begin() const
+        {
+            return u.cbegin();
+        }
+
+        auto end()
+        {
+            return u.end();
+        }
+
+        auto end() const
+        {
+            return u.cend();
+        }
+    };
+
+    template<typename R>
+    auto operator*(const R&k,const d_vector<R>& u)
     {
-        return u.size();
+        auto v=u;
+        return v*=k;
     }
-
-    auto& operator[](int k)
-    {
-        return u[k];
-    }
-
-    const auto& operator[](int k) const
-    {
-        return u[k];
-    }
-
-    auto& operator+=(const d_vector &o)
-    {
-        for(int i=0;i<dim();i++)
-            u[i]+=o.u[i];
-        return *this;
-    }
-
-    auto& operator-=(const d_vector &o)
-    {
-        for(int i=0;i<dim();i++)
-            u[i]-=o.u[i];
-        return *this;
-    }
-
-    auto& operator*=(R k)
-    {
-        for(auto &s:u)
-            s*=k;
-        return *this;
-    }
-
-    auto operator+(const d_vector &o) const
-    {
-        auto v=*this;
-        return v+=o;
-    }
-
-    auto operator-(const d_vector &o) const
-    {
-        auto v=*this;
-        return v-=o;
-    }
-
-    auto operator-() const
-    {
-        auto v=*this;
-        for(auto &s:v.u)
-            s=-s;
-        return v;
-    }
-
-    auto& operator/=(R k)
-    {
-        for(auto &s:u)
-            s/=k;
-        return *this;
-    }
-
-    auto operator/(R k) const
-    {
-        auto v=*this;
-        return v/=k;
-    }
-
-    auto begin() {
-        return u.begin();
-    }
-
-    auto begin() const
-    {
-        return u.cbegin();
-    }
-
-    auto end()
-    {
-        return u.end();
-    }
-
-    auto end() const
-    {
-        return u.cend();
-    }
-};
-
-template<typename R>
-auto operator*(const R&k,const d_vector<R>& u)
-{
-    auto v=u;
-    return v*=k;
-}
 
 /**
  * @brief Static Vector:
@@ -148,140 +150,141 @@ auto operator*(const R&k,const d_vector<R>& u)
  * In fact, the name s_vector is used for consistency with the computer science's name.
  */
 
-template<typename R,int n>
-class s_vector
-{
-    std::array<R,n> u;
-public:
-    using base_field=R;
-    using base_ring=R;
-    inline static constexpr int dim()
+    template<typename R,int n>
+    class s_vector
     {
-        return n;
-    }
+        std::array<R,n> u;
+    public:
+        using base_field=R;
+        using base_ring=R;
+        inline static constexpr int dim()
+        {
+            return n;
+        }
 
-    s_vector()
+        s_vector()
+        {
+            for(int i=0;i<n;i++)
+                u[i]=0;
+        }
+
+        s_vector(std::array<R,n>_u):u(std::move(_u)){}
+
+        bool operator==(const s_vector&) const = default;
+
+        auto& operator[](int k)
+        {
+            return u[k];
+        }
+
+        const auto& operator[](int k) const
+        {
+            return u[k];
+        }
+
+        auto& operator+=(const s_vector &o)
+        {
+            auto r=std::min(dim(),o.dim());
+            for(int i=0;i<r;i++)
+                u[i]+=o.u[i];
+            return *this;
+        }
+
+        auto& operator-=(const s_vector &o)
+        {
+            auto r=std::min(dim(),o.dim());
+            for(int i=0;i<r;i++)
+                u[i]-=o.u[i];
+            return *this;
+        }
+
+        auto& operator*=(R k)
+        {
+            for(auto &s:u)
+                s*=k;
+            return *this;
+        }
+
+        auto operator+(const s_vector &o) const
+        {
+            auto v=*this;
+            return v+=o;
+        }
+
+        auto operator-(const s_vector &o) const
+        {
+            auto v=*this;
+            return v-=o;
+        }
+
+        auto operator-() const
+        {
+            auto v=*this;
+            for(auto &s:v.u)
+                s=-s;
+            return v;
+        }
+
+        auto& operator/=(R k)
+        {
+            for(auto &s:u)
+                s/=k;
+            return *this;
+        }
+
+        auto operator/(R k) const
+        {
+            auto v=*this;
+            return v/=k;
+        }
+
+        auto begin()
+        {
+            return u.begin();
+        }
+
+        auto begin() const
+        {
+            return u.cbegin();
+        }
+
+        auto end()
+        {
+            return u.end();
+        }
+
+        auto end() const
+        {
+            return u.cend();
+        }
+
+        template <size_t k>
+        auto& get()& {
+            return u[k];
+        }
+
+        template <size_t k>
+        const auto& get() const& {
+            return u[k];
+        }
+
+        template <size_t k>
+        auto&& get() const&& {
+            return u[k];
+        }
+
+        template <size_t k>
+        auto&& get() && {
+            return u[k];
+        }
+    };
+
+    template<typename R,int n>
+    auto operator*(const R&k,const s_vector<R,n>& u)
     {
-        for(int i=0;i<n;i++)
-            u[i]=0;
+        auto v=u;
+        return v*=k;
     }
-
-    s_vector(std::array<R,n>_u):u(std::move(_u)){}
-
-    bool operator==(const s_vector&) const = default;
-
-    auto& operator[](int k)
-    {
-        return u[k];
-    }
-
-    const auto& operator[](int k) const
-    {
-        return u[k];
-    }
-
-    auto& operator+=(const s_vector &o)
-    {
-        auto r=std::min(dim(),o.dim());
-        for(int i=0;i<r;i++)
-            u[i]+=o.u[i];
-        return *this;
-    }
-
-    auto& operator-=(const s_vector &o)
-    {
-        auto r=std::min(dim(),o.dim());
-        for(int i=0;i<r;i++)
-            u[i]-=o.u[i];
-        return *this;
-    }
-
-    auto& operator*=(R k)
-    {
-        for(auto &s:u)
-            s*=k;
-        return *this;
-    }
-
-    auto operator+(const s_vector &o) const
-    {
-        auto v=*this;
-        return v+=o;
-    }
-
-    auto operator-(const s_vector &o) const
-    {
-        auto v=*this;
-        return v-=o;
-    }
-
-    auto operator-() const
-    {
-        auto v=*this;
-        for(auto &s:v.u)
-            s=-s;
-        return v;
-    }
-
-    auto& operator/=(R k)
-    {
-        for(auto &s:u)
-            s/=k;
-        return *this;
-    }
-
-    auto operator/(R k) const
-    {
-        auto v=*this;
-        return v/=k;
-    }
-
-    auto begin()
-    {
-        return u.begin();
-    }
-
-    auto begin() const
-    {
-        return u.cbegin();
-    }
-
-    auto end()
-    {
-        return u.end();
-    }
-
-    auto end() const
-    {
-        return u.cend();
-    }
-
-    template <size_t k>
-    auto& get()& {
-        return u[k];
-    }
-
-    template <size_t k>
-    const auto& get() const& {
-        return u[k];
-    }
-
-    template <size_t k>
-    auto&& get() const&& {
-        return u[k];
-    }
-
-    template <size_t k>
-    auto&& get() && {
-        return u[k];
-    }
-};
-
-template<typename R,int n>
-auto operator*(const R&k,const s_vector<R,n>& u)
-{
-    auto v=u;
-    return v*=k;
 }
 
 namespace std

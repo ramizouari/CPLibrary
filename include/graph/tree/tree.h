@@ -16,7 +16,7 @@
 #include <random>
 #include <chrono>
 
-namespace graph
+namespace cp::graph
 {
 
     namespace ds= data_structures;

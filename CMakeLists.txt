@@ -9,7 +9,9 @@ find_package(Boost COMPONENTS unit_test_framework)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arithmetic.h include/nt/number_theory.h
+set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h include/nt/number_theory.h
+        include/linear_algebra/view.h include/linear_algebra/tensor.h include/signals/fft.h include/signals/multi_fft.h
+        include/arithmetic/bigint.h include/arithmetic/varint.h include/arithmetic/utils.h include/arithmetic/operations.h
         include/parser/StatefulParser.h include/graph/tree/tree.h include/data_structures/dynamic_range_queries.h
         include/graph/tree/range_queries.h include/graph/tree/isomorphism.h
         include/polynomial/ring_extension.h include/polynomial/polynomial.h include/polynomial/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/range_queries.h include/algebra/binary_operation.h
@@ -18,7 +20,7 @@ set(HEADER_FILES include/linear_algebra/linear_algebra.h include/nt/modular_arit
         include/formal_verification/decision_tree.h include/graph/graph.h include/graph/union_find.h include/graph/2sat.h include/linear_algebra/decomposition.h include/linear_algebra/special_matrices.h include/linear_algebra/special_polynomials.h include/linear_algebra/vector.h include/linear_algebra/hilbert_geometry.h)
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp
-        src/parser/StatefulParser.cpp
+        src/parser/StatefulParser.cpp src/arithmetic/varint.cpp
         src/parser/LR0ParserBuilder.cpp src/formal_verification/abstract_decision_tree.cpp src/formal_verification/abstract_printer.cpp
         src/formal_verification/dynamic_decision_tree.cpp src/formal_verification/node.cpp)
 add_executable(SourceCombiner source_combiner.cpp ${HEADER_FILES})
@@ -33,7 +35,7 @@ add_executable(PathQuery example/PathQuery.cpp ${SOURCE_FILES} ${HEADER_FILES})
 
 #add_executable(CustomProblem local/WinterCupExpectedIterations.cpp ${HEADER_FILES} ${SOURCE_FILES} local/WinterCupGrundy.cpp)
 
-add_executable(GameTheory example/nim.cpp ${HEADER_FILES})
+add_executable(GameTheory example/nim.cpp src/arithmetic/varint.cpp ${HEADER_FILES})
 
 add_executable(CPLibrary main.cpp ${HEADER_FILES} ${SOURCE_FILES})
 add_executable(MLExample example/machine_learning.cpp ${HEADER_FILES})

@@ -4,7 +4,7 @@
 #include "../algebra/order.h"
 #include <optional>
 
-namespace data_structures
+namespace cp::data_structures
 {
     /*
 * B-tree of an order m

@@ -9,7 +9,7 @@
 #include "algebra/order.h"
 #include <queue>
 
-namespace graph::algorithms
+namespace cp::graph::algorithms
 {
     template<typename T,typename W>
     struct dijkstra_element

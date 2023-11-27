@@ -6,7 +6,7 @@
 #define CPLIBRARY_FIXED_SPARSE_ARRAY_H
 #include <vector>
 #include "algebra/bits.h"
-namespace data_structures::fixed
+namespace cp::data_structures::fixed
 {
     template<typename O>
     struct sparse_array

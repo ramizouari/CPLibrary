@@ -8,7 +8,7 @@
 #include <memory>
 #include "algebra/binary_operation.h"
 #include <variant>
-namespace data_structures::statistics_trees
+namespace cp::data_structures::statistics_trees
 {
     /**
 * @definition Order Statistic Tree: It is an AVL-tree augmented with a statistic.

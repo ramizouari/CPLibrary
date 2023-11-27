@@ -6,7 +6,7 @@
 #define CPLIBRARY_ISOMORPHISM_H
 #include "tree.h"
 
-namespace graph
+namespace cp::graph
 {
     using char_deque=std::deque<char>;
 
@@ -35,6 +35,7 @@ namespace graph
         Z->push_front('(');
         return Z;
     }
+
 
     std::string string_encode(const graph::Tree &T)
     {
@@ -131,12 +132,6 @@ namespace graph
                 return a.size() < b.size();
             auto X=full_string_encoding(a);
             auto Y=full_string_encoding(b);
-            for(int i:{0,1}) for(int j:{0,1}) if(i<X.size() && j<Y.size() && X[i]==Y[j])
-            {
-                if(i!=0 || j!=0)
-                    throw std::runtime_error("?????????????????????????????????????");
-                else return false;
-            }
             return X < Y;
         }
 

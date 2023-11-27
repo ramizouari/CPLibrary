@@ -10,7 +10,6 @@
 #include <cstdint>
 #include <numeric>
 
-using integer=std::int64_t;
 /*
  * This file contains the following data structures:
  * 1) static_vector<T,capacity>: a vector with a fixed capacity
@@ -19,8 +18,9 @@ using integer=std::int64_t;
  *
  * */
 
-namespace data_structures
+namespace cp::data_structures
 {
+    using integer=std::int64_t;
     template<typename T,std::size_t capacity>
     struct static_vector:public std::array<T,capacity>
     {

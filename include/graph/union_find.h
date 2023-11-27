@@ -7,163 +7,164 @@
 #include <vector>
 #include <map>
 #include <unordered_map>
-
-class UnionFind
+namespace cp
 {
-    int n;
-    std::vector<int> parent,rank;
-public:
-    UnionFind(int n):n(n),rank(n),parent(n)
+    class UnionFind
     {
-        for(int i=0;i<n;i++)
-            parent[i]=i;
-    }
-
-    void connect(int a,int b)
-    {
-        auto u= representative(a),v= representative(b);
-        if(u==v)
-            return;
-        if(rank[u]<rank[u])
-            parent[u]=parent[v];
-        else if(rank[v]<rank[u])
-            parent[v]=parent[u];
-        else
+        int n;
+        std::vector<int> parent,rank;
+    public:
+        UnionFind(int n):n(n),rank(n),parent(n)
         {
-            parent[u]=parent[v];
-            rank[v]++;
+            for(int i=0;i<n;i++)
+                parent[i]=i;
         }
-    }
 
-    int representative(int a)
-    {
-        if(parent[a]==a)
-            return a;
-        else return parent[a]= representative(parent[a]);
-    }
+        void connect(int a,int b)
+        {
+            auto u= representative(a),v= representative(b);
+            if(u==v)
+                return;
+            if(rank[u]<rank[u])
+                parent[u]=parent[v];
+            else if(rank[v]<rank[u])
+                parent[v]=parent[u];
+            else
+            {
+                parent[u]=parent[v];
+                rank[v]++;
+            }
+        }
 
-    bool equivalent(int a,int b)
-    {
-        return representative(a)== representative(b);
-    }
-};
+        int representative(int a)
+        {
+            if(parent[a]==a)
+                return a;
+            else return parent[a]= representative(parent[a]);
+        }
 
-template<typename OrderedSet>
-class OrderedUnionFind
-{
-    struct ParentData
-    {
-        const OrderedSet* parent;
-        int rank;
+        bool equivalent(int a,int b)
+        {
+            return representative(a)== representative(b);
+        }
     };
-    std::map<OrderedSet,ParentData> data{};
-public:
-    void connect(const OrderedSet& A,const OrderedSet&B)
+
+    template<typename OrderedSet>
+    class OrderedUnionFind
     {
-        if(equivalent(A,B))
-            return;
-        auto &[C,NodeData1]=get(representative(A));
-        auto &[D,NodeData2]=get(representative(B));
-        auto &[p1,r1]=NodeData1;
-        auto &[p2,r2]=NodeData2;
-        if(r1<r2)
-            p1=p2;
-        else if(r1>r2)
-            p2=p1;
-        else
+        struct ParentData
         {
-            p1=p2;
-            r2++;
-        }
-    }
-    std::pair<const OrderedSet,ParentData>& get(const OrderedSet &A)
-    {
-        if(!data.contains(A))
+            const OrderedSet* parent;
+            int rank;
+        };
+        std::map<OrderedSet,ParentData> data{};
+    public:
+        void connect(const OrderedSet& A,const OrderedSet&B)
         {
-            auto [it,_]=data.emplace(A,ParentData{nullptr,0});
-            auto &[B,NodeData]=*it;
-            NodeData.parent=&B;
-            return *it;
+            if(equivalent(A,B))
+                return;
+            auto &[C,NodeData1]=get(representative(A));
+            auto &[D,NodeData2]=get(representative(B));
+            auto &[p1,r1]=NodeData1;
+            auto &[p2,r2]=NodeData2;
+            if(r1<r2)
+                p1=p2;
+            else if(r1>r2)
+                p2=p1;
+            else
+            {
+                p1=p2;
+                r2++;
+            }
         }
-        return *data.find(A);
-    }
-    const OrderedSet& representative(const OrderedSet&A)
-    {
-        auto &[B,NodeData]=get(A);
-        auto &C=NodeData.parent;
-        if(&B==C)
-            return B;
-        else {
-            NodeData.parent = &representative(*NodeData.parent);
-            return *NodeData.parent;
+        std::pair<const OrderedSet,ParentData>& get(const OrderedSet &A)
+        {
+            if(!data.contains(A))
+            {
+                auto [it,_]=data.emplace(A,ParentData{nullptr,0});
+                auto &[B,NodeData]=*it;
+                NodeData.parent=&B;
+                return *it;
+            }
+            return *data.find(A);
         }
-    }
+        const OrderedSet& representative(const OrderedSet&A)
+        {
+            auto &[B,NodeData]=get(A);
+            auto &C=NodeData.parent;
+            if(&B==C)
+                return B;
+            else {
+                NodeData.parent = &representative(*NodeData.parent);
+                return *NodeData.parent;
+            }
+        }
 
-    bool equivalent(const OrderedSet&A,const OrderedSet&B)
-    {
-        return &representative(get(A).first)== &representative(get(B).first);
-    }
+        bool equivalent(const OrderedSet&A,const OrderedSet&B)
+        {
+            return &representative(get(A).first)== &representative(get(B).first);
+        }
 
-};
-
-template<typename UnorderedSet>
-class UnorderedUnionFind
-{
-    struct ParentData
-    {
-        const UnorderedSet* parent;
-        int rank;
     };
-    std::unordered_map<UnorderedSet,ParentData> data{};
-public:
-    void connect(const UnorderedSet& A,const UnorderedSet&B)
+
+    template<typename UnorderedSet>
+    class UnorderedUnionFind
     {
-        if(equivalent(A,B))
-            return;
-        auto &[C,NodeData1]=get(representative(A));
-        auto &[D,NodeData2]=get(representative(B));
-        auto &[p1,r1]=NodeData1;
-        auto &[p2,r2]=NodeData2;
-        if(r1<r2)
-            p1=p2;
-        else if(r1>r2)
-            p2=p1;
-        else
+        struct ParentData
         {
-            p1=p2;
-            r2++;
-        }
-    }
-    std::pair<const UnorderedSet,ParentData>& get(const UnorderedSet &A)
-    {
-        if(!data.contains(A))
+            const UnorderedSet* parent;
+            int rank;
+        };
+        std::unordered_map<UnorderedSet,ParentData> data{};
+    public:
+        void connect(const UnorderedSet& A,const UnorderedSet&B)
         {
-            auto [it,_]=data.emplace(A,ParentData{nullptr,0});
-            auto &[B,NodeData]=*it;
-            NodeData.parent=&B;
-            return *it;
+            if(equivalent(A,B))
+                return;
+            auto &[C,NodeData1]=get(representative(A));
+            auto &[D,NodeData2]=get(representative(B));
+            auto &[p1,r1]=NodeData1;
+            auto &[p2,r2]=NodeData2;
+            if(r1<r2)
+                p1=p2;
+            else if(r1>r2)
+                p2=p1;
+            else
+            {
+                p1=p2;
+                r2++;
+            }
         }
-        return *data.find(A);
-    }
-    const UnorderedSet& representative(const UnorderedSet&A)
-    {
-        auto &[B,NodeData]=get(A);
-        auto &C=NodeData.parent;
-        if(&B==C)
-            return B;
-        else {
-            NodeData.parent = &representative(*NodeData.parent);
-            return *NodeData.parent;
+        std::pair<const UnorderedSet,ParentData>& get(const UnorderedSet &A)
+        {
+            if(!data.contains(A))
+            {
+                auto [it,_]=data.emplace(A,ParentData{nullptr,0});
+                auto &[B,NodeData]=*it;
+                NodeData.parent=&B;
+                return *it;
+            }
+            return *data.find(A);
         }
-    }
+        const UnorderedSet& representative(const UnorderedSet&A)
+        {
+            auto &[B,NodeData]=get(A);
+            auto &C=NodeData.parent;
+            if(&B==C)
+                return B;
+            else {
+                NodeData.parent = &representative(*NodeData.parent);
+                return *NodeData.parent;
+            }
+        }
 
-    bool equivalent(const UnorderedSet&A,const UnorderedSet&B)
-    {
-        return &representative(get(A).first)== &representative(get(B).first);
-    }
+        bool equivalent(const UnorderedSet&A,const UnorderedSet&B)
+        {
+            return &representative(get(A).first)== &representative(get(B).first);
+        }
 
-};
-
+    };
+}
 
 
 #endif //CPLIBRARY_UNION_FIND_H

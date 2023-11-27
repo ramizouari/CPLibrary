@@ -21,7 +21,7 @@
  * @param n the size of the Graph
  * */
 
-namespace graph
+namespace cp::graph
 {
     struct Graph : public AbstractGraph<int>
     {

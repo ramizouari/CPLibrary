@@ -6,7 +6,7 @@
 #define CPLIBRARY_RANGE_QUERIES_H
 #include "tree.h"
 
-namespace graph
+namespace cp::graph
 {
     template<typename O, typename RMQ>
     struct HeavyLightTree : public WeightedTree<typename O::type>

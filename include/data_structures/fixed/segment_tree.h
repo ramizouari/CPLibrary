@@ -5,7 +5,7 @@
 #ifndef CPLIBRARY_FIXED_SEGMENT_TREE_H
 #define CPLIBRARY_FIXED_SEGMENT_TREE_H
 #include <vector>
-namespace data_structures::fixed
+namespace cp::data_structures::fixed
 {
     template<typename O>
     struct segment_tree

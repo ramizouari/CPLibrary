@@ -8,7 +8,7 @@
 #include "algebra/binary_operation.h"
 #include <memory>
 
-namespace data_structures::dynamic
+namespace cp::data_structures::dynamic
 {
     template<typename R>
     struct segment_tree

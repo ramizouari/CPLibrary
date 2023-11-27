@@ -6,7 +6,7 @@
 #define CPLIBRARY_FIXED_OTHERS_H
 #include "data_structures/statistic_tree.h"
 #include "segment_tree.h"
-namespace data_structures::fixed
+namespace cp::data_structures::fixed
 {
     template<typename O>
     struct segment_matrix

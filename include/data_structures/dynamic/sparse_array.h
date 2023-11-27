@@ -9,7 +9,7 @@
 #include <memory>
 #include "algebra/bits.h"
 
-namespace data_structures::dynamic
+namespace cp::data_structures::dynamic
 {
     template<typename T>
     struct sparse_array

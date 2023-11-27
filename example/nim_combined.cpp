@@ -1930,6 +1930,7 @@ namespace graph
         return Z;
     }
 
+
     std::string string_encode(const graph::Tree &T)
     {
         auto E=string_encode(T,T.root);
@@ -2004,6 +2005,7 @@ namespace graph
             if(c.has_value())
             {
                 a.reRoot(*c);
+                a.buildStatistics(graph::TreeStats::SIZE);
                 auto M3= string_encode(a);
                 return M3==M2;
             }
@@ -2024,12 +2026,6 @@ namespace graph
                 return a.size() < b.size();
             auto X=full_string_encoding(a);
             auto Y=full_string_encoding(b);
-            for(int i:{0,1}) for(int j:{0,1}) if(i<X.size() && j<Y.size() && X[i]==Y[j])
-            {
-                if(i!=0 || j!=0)
-                    throw std::runtime_error("?????????????????????????????????????");
-                else return false;
-            }
             return X < Y;
         }
 
@@ -2061,42 +2057,183 @@ namespace graph
 #endif //CPLIBRARY_ISOMORPHISM_H
 #include <iostream>
 
+using TreeesHashMap=std::unordered_map<graph::TreeHolder,double,graph::IsoTreeHash,graph::IsoTreeEq>;
+
+struct NaiveTreeCmp
+{
+    bool operator()(const graph::TreeHolder &a, const graph::TreeHolder &b) const
+    {
+        return a->adjacencyList < b->adjacencyList;
+    }
+};
+using TreesMap=std::map<graph::TreeHolder,double,graph::IsoTreeCmp>;
+using NaiveMap=std::map<graph::TreeHolder,double,NaiveTreeCmp>;
+
+
+graph::TreeHolder cut(const graph::Tree & A,int node)
+{
+    auto n=A.size();
+    graph::Tree B(n-1,0);
+    for(int i=0;i<n;i++) if(i!=node) for(auto j:A.children(i)) if(j!=node)
+        B.setParent(j-(j>node),i-(i>node));
+    B.reRoot(0);
+    B.buildStatistics(graph::TreeStats::SIZE);
+    return B;
+}
+
+std::vector<graph::TreeHolder> cuts(const graph::Tree & A)
+{
+    std::vector<graph::TreeHolder> R;
+    auto n=A.size();
+    for(int i=0;i<n;i++) if(A.children(i).empty() || i==A.root && A.children(i).size()==1)
+        R.push_back(cut(A,i));
+    return R;
+}
+struct Hasher
+{
+    inline static std::random_device dev;
+    std::mt19937_64 rng{dev()};
+    inline static integer a=0,b=0;
+    inline static constexpr integer M=1e9+7;
+    Hasher()
+    {
+        std::uniform_int_distribution<integer> d(1,M-1);
+        if(!a) a=d(rng);
+        if(!b) b=d(rng);
+    }
+    std::uint64_t operator()(int x) const
+    {
+        return (a*x+b)%M;
+    }
+};
+
+using SetInt=std::unordered_map<int,int,Hasher>;
+struct UnorderedSetHash
+{
+    inline static std::random_device dev;
+    std::mt19937_64 rng{dev()};
+    integer x;
+    inline static constexpr integer M=1e9+7;
+    inline static constexpr integer N=1e6;
+    inline static std::vector<integer> X{N+1};
+    UnorderedSetHash()
+    {
+        std::uniform_int_distribution<integer> d(1,M-1);
+        x=d(rng);
+        if(X[0]==0)
+        {
+            X[0]=1;
+            for(int i=1;i<=N;i++)
+                X[i]=(X[i-1]*x)%M;
+        }
+
+    }
+    size_t operator()(const SetInt &Z) const
+    {
+        integer R=0;
+        for(auto [z,m]:Z)
+            R=(R+X[z]*m)%M;
+        return R;
+    }
+};
+using UnorderedMapper = std::unordered_map<SetInt,int,UnorderedSetHash>;
+int encode(const graph::Tree & T, int u,UnorderedMapper & mapper)
+{
+    SetInt A(3*T.children(u).size());
+    for(auto v:T.children(u)) A[encode(T,v,mapper)]++;
+    auto [it,inserted]= mapper.emplace(A,mapper.size());
+    return it->second;
+}
+
+UnorderedMapper encode(const graph::Tree &T)
+{
+    UnorderedMapper E;
+    encode(T,T.root,E);
+    return E;
+}
+
+bool encodings_equality(const graph::Tree &T1, const graph::Tree &T2)
+{
+    if(T1.size()!=T2.size())
+        return false;
+    int n=T1.size();
+    auto E1=encode(T1);
+    auto E2=encode(T2);
+    if(E1.size()!=E2.size())
+        return false;
+    std::vector<std::optional<int>> P(E2.size());
+    bool assignment=true;
+    std::vector<std::vector<std::pair<const SetInt&,int>>> buckets(E2.size()+1);
+    for(const auto &[C,e]:E2)
+    {
+        int i=-1;
+        for(auto [c,_]:C)
+            i=std::max(i,c);
+        buckets[i+1].emplace_back(C,e);
+    }
+    for(const auto &H:buckets) for(const auto& [C,e]:H)
+    {
+        SetInt B(C.bucket_count());
+        for(auto [c,m] : C)
+        {
+            if(!P[c].has_value())
+            {
+                assignment=false;
+                goto exit;
+            }
+            else B.emplace(*P[c],m);
+        }
+        auto it=E1.find(B);
+        if(it==E1.end())
+            assignment=false;
+        else P[e]=it->second;
+    }
+    exit:
+    return assignment;
+}
+
+bool tree_fast_isomorphism(const graph::TreeHolder &T1, const graph::TreeHolder &T2)
+{
+    T1->reRoot(0);
+    T2->reRoot(0);
+    T1->buildStatistics(graph::TreeStats::SIZE);
+    T2->buildStatistics(graph::TreeStats::SIZE);
+    T1->centroid();
+    T2->centroid();
+    T1->buildStatistics(graph::TreeStats::SIZE);
+    T2->buildStatistics(graph::TreeStats::SIZE);
+    auto result=encodings_equality(*T1,*T2);
+    if(!result)
+    {
+        auto x=graph::second_centroid(*T1);
+        if(x.has_value())
+        {
+            T1->reRoot(*x);
+            T1->buildStatistics(graph::TreeStats::SIZE);
+            result = encodings_equality(*T1, *T2);
+        }
+    }
+    return result;
+}
+
 int main()
 {
     std::ios_base::sync_with_stdio(false);
     int T;
     std::cin >> T;
-    graph::IsoTreeEq treeEq;
-    using TreesSet=std::set<graph::TreeHolder,graph::IsoTreeCmp>;
     for(int t=1;t<=T;t++)
     {
-        TreesSet Z;
         int n;
         std::cin >> n;
-        graph::TreeHolder T1(n), T2(n);
-        for(int i=0;i<n-1;i++)
-        {
-            int u,v;
-            std::cin >> u >> v;
-            u--;
-            v--;
-            T1->connect(u,v);
-        }
-        for(int i=0;i<n-1;i++)
-        {
-            int u,v;
-            std::cin >> u >> v;
-            u--;
-            v--;
-            T2->connect(u,v);
-        }
-        T1->reRoot(0);
-        T2->reRoot(0);
-        T1->buildStatistics(graph::TreeStats::SIZE);
-        T2->buildStatistics(graph::TreeStats::SIZE);
-        Z.emplace(std::move(T1));
-        Z.emplace(std::move(T2));
-        auto result=(Z.size()==1?"YES":"NO");
-        std::cout << result << '\n';
+        graph::TreeHolder T1(n),T2(n);
+        for(auto T:{T1,T2}) for(int i=0;i<n-1;i++)
+            {
+                int u,v;
+                std::cin >> u >> v;
+                u--;
+                v--;
+                T->connect(u,v);
+            }
+        std::cout << (tree_fast_isomorphism(T1,T2)?"YES":"NO") << '\n';
     }
 }

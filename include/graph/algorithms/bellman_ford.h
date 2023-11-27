@@ -7,7 +7,7 @@
 #include "algebra/order.h"
 #include "graph/graph.h"
 #include "graph/general.h"
-namespace graph::algorithms
+namespace cp::graph::algorithms
 {
     template<typename W>
     auto iterative_bellman_ford(const WeightedGraph<W> &G,int u,int m)

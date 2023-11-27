@@ -7,7 +7,7 @@
 #include "graph/general.h"
 #include <queue>
 
-namespace graph::algorithms
+namespace cp::graph::algorithms
 {
     template<typename Mapper,typename T>
     auto bfs(const AbstractGraph<T> &G,const T& u)

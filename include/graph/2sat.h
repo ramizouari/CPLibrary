@@ -9,7 +9,7 @@
 #include <stack>
 #include <ostream>
 #include <optional>
-namespace sat
+namespace cp::sat
 {
     constexpr int Id(int x)
     {

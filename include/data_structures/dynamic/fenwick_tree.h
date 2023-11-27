@@ -6,7 +6,7 @@
 #define CPLIBRARY_DYN_FENWICK_TREE_H
 #include "algebra/binary_operation.h"
 #include <memory>
-namespace data_structures::dynamic
+namespace cp::data_structures::dynamic
 {
     template<typename T>
     struct fenwick_tree {

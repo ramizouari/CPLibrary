@@ -6,7 +6,7 @@
 #include "parser/LRParserBuilder.h"
 #include "parser/StatefulParser.h"
 
-namespace parser {
+namespace cp::parser {
 
     LR0Item::LR0Item(std::uint64_t ruleId, std::uint64_t dot) : ruleId(ruleId), dot(dot)
     {

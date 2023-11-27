@@ -3,7 +3,7 @@
 //
 #include "parser/LRParserBuilder.h"
 
-namespace parser
+namespace cp::parser
 {
     SLRParserBuilder& SLRParserBuilder::build() &
     {

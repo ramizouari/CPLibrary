@@ -5,7 +5,7 @@
 #ifndef CPLIBRARY_FIXED_PREFIX_ARRAY_H
 #define CPLIBRARY_FIXED_PREFIX_ARRAY_H
 #include <vector>
-namespace data_structures::fixed
+namespace cp::data_structures::fixed
 {
     template<typename O>
     struct prefix_array

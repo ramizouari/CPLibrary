@@ -4,34 +4,39 @@
 
 #ifndef CPLIBRARY_BITS_H
 #define CPLIBRARY_BITS_H
-
-inline unsigned int bit_log(unsigned int n)
+namespace cp
 {
-    unsigned char a=0,b=30,r=0;
-    while(a<=b)
+    inline unsigned int bit_log(unsigned int n)
     {
-        auto c=(a+b)/2;
-        if(n>>c)
-            a=c+1;
-        else
+        unsigned char a=0,b=30,r=0;
+        while(a<=b)
         {
-            b=c-1;
-            r=c-1;
+            auto c=(a+b)/2;
+            if(n>>c)
+                a=c+1;
+            else
+            {
+                b=c-1;
+                r=c-1;
+            }
         }
+        if(r && (1<<(r-1))==n)
+            return r-1;
+        return r;
     }
-    if(r && (1<<(r-1))==n)
-        return r-1;
-    return r;
-}
 
-inline unsigned int bit_floor(unsigned int n)
-{
-    return 1<<bit_log(n);
-}
+    inline unsigned int bit_floor(unsigned int n)
+    {
+        return 1<<bit_log(n);
+    }
 
-inline unsigned int bit_ceil(unsigned int n)
-{
-    return 1<<(bit_log(n)+1);
+    inline unsigned int bit_ceil(unsigned int n)
+    {
+        unsigned r=1;
+        while(r<n)
+            r<<=1;
+        return r;
+    }
 }
 
 #endif //CPLIBRARY_BITS_H
