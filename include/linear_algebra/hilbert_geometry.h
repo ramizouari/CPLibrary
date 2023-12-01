@@ -8,7 +8,7 @@
 
 #include "decomposition.h"
 
-namespace linalg
+namespace cp::linalg
 {
     template<typename IK>
     IK inner_product(const d_vector<IK>& u,const d_vector<IK> &v)

@@ -10,7 +10,7 @@
 #include "vector.h"
 
 
-namespace linalg
+namespace cp::linalg
 {
     struct m_shape
     {

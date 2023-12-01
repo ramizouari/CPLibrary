@@ -20,7 +20,7 @@ namespace cp::data_structures::dynamic
         segment_tree(const std::vector<R> &_A, std::shared_ptr<binary_operation<R>> _F):A(_A),F(_F)
         {
             n=bit_ceil(A.size());
-            A.resize(n,F->neutral_element());
+            A.resize(n,F.neutral_element());
             int m=n;
             h=0;
             while(m)
@@ -63,7 +63,7 @@ namespace cp::data_structures::dynamic
         R query(int l,int r,int a,int b,int depth)
         {
             if(l>=r)
-                return F->neutral_element();
+                return F.neutral_element();
             if(l==a && r==b)
                 return S[depth][l>>(h-1-depth)];
             int mid=(a+b)/2;

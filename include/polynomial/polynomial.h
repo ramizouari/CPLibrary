@@ -24,6 +24,16 @@ namespace cp
         std::vector<R> p;
 
     public:
+
+        const std::vector<R>& data() const
+        {
+            return p;
+        }
+        std::vector<R>& data()
+        {
+            return p;
+        }
+
         bool operator==(const R& a) const
         {
             if (is_zero(a))
@@ -33,20 +43,23 @@ namespace cp
 
         bool operator==(const polynomial<R> &) const = default;
 
-        void reduce()
+        polynomial& reduce()
         {
             while(!p.empty() && is_zero(p.back()))
                 p.pop_back();
+            return *this;
         }
         polynomial(R k):p(1,k)
         {
             reduce();
         }
 
-        polynomial(int k = 0) :p(1, k)
+        polynomial(int k) :p(1, k)
         {
             reduce();
         }
+
+        polynomial()=default;
 
         polynomial(std::vector<R> _p):p(std::move(_p))
         {
@@ -261,6 +274,9 @@ namespace cp
                 return {};
             polynomial D;
             D.p.resize(degree());
+            for(int i=1;i<=degree();i++)
+                D.p[i-1]=p[i]*R(i);
+            return D;
         }
 
         /**
@@ -273,7 +289,7 @@ namespace cp
         template<typename H>
         H operator()(H a) const
         {
-            H r(0);
+            H r{};
             for(int i=degree();i>=0;i--)
                 r=r*a+p[i];
             return r;
@@ -326,211 +342,6 @@ namespace cp
     template<typename R>
     const polynomial<R> X=polynomial<R>(std::vector<R>{0,1});
 
-
-/**
- * @brief Sparse Polynomial
-* @details This is the class of sparse polynomials over commutative ring R
-* @Requirements
-* <strong>R</strong> is a commutative ring
-* @Recommendation
-* <ol> <li> The coefficients are sparse. Formally a k-sparse polynomial p of degree n is a polynomial where:
-* (card supp {p_1,..,p_n}) / n <= k
-* <li> It is recommended that k<=0.01 </ol>
-* @Notes
-* Formally this class is simply R[x]
-*/
-    template<typename R>
-    class sparse_polynomial
-    {
-        std::map<int,R> p;
-        void reduce()
-        {
-            std::vector<int> to_del;
-            for(auto [k,x]:p)
-                if(is_zero(x))
-                    to_del.push_back(k);
-            for(auto k:to_del)
-                p.erase(k);
-        }
-    public:
-        sparse_polynomial(R k=0)
-        {
-            p[0]=k;
-            reduce();
-        }
-        sparse_polynomial(const std::vector<R> &_p)
-        {
-            for(int i=0;i<_p.size();i++)
-                p[i]=_p[i];
-            reduce();
-        }
-
-        int degree() const
-        {
-            return p.empty()?-1:p.rbegin()->first;
-        }
-
-        auto& operator+=(sparse_polynomial O)
-        {
-            for(const auto& [k,s]:O.p)
-            {
-                p[k] += O.p[k];
-                if(is_zero(p[k]))
-                    p.erase(k);
-            }
-            return *this;
-        }
-
-        auto& operator-=(sparse_polynomial O)
-        {
-            for(const auto& [k,s]:O.p)
-            {
-                p[k] -= O.p[k];
-                if(is_zero(p[k]))
-                    p.erase(k);
-            }
-            return *this;
-        }
-
-        auto operator*(const sparse_polynomial &O) const
-        {
-
-            sparse_polynomial q;
-            for(auto [i,u]:p) for(auto [j,v]:O.p)
-                {
-                    q.p[i+j]+=u*v;
-                    if(is_zero(q.p[i+j]))
-                        q.p.erase(i+j);
-                }
-            return q;
-        }
-
-        auto& operator*=(const sparse_polynomial &O)
-        {
-            auto r=(*this)*O;
-            p.swap(r.p);
-            return *this;
-        }
-
-        auto operator+(const sparse_polynomial &O) const
-        {
-            auto r=*this;
-            return r+=O;
-        }
-
-        auto operator-(const sparse_polynomial &O) const
-        {
-            auto r=*this;
-            return r-=O;
-        }
-
-        auto operator-() const
-        {
-            auto r=*this;
-            for(auto &s:r.p)
-                s=-s;
-            return r;
-        }
-
-        auto operator*=(R a)
-        {
-            if(is_zero(a))
-                p.clear();
-            else for(auto& s:p)
-                    s*=a;
-            reduce();
-            return *this;
-        }
-
-        auto& operator+=(R a)
-        {
-            return *this+=sparse_polynomial({a});
-        }
-
-        auto& operator-=(R a)
-        {
-            return *this+=sparse_polynomial({a});
-        }
-
-        auto operator+(R a) const
-        {
-            auto q=*this;
-            return q+=a;
-        }
-
-        auto operator-(R a) const
-        {
-            auto q=*this;
-            return q-=a;
-        }
-
-        auto& operator/=(R k)
-        {
-            for(auto &s:p)
-                s/=k;
-            return *this;
-        }
-
-        auto operator/(R k) const
-        {
-            auto q=*this;
-            return q/=k;
-        }
-
-        auto &operator[](int k)
-        {
-            return p[k];
-        }
-
-        const auto& operator[](int k) const
-        {
-            return p.at(k);
-        }
-
-        /**
-         * @brief Polynomial evaluation
-        * @details Evaluates the polynomial at a point a.
-        * @Requirements:
-        * H is an associative algebra over R
-        */
-        template<typename H>
-        H operator()(H a)
-        {
-            H r=0,u=1,i=0;
-            for(auto [k,x]:p)
-            {
-                u*=pow(a,k-i);
-                r+=u*x;
-                i=k;
-            }
-        }
-
-        operator std::map<int, R>& ()
-        {
-            return p;
-        }
-
-        operator const std::map<int, R>& () const
-        {
-            return p;
-        }
-
-        auto size() const
-        {
-            return p.size();
-        }
-    };
-
-    template<typename R>
-    sparse_polynomial<R> Z=sparse_polynomial<R>({0,1});
-
-    template<typename R>
-    sparse_polynomial<R> operator*(R a,const sparse_polynomial<R> &p)
-    {
-        auto q=p;
-        return q*=a;
-    }
-
 /**
 * @brief Newton Interpolation
 * @details Applies Lagrange Interpolation over points (x,y) using Newton's method
@@ -559,84 +370,6 @@ namespace cp
             u*=(X<R>-x[i]);
         }
         return p;
-    }
-
-/**
- * @brief Karatsuba multiplication
-* @details Applies Karatsuba multiplication between two polynomials
-* @Requirements
-* None
-*/
-    template<typename R>
-    polynomial<R> karatsuba_multiplication(const polynomial<R> &p,const polynomial<R> &q)
-    {
-        constexpr int L=75;
-        if(std::min(p.degree(),q.degree())<=L)
-            return p*q;
-        polynomial<R> a1,b1,a2,b2;
-        int n=p.degree(),m=q.degree(),r=std::max(n,m)+1;
-        std::vector<R> &u1=static_cast<std::vector<R>&>(a1),&u2=static_cast<std::vector<R>&>(a2),
-                &v1=static_cast<std::vector<R>&>(b1),&v2=static_cast<std::vector<R>&>(b2);
-        u1.resize(std::min(n+1,r/2));
-        u2.resize(std::min(m+1,r/2));
-        v1.resize(std::max(n+1-r/2,0));
-        v2.resize(std::max(m+1-r/2,0));
-        for(int i=0;i<u1.size();i++)
-            u1[i]=p[i];
-        for(int i=0;i<u2.size();i++)
-            u2[i]=q[i];
-        for(int i=0;i<v1.size();i++)
-            v1[i]=p[i+r/2];
-        for(int i=0;i<v2.size();i++)
-            v2[i]=q[i+r/2];
-        polynomial<R> r1= karatsuba_multiplication(a1,a2),
-                r3= karatsuba_multiplication(b1,b2),
-                t=karatsuba_multiplication(a1+b1,a2+b2),
-                r2=t-r1-r3;
-        polynomial<R> h;
-        int s=r-r%2;
-        auto &c=static_cast<std::vector<R>&>(h);
-        c.resize(n+m+1);
-        for(int i=0;i<=r1.degree();i++)
-            c[i]+=r1[i];
-        for(int i=0;i<=r2.degree();i++)
-            c[i+r/2]+=r2[i];
-        for(int i=0;i<=r3.degree();i++)
-            c[i+s]+=r3[i];
-        return h;
-    }
-
-    template<typename R>
-    sparse_polynomial<R> karatsuba_multiplication(const sparse_polynomial<R>& p, const sparse_polynomial<R>& q)
-    {
-        constexpr int recursion_limit = 30;
-        if (std::min(p.size(), q.size()) <= recursion_limit)
-            return p * q;
-        sparse_polynomial<R> a1, b1, a2, b2;
-        int n = p.degree(), m = q.degree(), r = std::max(n, m) + 1;
-        const auto &mapper1 = static_cast<const std::map<int, R>&>(p),&mapper2=static_cast<const std::map<int, R>&>(q);
-        auto it1 = mapper1.begin(),it2=mapper2.begin();
-        for (; it1!=mapper1.end()  && it1->first<  r / 2; ++it1)
-            a1[it1->first] = it1->second;
-        for (; it2 != mapper2.end() && it2->first < r / 2; ++it2)
-            a2[it2->first] = it2->second;
-        for (; it1 != mapper1.end(); ++it1)
-            b1[it1->first-r/2] = it1->second;
-        for (; it2 != mapper2.end(); ++it2)
-            b2[it2->first-r/2] = it2->second;
-        sparse_polynomial<R> r1 = karatsuba_multiplication(a1, a2),
-                r3 = karatsuba_multiplication(b1, b2),
-                t = karatsuba_multiplication(a1 + b1, a2 + b2),
-                r2 = t - r1 - r3;
-        sparse_polynomial<R> h;
-        int s = r - r % 2;
-        auto& c = static_cast<std::map<int,R>&>(h);
-        c = r1;
-        for (auto [k, w] : static_cast<std::map<int, R>&>(r2))
-            c[k + r / 2] += w;
-        for (auto [k, w] : static_cast<std::map<int, R>&>(r3))
-            c[k + s] += w;
-        return h;
     }
 }
 

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(CPLibrary)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse3")
 
 #Put this in your CMakeLists.txt file (change any options from OFF to ON if you want):
 
@@ -10,7 +11,10 @@ find_package(Boost COMPONENTS unit_test_framework)
 set(CMAKE_CXX_STANDARD 23)
 
 set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h include/nt/number_theory.h
+        include/signals/quadratic/ntt.h include/rings/tower.h
+        include/rings/quadratic/fixed.h include/rings/quadratic/static.h include/rings/quadratic/dynamic.h
         include/linear_algebra/view.h include/linear_algebra/tensor.h include/signals/fft.h include/signals/multi_fft.h
+        include/signals/ntt.h include/polynomial/fast_polynomial.h include/linear_algebra/wrappers.h
         include/arithmetic/bigint.h include/arithmetic/varint.h include/arithmetic/utils.h include/arithmetic/operations.h
         include/parser/StatefulParser.h include/graph/tree/tree.h include/data_structures/dynamic_range_queries.h
         include/graph/tree/range_queries.h include/graph/tree/isomorphism.h

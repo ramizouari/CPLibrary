@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <array>
 
-namespace linalg
+namespace cp::linalg
 {
     struct v_shape
     {
@@ -290,9 +290,9 @@ namespace linalg
 namespace std
 {
     template<typename R,int n>
-    struct tuple_size<s_vector<R, n>> : std::integral_constant<size_t, n>{};
+    struct tuple_size<cp::linalg::s_vector<R, n>> : std::integral_constant<size_t, n>{};
     template<size_t k,typename R,int n>
-    struct tuple_element<k, s_vector<R, n>>
+    struct tuple_element<k, cp::linalg::s_vector<R, n>>
     {
         using type = R;
     };

@@ -7,6 +7,9 @@
 
 #include "algebra/abstract_algebra.h"
 #include "modular_arithmetic.h"
+#include "number_theory.h"
+#include "polynomial/polynomial.h"
+#include <random>
 
 namespace cp
 {
@@ -23,7 +26,7 @@ namespace cp
             h++;
         }
         integer d = 1;
-        d_cyclic a(_a);
+        cyclic<dynamic_modulus> a(_a,n);
         auto u = pow(a, r);
         if (u - 1 == 0)
             return true;
@@ -39,9 +42,8 @@ namespace cp
         if (n == 1)
             return false;
         std::uniform_int_distribution<integer> d(2, n - 1);
-        d_cyclic::m = n;
         for (int i = 0; i < iter; i++) if (!rabin_miller_primality_test(n, d(g)))
-                return false;
+            return false;
         return true;
     }
 
@@ -49,9 +51,8 @@ namespace cp
     {
         if (n == 1)
             return false;
-        d_cyclic::m = n;
         for (const auto& d : provers) if (!rabin_miller_primality_test(n, d))
-                return false;
+            return false;
         return true;
     }
 
@@ -59,20 +60,18 @@ namespace cp
     {
         if (n == 1)
             return false;
-        d_cyclic::m = n;
-        for (const auto &p : provers) if (pow<d_cyclic>(p, n - 1) != 1)
+        for (const auto &p : provers) if (pow<cyclic<dynamic_modulus>>(p, n - 1,n) != 1)
                 return false;
         return true;
     }
 
     inline integer rho_divisor_method(integer n,const polynomial<integer> &_P,integer x0)
     {
-        d_cyclic::m=n;
-        polynomial<d_cyclic> P;
+        polynomial<cyclic<dynamic_modulus>> P;
         for(int i=0;i<=_P.degree();i++)
-            P.p.emplace_back(_P[i]);
+            P.p.emplace_back(_P[i],n);
         P.reduce();
-        d_cyclic x=x0,y=x;
+        cyclic<dynamic_modulus> x(x0,n),y=x;
         integer d=1;
         do
         {
@@ -84,7 +83,7 @@ namespace cp
     };
 
 
-    class fast_factoriser
+    class fast_factoriser : public abstract_factoriser
     {
         int iters;
         polynomial<integer> P;
@@ -116,15 +115,15 @@ namespace cp
         }
     };
 
-    class randomized_fast_factoriser
+    class randomized_fast_factoriser : public abstract_factoriser
     {
         int iters;
         std::random_device dev;
-        std::mt19937_64 g{dev()};
+        mutable std::mt19937_64 g{dev()};
         int max_degree;
     public:
         randomized_fast_factoriser(int iters,int max_degree):iters(iters),max_degree(max_degree){}
-        [[nodiscard]] integer smallest_divisor(integer n)
+        [[nodiscard]] integer smallest_divisor(integer n) const
         {
             std::uniform_int_distribution<integer> d(0,n-1);
             std::vector<integer> P(max_degree+1);
@@ -151,6 +150,7 @@ namespace cp
             }
             return {M.begin(),M.end()};
         }
+
     };
 }
 

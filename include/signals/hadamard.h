@@ -27,7 +27,7 @@ namespace cp::signals
                 break;
         }
         if(normalized!=FFTNormalization::None) for (R & x : v)
-                x /= r;
+            x /= r;
     }
     template<typename R>
     struct binary_fft : public abstract_fft<R>

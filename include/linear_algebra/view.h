@@ -14,8 +14,6 @@ namespace cp::linalg
     template<typename R,std::size_t Rank>
     struct tensor_subview;
     template<typename R,std::size_t Rank>
-    struct to_dynamic_view_t;
-    template<typename R,std::size_t Rank>
     struct tensor_view
     {
         virtual R& at(std::array<std::size_t,Rank> indexes) = 0;
@@ -55,7 +53,6 @@ namespace cp::linalg
             return at(std::move(args));
         }
 
-
         virtual std::array<std::size_t,Rank> shape() const = 0;
         static constexpr std::size_t rank()
         {
@@ -75,9 +72,10 @@ namespace cp::linalg
             iterator(tensor_view<R,Rank> &src,std::array<std::size_t,Rank> indexes,bool is_end=false):src(src),indexes(indexes),is_end(is_end){}
             iterator& operator++()
             {
+                auto shape=src.shape();
                 for(int i=Rank-1;i>=0;i--)
                 {
-                    if(indexes[i]+1<src.shape()[i])
+                    if(indexes[i]+1<shape[i])
                     {
                         indexes[i]++;
                         return *this;
@@ -124,35 +122,41 @@ namespace cp::linalg
             return iterator(*this,std::array<std::size_t,Rank>{},true);
         }
         virtual tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end);
+        virtual tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,std::array<std::size_t,Rank> step);
     };
 
 
     template <typename R,std::size_t Rank>
-    struct tensor_subview:tensor_view<R,Rank>
+    struct tensor_subview: public tensor_view<R,Rank>
     {
         tensor_view<R,Rank> &src;
-        std::array<std::size_t,Rank> start,end;
-        tensor_subview(tensor_view<R,Rank> &src,std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end):src(src),start(start),end(end){}
+        std::array<std::size_t,Rank> m_start,m_end,m_step;
+        tensor_subview(tensor_view<R,Rank> &src,std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end):src(src),m_start(start),m_end(end)
+        {
+            std::fill(m_step.begin(),m_step.end(),1);
+        }
+        tensor_subview(tensor_view<R,Rank> &src,std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,
+                       std::array<std::size_t,Rank> step):src(src),m_start(start),m_end(end),m_step(step){}
 
         R& at(std::array<std::size_t,Rank> indexes) override
         {
             std::array<std::size_t,Rank> new_indexes;
             for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i] + start[i];
+                new_indexes[i]=indexes[i]*m_step[i] + m_start[i];
             return src.at(new_indexes);
         }
         const R& at(std::array<std::size_t,Rank> indexes) const override
         {
             std::array<std::size_t,Rank> new_indexes;
             for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i] + start[i];
+                new_indexes[i]=indexes[i]*m_step[i] + m_start[i];
             return src.at(new_indexes);
         }
         std::array<std::size_t,Rank> shape() const override
         {
             std::array<std::size_t,Rank> new_shape;
             for(int i=0;i<Rank;i++)
-                new_shape[i]=end[i]-start[i];
+                new_shape[i]=(m_end[i]-m_start[i]+m_step[i]-1)/m_step[i];
             return new_shape;
         }
         tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end) override
@@ -160,10 +164,21 @@ namespace cp::linalg
             std::array<std::size_t,Rank> new_start,new_end;
             for(int i=0;i<Rank;i++)
             {
-                new_start[i]=this->start[i]+start[i];
-                new_end[i]=this->start[i]+end[i];
+                new_start[i]=this->m_start[i]+start[i]*m_step[i];
+                new_end[i]=this->m_start[i]+end[i]*m_step[i];
             }
-            return tensor_subview<R,Rank>(src,new_start,new_end);
+            return tensor_subview<R,Rank>(src,new_start,new_end,m_step);
+        }
+        tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,std::array<std::size_t,Rank> step) override
+        {
+            std::array<std::size_t,Rank> new_start,new_end,new_step;
+            for(int i=0;i<Rank;i++)
+            {
+                new_start[i]=this->m_start[i]+start[i]*m_step[i];
+                new_end[i]=this->m_start[i]+end[i]*m_step[i];
+                new_step[i]=this->m_step[i]*step[i];
+            }
+            return tensor_subview<R,Rank>(src,new_start,new_end,new_step);
         }
     };
 
@@ -171,6 +186,12 @@ namespace cp::linalg
     tensor_subview<R,Rank> tensor_view<R,Rank>::slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end)
     {
         return tensor_subview<R,Rank>(*this,start,end);
+    }
+
+    template<typename R,std::size_t Rank>
+    tensor_subview<R,Rank> tensor_view<R,Rank>::slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,std::array<std::size_t,Rank> step)
+    {
+        return tensor_subview<R,Rank>(*this,start,end,step);
     }
 
     template<typename R>
@@ -271,6 +292,7 @@ namespace cp::linalg
             return iterator(*this,zeros,true);
         }
         virtual tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end);
+        virtual tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end,std::vector<std::size_t> step);
     };
 
     template<typename R>
@@ -309,14 +331,79 @@ namespace cp::linalg
         }
         tensor_subview<R,1> slice(std::array<std::size_t,1> start,std::array<std::size_t,1> end) override
         {
-            return tensor_subview<R,1>(*this,{start[0]},{end[0]});
+            return tensor_subview<R,1>(*this,start,end);
         }
+
+        tensor_subview<R,1> slice(std::array<std::size_t,1> start,std::array<std::size_t,1> end, std::array<std::size_t,1> step) override
+        {
+            return tensor_subview<R,1>(*this,start,end,step);
+        }
+
         vector_view& operator=(const std::vector<R>& O)
         {
             for(int i=0;i<size();i++)
                 at(i)=O.at(i);
             return *this;
         }
+    };
+
+    template<typename R>
+    struct tensor_subview<R,dynamic_extent>:tensor_view<R,dynamic_extent>
+    {
+        tensor_view<R,dynamic_extent> &src;
+        std::vector<std::size_t> m_start,m_end,m_step;
+        tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end):src(src),m_start(start),m_end(end),m_step(src.rank())
+        {
+            std::fill(m_step.begin(),m_step.end(),1);
+        }
+        tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end,
+                       std::vector<std::size_t> step):src(src),m_start(start),m_end(end),m_step(step){}
+
+        R& at(std::vector<std::size_t> indexes) override
+        {
+            std::vector<std::size_t> new_indexes(src.rank());
+            for(int i=0;i<src.rank();i++)
+                new_indexes[i]=indexes[i] + m_start[i];
+            return src.at(new_indexes);
+        }
+        const R& at(std::vector<std::size_t> indexes) const override
+        {
+            std::vector<std::size_t> new_indexes(src.rank());
+            for(int i=0;i<src.rank();i++)
+                new_indexes[i]=indexes[i] + m_start[i];
+            return src.at(new_indexes);
+        }
+        std::vector<std::size_t> shape() const override
+        {
+            std::vector<std::size_t> new_shape(src.rank());
+            for(int i=0;i<src.rank();i++)
+                new_shape[i]=m_end[i]-m_start[i];
+            return new_shape;
+        }
+        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end) override
+        {
+            std::vector<std::size_t> new_start(src.rank()),new_end(src.rank());
+            for(int i=0;i<src.rank();i++)
+            {
+                new_start[i]=this->m_start[i]+start[i];
+                new_end[i]=this->m_start[i]+end[i];
+            }
+            return tensor_subview<R,dynamic_extent>(src,new_start,new_end);
+        }
+
+        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end,std::vector<std::size_t> step) override
+        {
+            auto Rank=src.rank();
+            std::vector<std::size_t> new_start(Rank),new_end(Rank),new_step(Rank);
+            for(int i=0;i<Rank;i++)
+            {
+                new_start[i]=this->m_start[i]+start[i]*m_step[i];
+                new_end[i]=this->m_start[i]+end[i]*m_step[i];
+                new_step[i]=this->m_step[i]*step[i];
+            }
+            return tensor_subview<R,dynamic_extent>(src,new_start,new_end,new_step);
+        }
+
     };
 
     template<typename R,std::size_t Rank>
@@ -344,13 +431,25 @@ namespace cp::linalg
         }
         tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end) override
         {
-            std::array<std::size_t,Rank> new_start,new_end;
+            std::vector<std::size_t> new_start(Rank),new_end(Rank);
             for(int i=0;i<Rank;i++)
             {
                 new_start[i]=start[i];
                 new_end[i]=end[i];
             }
-            return tensor_subview<R,dynamic_extent>(src,new_start,new_end);
+            return tensor_subview<R,dynamic_extent>(*this,new_start,new_end);
+        }
+
+        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end, std::vector<std::size_t> step) override
+        {
+            std::vector<std::size_t> new_start(Rank),new_end(Rank),new_step(Rank);
+            for(int i=0;i<Rank;i++)
+            {
+                new_start[i]=start[i];
+                new_end[i]=end[i];
+                new_step[i]=step[i];
+            }
+            return tensor_subview<R,dynamic_extent>(*this,new_start,new_end,new_step);
         }
     };
 
@@ -390,49 +489,15 @@ namespace cp::linalg
     };
 
     template<typename R>
-    struct tensor_subview<R,dynamic_extent>:tensor_view<R,dynamic_extent>
-    {
-        tensor_view<R,dynamic_extent> &src;
-        std::vector<std::size_t> start,end;
-        tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end):src(src),start(start),end(end){}
-
-        R& at(std::vector<std::size_t> indexes) override
-        {
-            std::vector<std::size_t> new_indexes(src.rank());
-            for(int i=0;i<src.rank();i++)
-                new_indexes[i]=indexes[i] + start[i];
-            return src.at(new_indexes);
-        }
-        const R& at(std::vector<std::size_t> indexes) const override
-        {
-            std::vector<std::size_t> new_indexes(src.rank());
-            for(int i=0;i<src.rank();i++)
-                new_indexes[i]=indexes[i] + start[i];
-            return src.at(new_indexes);
-        }
-        std::vector<std::size_t> shape() const override
-        {
-            std::vector<std::size_t> new_shape(src.rank());
-            for(int i=0;i<src.rank();i++)
-                new_shape[i]=end[i]-start[i];
-            return new_shape;
-        }
-        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end) override
-        {
-            std::vector<std::size_t> new_start(src.rank()),new_end(src.rank());
-            for(int i=0;i<src.rank();i++)
-            {
-                new_start[i]=this->start[i]+start[i];
-                new_end[i]=this->start[i]+end[i];
-            }
-            return tensor_subview<R,dynamic_extent>(src,new_start,new_end);
-        }
-    };
-
-    template<typename R>
     tensor_subview<R,dynamic_extent> tensor_view<R,dynamic_extent>::slice(std::vector<std::size_t> start,std::vector<std::size_t> end)
     {
         return tensor_subview<R,dynamic_extent>(*this,start,end);
+    }
+
+    template<typename R>
+    tensor_subview<R,dynamic_extent> tensor_view<R,dynamic_extent>::slice(std::vector<std::size_t> start,std::vector<std::size_t> end,std::vector<std::size_t> step)
+    {
+        return tensor_subview<R,dynamic_extent>(*this,start,end,step);
     }
 
     template<typename R,std::size_t Rank>

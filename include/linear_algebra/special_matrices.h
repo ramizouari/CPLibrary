@@ -8,7 +8,7 @@
 #include "algebra/abstract_algebra.h"
 
 
-namespace linalg
+namespace cp::linalg
 {
     template<typename R>
     struct BandMatrix

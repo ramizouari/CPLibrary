@@ -10,7 +10,7 @@
 #include "matrix.h"
 #include "special_matrices.h"
 
-namespace linalg
+namespace cp::linalg
 {
     template<typename IK>
     std::pair<LowerTriangularSquareMatrix<IK>,UpperTriangularSquareMatrix<IK>> choleskyDecomposition(const d_matrix<IK> &P)

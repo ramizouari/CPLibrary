@@ -9,7 +9,7 @@
 namespace cp
 {
     template<typename T>
-    struct binary_operation
+    struct binary_operation : public std::enable_shared_from_this<binary_operation<T>>
     {
         using type=T;
         template<typename H0,typename ...H>
@@ -27,9 +27,45 @@ namespace cp
     };
 
     template<typename T>
-    struct invertible_operation
+    struct invertible_operation : public std::enable_shared_from_this<invertible_operation<T>>
     {
         virtual T inv(const T& a) const = 0;
+    };
+
+    template<typename T>
+    struct multiplicative_inverse_t : public invertible_operation<T>
+    {
+        T inv(const T& a) const override
+        {
+            return a.inv();
+        }
+    };
+
+    template<std::floating_point T>
+    struct multiplicative_inverse_t<T> : public invertible_operation<T>
+    {
+        T inv(const T& a) const override
+        {
+            return 1/a;
+        }
+    };
+
+    template<typename T>
+    struct multiplicative_inverse_t<std::complex<T>> : public invertible_operation<std::complex<T>>
+    {
+        std::complex<T> inv(const std::complex<T>& a) const override
+        {
+            return std::complex<T>(1.)/a;
+        }
+    };
+
+    template<typename T>
+    struct additive_inverse_t : public invertible_operation<T>
+    {
+        T inv(const T& a) const override
+        {
+            return -a;
+        }
     };
 
     template<typename T>
@@ -41,12 +77,8 @@ namespace cp
     };
 
     template<typename T>
-    struct plus_t:public monoid_plus_t<T>,public invertible_operation<T>
+    struct plus_t:public monoid_plus_t<T>,public additive_inverse_t<T>
     {
-        T inv(const T&a) const override
-        {
-            return -a;
-        }
     };
 
     template<typename T>
@@ -67,29 +99,6 @@ namespace cp
     template<typename T>
     struct field_multiplies_t:public multiplies_t<T>,public invertible_operation<T>
     {
-        T inv(const T&a) const
-        {
-            return a.inv();
-        }
-
-    };
-
-    template<>
-    struct field_multiplies_t<real>:public multiplies_t<real>,public invertible_operation<real>
-    {
-        real inv(const real& a)const
-        {
-            return 1./a;
-        }
-    };
-
-    template<>
-    struct field_multiplies_t<IC>:public multiplies_t<IC>,public invertible_operation<IC>
-    {
-        IC inv(const IC& a)const
-        {
-            return IC(1)/a;
-        }
     };
 
     template<typename T>
@@ -256,6 +265,11 @@ namespace cp
         auto operator()(const H&... h) const
         {
             return op->operator()(h...);
+        }
+
+        auto reduce(const T& a,const T& b) const
+        {
+            return op->reduce(a,b);
         }
 
         auto neutral_element() const

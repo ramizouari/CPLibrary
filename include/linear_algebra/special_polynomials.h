@@ -8,7 +8,7 @@
 #include "vector.h"
 #include "matrix.h"
 #include "polynomial/polynomial.h"
-namespace linalg
+namespace cp::linalg
 {
     template<typename R>
     polynomial<R> faddev_lerrier_characteristic_polynomial(const d_matrix<R>&A)

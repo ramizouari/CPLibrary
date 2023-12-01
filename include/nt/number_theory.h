@@ -15,15 +15,52 @@
 namespace cp
 {
     using couple =std::pair<integer,integer>;
-    class factoriser
-    {
-        int n;
-        std::vector<integer> p_list,smallest_d;
-        std::vector<std::vector<integer>> p_factors;
-        std::vector<std::vector<integer>> d_list;
-        std::vector<std::vector<couple>> p_dec;
 
-        void divisors_list_rec(integer n,std::vector<integer> &D,const std::vector<integer> &P, int o=0)
+    class abstract_factoriser
+    {
+    public:
+        virtual ~abstract_factoriser()=default;
+        virtual std::vector<integer> prime_factors(integer m) const
+        {
+            std::vector<integer> P;
+            auto p=smallest_divisor(m);
+            while(m>1)
+            {
+                if(P.empty()||P.back()!=p)
+                    P.push_back(p);
+                m/=p;
+            }
+            return P;
+        }
+        virtual integer smallest_divisor(integer m) const=0;
+        virtual bool is_prime(integer m) const
+        {
+            return smallest_divisor(m)==m;
+        }
+        virtual std::vector<couple> prime_decomposition(integer m) const
+        {
+            std::vector<couple> P;
+            auto p=smallest_divisor(m);
+            while(m>1)
+            {
+                int s=0;
+                while(m%p==0)
+                {
+                    m/=p;
+                    s++;
+                }
+                P.emplace_back(p,s);
+            }
+            return P;
+        }
+        virtual std::vector<integer> divisors_list(integer m) const
+        {
+            std::vector<integer> D;
+            divisors_list_rec(m, D, prime_factors(m));
+            return D;
+        }
+    protected:
+        void divisors_list_rec(integer n,std::vector<integer> &D,const std::vector<integer> &P, int o=0) const
         {
             auto r=P.size();
             for(int i=o;i<r;i++) if(n%P[i]==0)
@@ -31,8 +68,24 @@ namespace cp
             D.push_back(n);
 
         }
+
+    };
+
+    struct default_factoriser_t
+    {
+        inline static std::shared_ptr<abstract_factoriser> default_factoriser;
+    };
+
+
+    class factoriser : public abstract_factoriser
+    {
+        int n;
+        std::vector<integer> p_list,smallest_d;
+        std::vector<std::vector<integer>> p_factors;
+
+
     public:
-        factoriser(int _n):n(_n),smallest_d(n+1),p_factors(n+1),d_list(n+1),p_dec(n+1)
+        factoriser(int _n):n(_n),smallest_d(n+1),p_factors(n+1)
         {
             p_list.reserve(n/log(n));
             std::vector<bool> is_prime(n+1,true);
@@ -53,107 +106,46 @@ namespace cp
                 }
         }
 
-        [[nodiscard]] const auto& prime_factors(integer m) const
+        [[nodiscard]] std::vector<integer> prime_factors(integer m) const override
         {
-            static std::vector<integer> holder;
             if(m<=n)
                 return p_factors[m];
-            auto p=smallest_divisor(m);
-            holder={};
+            std::vector<integer> result={};
             while(m>1)
             {
                 auto p= smallest_divisor(m);
-                if(holder.empty()||holder.back()!=p)
-                    holder.push_back(p);
+                if(result.empty()||result.back()!=p)
+                    result.push_back(p);
                 m/=p;
             }
-            return holder;
+            return result;
         }
 
-        const auto& prime_decomposition(integer m)
+        std::vector<std::pair<integer,integer>> prime_decomposition(integer m) const override
         {
-            static std::vector<std::pair<integer,integer>> holder;
-            if(m<=n)
+            integer r=m;
+            std::vector<std::pair<integer,integer>> p_dec;
+            for(auto p: prime_factors(m))
             {
-                integer r=m;
-                if(p_dec[m].empty())
+                int s=0;
+                while(r%p==0)
                 {
-                    for(auto p: prime_factors(m))
-                    {
-                        int s=0;
-                        while(r%p==0)
-                        {
-                            r/=p;
-                            s++;
-                        }
-                        p_dec[m].emplace_back(p,s);
-                    }
+                    r/=p;
+                    s++;
                 }
-                return p_dec[m];
+                p_dec.emplace_back(p,s);
             }
-            else
-            {
-                holder.clear();
-                integer r=m;
-                for(auto p: prime_factors(m))
-                {
-                    int s=0;
-                    while(r%p==0)
-                    {
-                        r/=p;
-                        s++;
-                    }
-                    holder.emplace_back(p,s);
-                }
-                return holder;
-            }
+            return p_dec;
         }
 
-        const auto& divisors_list(integer m)
+        std::vector<integer> divisors_list_sorted(integer m) const
         {
-            static std::vector<integer> holder;
-            static std::map<integer,std::vector<integer>> cache;
-            if(m<=n)
-            {
-                if (d_list[m].empty())
-                    divisors_list_rec(m, d_list[m], p_factors[m]);
-                return d_list[m];
-            }
-            else
-            {
-                if(cache.count(m))
-                    return cache[m];
-                divisors_list_rec(m,holder, prime_factors(m));
-                cache[m]=holder;
-                return cache[m];
-            }
+            auto D=divisors_list(m);
+            std::sort(D.begin(),D.end());
+            return D;
         }
 
-        const auto& divisors_list_sorted(integer m)
-        {
-            static std::vector<integer> holder;
-            static std::map<integer,std::vector<integer>> cache;
-            if(m<=n)
-            {
-                if (d_list[m].empty())
-                {
-                    divisors_list_rec(m, d_list[m], p_factors[m]);
-                    std::sort(d_list[m].begin(),d_list[m].end());
-                }
-                return d_list[m];
-            }
-            else
-            {
-                if(cache.count(m))
-                    return cache[m];
-                divisors_list_rec(m,holder, prime_factors(m));
-                std::sort(holder.begin(),holder.end());
-                cache[m]=holder;
-                return cache[m];
-            }
-        }
-
-        [[nodiscard]] integer smallest_divisor(integer m) const
+        [[nodiscard]] integer smallest_divisor(integer m) const override
         {
             if(m<=n)
                 return smallest_d[m];
@@ -168,7 +160,7 @@ namespace cp
             return m;
         }
 
-        [[nodiscard]] bool is_prime(integer m) const
+        [[nodiscard]] bool is_prime(integer m) const override
         {
             if(m<n)
                 return m>1 && smallest_d[m]==m;

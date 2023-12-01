@@ -15,7 +15,7 @@ namespace cp
     using real = long double;
     using IR=real;
     using IC= std::complex<IR>;
-    constexpr real epsilon=1e-7;
+    constexpr real epsilon=1e-6;
 
     template<typename R>
     R commutator(R a,R b)
@@ -43,7 +43,7 @@ namespace cp
             return R(1,meta_info...);
         else if(n==1)
             return a;
-        auto s=pow(a,n/2);
+        auto s=pow(a,n/2,meta_info...);
         return n%2?s*s*a:s*s;
     }
 
@@ -53,7 +53,13 @@ namespace cp
         return a==R{};
     }
 
-    inline bool is_zero(const IC&a)
+
+    inline bool is_zero(const std::complex<long double>&a)
+    {
+        return std::abs(a) < epsilon;
+    }
+
+    inline bool is_zero(const std::complex<double>&a)
     {
         return std::abs(a) < epsilon;
     }

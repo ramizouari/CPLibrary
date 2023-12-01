@@ -15,14 +15,16 @@ namespace cp::signals
     {
         None,
         Sqrt,
-        Normalized
+        Normalized,
+        Auto
     };
 
     using cp::linalg::dynamic_extent;
+
     template<typename R>
     struct abstract_fft
     {
-        virtual void transform(linalg::tensor_view<R,1> &&v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None)
+        virtual void transform(linalg::tensor_view<R,1> &&v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const
         {
             transform(v,inverse,normalization);
         }
@@ -61,9 +63,11 @@ namespace cp::signals
             case FFTNormalization::Normalized:
                 r=v.size();
                 break;
+            case FFTNormalization::Auto:
+                throw std::invalid_argument("cannot normalize with auto");
         }
         if(normalized!=FFTNormalization::None) for (std::complex<R> & x : v)
-                x /= r;
+            x /= r;
     }
 
     template<typename R>
@@ -75,6 +79,8 @@ namespace cp::signals
     template<typename R>
     void inplace_fft2(cp::linalg::tensor_view<std::complex<R>,1> & a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
     {
+        if(normalized==FFTNormalization::Auto)
+            normalized=FFTNormalization::Sqrt;
         int n = a.size();
         for (int i = 1, j = 0; i < n; i++)
         {
@@ -111,9 +117,10 @@ namespace cp::signals
     }
 
     template<typename R>
-    struct radix2_fft:public abstract_fft<R>
+    struct radix2_fft: public abstract_fft<R>
     {
-        void transform(linalg::tensor_view<R,1> &v,bool inverse, FFTNormalization normalization = FFTNormalization::None) const override
+        using abstract_fft<R>::transform;
+        void transform(linalg::tensor_view<R,1> &v,bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const override
         {
             if(v.size()!= bit_ceil(v.size()))
                 throw std::invalid_argument("size of vector must be a power of 2");
@@ -121,6 +128,8 @@ namespace cp::signals
         }
     };
 
+    template<typename R>
+    struct mixed_radix_fft;
 
     template<typename R>
     R mod_operator(R x, R y)
@@ -128,7 +137,7 @@ namespace cp::signals
         return (x%y+y)%y;
     }
 
-//Bluestein's algorithm
+    //Bluestein's algorithm
     template<typename R>
     std::vector<std::complex<R>> general_fft(const cp::linalg::tensor_view<std::complex<R>,1> &a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
     {
@@ -162,26 +171,68 @@ namespace cp::signals
             B[m-i]=B[i];
         inplace_fft2(vector_view(A),false,FFTNormalization::None);
         inplace_fft2(vector_view(B),false,FFTNormalization::None);
-        std::vector<std::complex<R>> C(m);
         for(size_t i=0;i<m;i++)
-            C[i]=A[i]*B[i];
-        inplace_fft2(vector_view(C),true,FFTNormalization::Normalized);
+            A[i]*=B[i];
+        inplace_fft2(vector_view(A),true,FFTNormalization::Normalized);
         for(size_t i=0;i<n;i++)
-            C[i]*=std::conj(W[i]);
-        C.resize(n);
-        normalize(vector_view(C),normalized);
-        return C;
+            A[i]*=std::conj(W[i]);
+        A.resize(n);
+        normalize(vector_view(A),normalized);
+        return A;
     }
 
     template<typename R>
     struct bluestein_fft : public abstract_fft<R>
     {
+        using abstract_fft<R>::transform;
         void transform(linalg::tensor_view<R,1> &v,bool inverse, FFTNormalization normalization = FFTNormalization::None) const override
         {
             auto b=general_fft(v,inverse,normalization);
             for(int i=0;i<v.size();i++)
                 v(i)=b[i];
         }
+    };
+
+    template<typename R>
+    struct chirpz_transform
+    {
+        radix2_fft<R> fft;
+        R z;
+        chirpz_transform(R _z):z(_z)
+        {
+        }
+
+        std::vector<R> transform(const cp::linalg::tensor_view<R,1> &a)
+        {
+            using linalg::vector_view;
+            auto n=a.size();
+            auto m=bit_ceil(2*n-1);
+            std::vector<R> A(m),B(m),W(m);
+            for(size_t i=0;i<n;i++)
+            {
+                W[i]=pow(z,i*i);
+                A[i]=a(i)*W[i];
+            }
+            for(size_t i=0;i<n;i++)
+                B[i]=R(1)/W[i];
+            for(size_t i=1;i<n;i++)
+                B[m-i]=B[i];
+            fft.transform(vector_view(A),false,FFTNormalization::None);
+            fft.transform(vector_view(B),false,FFTNormalization::None);
+            for(size_t i=0;i<m;i++)
+                A[i]*=B[i];
+            fft.transform(vector_view(A),true,FFTNormalization::Normalized);
+            for(size_t i=0;i<n;i++)
+                A[i]/=W[i];
+            A.resize(n);
+            return A;
+        }
+
+        std::vector<R> transform(const cp::linalg::tensor_view<R,1> &&a)
+        {
+            return transform(a);
+        }
+
     };
 }
 
