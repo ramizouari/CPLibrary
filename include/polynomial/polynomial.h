@@ -287,9 +287,9 @@ namespace cp
         * <strong>H</strong> is an associative algebra over <strong>R</strong>
         */
         template<typename H>
-        H operator()(H a) const
+        std::common_type<H,R>::type operator()(H a) const
         {
-            H r{};
+            typename std::common_type<H,R>::type r{};
             for(int i=degree();i>=0;i--)
                 r=r*a+p[i];
             return r;

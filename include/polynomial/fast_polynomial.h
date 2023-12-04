@@ -27,7 +27,7 @@ namespace cp
     template<typename R>
     polynomial<R> karatsuba_multiplication(const polynomial<R> &p,const polynomial<R> &q)
     {
-        constexpr int L=75;
+        constexpr int L=64;
         if(std::min(p.degree(),q.degree())<=L)
             return p*q;
         polynomial<R> a1,b1,a2,b2;
@@ -130,11 +130,22 @@ namespace cp
     };
 
     template<typename R>
-    struct karatsuba_multiplies_t : public polynomial_operation<R>
+    struct karatsuba_multiplies_t;
+    template<typename R>
+    struct karatsuba_multiplies_t<polynomial<R>> : public binary_operation<polynomial<R>>
     {
-        R reduce(const R&a,const R&b) const override
+        polynomial<R> reduce(const polynomial<R>&a,const polynomial<R>&b) const override
         {
             return karatsuba_multiplication(a,b);
+        }
+    };
+
+    template<typename R>
+    struct karatsuba_multiplies_t<std::vector<R>> : public binary_operation<std::vector<R>>
+    {
+        std::vector<R> reduce(const std::vector<R>&a,const std::vector<R>&b) const override
+        {
+            return karatsuba_multiplication(polynomial(a),polynomial(b)).data();
         }
     };
 
@@ -145,6 +156,8 @@ namespace cp
     struct fast_multiplies_t<std::vector<R>> : public binary_operation<std::vector<R>>
     {
         signals::radix2_fft<R> fft;
+        template<typename ...Args>
+        fast_multiplies_t(Args&&...args):fft(std::forward<Args>(args)...){}
         std::vector<R> reduce(const std::vector<R>&a,const std::vector<R>&b) const override
         {
             if(a.size()==0 || b.size()==0)
@@ -233,39 +246,52 @@ namespace cp
         return multiplies.reduce(A,B);
     }
 
-    template<typename Real=real, cp::integer m>
+    template<typename Real=real,cp::integer decompositions=2, cp::integer m>
     std::vector<cp::cyclic<m>> fast_modular_multiplication_real(const std::vector<cp::cyclic<m>> &a,const std::vector<cp::cyclic<m>> &b)
     {
         if(a.size()==0)
             return {};
         using namespace cp;
-        std::array<std::vector<Real>,2> A,B;
-        integer block=std::ceil(std::sqrt(a.front().modulus()));
+        std::array<std::vector<Real>,decompositions> A,B;
+        integer block=std::ceil(std::pow<Real>(a.front().modulus(),1./decompositions));
         for(int i=0;i<a.size();i++)
         {
-            auto [q,r]=std::div(static_cast<integer>(a[i]),block);
-            A[0].push_back(r);
-            A[1].push_back(q);
+            auto z=static_cast<integer>(a[i]);
+            for(int j=0;j<decompositions;j++)
+            {
+                auto [q,r]=std::div(z,block);
+                A[j].push_back(r);
+                z=q;
+            }
         }
         for(int i=0;i<b.size();i++)
         {
-            auto [q,r]=std::div(static_cast<integer>(b[i]),block);
-            B[0].push_back(r);
-            B[1].push_back(q);
+            auto z=static_cast<integer>(b[i]);
+            for(int j=0;j<decompositions;j++)
+            {
+                auto [q,r]=std::div(z,block);
+                B[j].push_back(r);
+                z=q;
+            }
         }
-        std::array<std::vector<Real>,4> C;
-        C[0]=fast_multiplication(A[0],B[0]);
-        C[1]=fast_multiplication(A[0],B[1]);
-        C[2]=fast_multiplication(A[1],B[0]);
-        C[3]=fast_multiplication(A[1],B[1]);
+        std::array<std::array<std::vector<Real>,decompositions>,decompositions> C;
+        for(int i=0;i<decompositions;i++) for(int j=0;j<decompositions;j++)
+            C[i][j]= fast_multiplication(A[i],B[j]);
         std::vector<cyclic<m>> R(a.size()+b.size()-1);
         for(int i=0;i<R.size();i++)
         {
             integer x=0;
-            x+=std::llround(C[0][i]);
-            x+=std::llround(C[1][i])%m*block;
-            x+=std::llround(C[2][i])%m*block%m;
-            x+=std::llround(C[3][i])%m*(block*block)%m;
+            integer t1=1;
+            for(int j=0;j<decompositions;j++)
+            {
+                integer t2=t1;
+                for(int k=0;k<decompositions;k++)
+                {
+                    x+=std::llround(C[j][k][i])%m*t2%m;
+                    t2*=block;
+                }
+                t1*=block;
+            }
             R[i]=x;
         }
         return R;

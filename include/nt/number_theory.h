@@ -11,6 +11,7 @@
 #include <stack>
 #include <algorithm>
 #include "algebra/abstract_algebra.h"
+#include <memory>
 
 namespace cp
 {

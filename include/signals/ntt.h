@@ -279,7 +279,7 @@ namespace cp::signals
 
     //Bluestein's algorithm
     template<integer q>
-    std::vector<cyclic<q>> general_ntt(const radix2_fft<cyclic<q>> &ntt,const cp::linalg::tensor_view<cyclic<q>,1> &a, bool inverse,
+    std::vector<cyclic<q>> general_ntt(const abstract_ntt<q> &ntt,const cp::linalg::tensor_view<cyclic<q>,1> &a, bool inverse,
                                        FFTNormalization normalized = FFTNormalization::Sqrt)
     {
         using cp::linalg::vector_view;
@@ -337,6 +337,50 @@ namespace cp::signals
             auto b=general_ntt(*fft,v,inverse,normalization);
             for(int i=0;i<v.size();i++)
                 v(i)=b[i];
+        }
+    };
+
+    template<integer m>
+    struct mixed_radix_fft<cyclic<m>> : public abstract_ntt<m>
+    {
+        using R=cyclic<m>;
+        using cp::signals::abstract_fft<R>::transform;
+        using default_factoriser_t::default_factoriser;
+        mixed_radix_fft(std::shared_ptr<cp::abstract_factoriser> _F=default_factoriser):abstract_ntt<m>(_F){}
+        void transform_rec(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const
+        {
+            auto n=v.size();
+            if(n==1)
+                return;
+            std::uint32_t p = this->F->smallest_divisor(n);
+            auto q=n/p;
+            std::vector<cp::linalg::tensor_subview<R,1>> V;
+            for(unsigned i=0;i<p;i++)
+                V.push_back(v.slice({i},{n},{p}));
+            for(auto &v:V)
+                transform_rec(v,inverse,normalization);
+            R w=this->root_of_unity(n,m,inverse);
+            R z=this->root_of_unity(p,m,inverse);
+            R t=1;
+            std::vector<R> result(n);
+            for(int i=0;i<p;i++,t*=z)
+            {
+                R h1=1,h2=1;
+                for (int j = 0; j < p; j++,h1*=t,h2*=w)
+                {
+                    R h3=1;
+                    for (int k = 0; k < q; k++,h3*=h2)
+                        result[i*q+k] += h1 * h3 * V[j](k);
+                }
+            }
+            for(int i=0;i<n;i++)
+                v(i)=result[i];
+        }
+
+        void transform(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const override
+        {
+            transform_rec(v,inverse,normalization);
+            cyclic_normalize(v,normalization);
         }
     };
 

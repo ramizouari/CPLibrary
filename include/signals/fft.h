@@ -131,6 +131,56 @@ namespace cp::signals
     template<typename R>
     struct mixed_radix_fft;
 
+
+    template<std::floating_point Real>
+    struct mixed_radix_fft<std::complex<Real>> : public cp::signals::abstract_fft<std::complex<Real>>, protected cp::default_factoriser_t
+    {
+        using R=std::complex<Real>;
+        using cp::signals::abstract_fft<R>::transform;
+        std::shared_ptr<cp::abstract_factoriser> F;
+        mixed_radix_fft(std::shared_ptr<cp::abstract_factoriser> _F=default_factoriser):F(_F){}
+        void transform_rec(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const
+        {
+            auto n=v.size();
+            if(n==1)
+                return;
+            std::uint32_t p = F->smallest_divisor(n);
+            auto q=n/p;
+            std::vector<cp::linalg::tensor_subview<R,1>> V;
+            for(unsigned i=0;i<p;i++)
+                V.push_back(v.slice({i},{n},{p}));
+            for(auto &v:V)
+                transform_rec(v,inverse,normalization);
+            R w=std::polar(1.0,2*std::numbers::pi/n);
+            R z=std::polar(1.0,2*std::numbers::pi/p);
+            if(inverse)
+            {
+                w = std::conj(w);
+                z = std::conj(z);
+            }
+            R t=1;
+            std::vector<R> result(n);
+            for(int i=0;i<p;i++,t*=z)
+            {
+                R h1=1,h2=1;
+                for (int j = 0; j < p; j++,h1*=t,h2*=w)
+                {
+                    R h3=1;
+                    for (int k = 0; k < q; k++,h3*=h2)
+                        result[i*q+k] += h1 * h3 * V[j](k);
+                }
+            }
+            for(int i=0;i<n;i++)
+                v(i)=result[i];
+        }
+
+        void transform(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const override
+        {
+            transform_rec(v,inverse,normalization);
+            normalize(v,normalization);
+        }
+    };
+
     template<typename R>
     R mod_operator(R x, R y)
     {
@@ -185,7 +235,7 @@ namespace cp::signals
     struct bluestein_fft : public abstract_fft<R>
     {
         using abstract_fft<R>::transform;
-        void transform(linalg::tensor_view<R,1> &v,bool inverse, FFTNormalization normalization = FFTNormalization::None) const override
+        void transform(linalg::tensor_view<R,1> &v,bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const override
         {
             auto b=general_fft(v,inverse,normalization);
             for(int i=0;i<v.size();i++)
@@ -198,7 +248,8 @@ namespace cp::signals
     {
         radix2_fft<R> fft;
         R z;
-        chirpz_transform(R _z):z(_z)
+        template<typename ...Args>
+        chirpz_transform(R _z,Args&&... args):z(_z),fft(std::forward<Args>(args)...)
         {
         }
 
@@ -234,6 +285,7 @@ namespace cp::signals
         }
 
     };
+
 }
 
 #endif //CPLIBRARY_FFT_H
