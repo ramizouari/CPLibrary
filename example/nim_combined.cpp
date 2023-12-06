@@ -1,17 +1,811 @@
 #include <iostream>
 //
-// Created by ramizouari on 30/11/2021.
+// Created by ramizouari on 07/11/23.
 //
 
+#ifndef CPLIBRARY_ISOMORPHISM_H
+#define CPLIBRARY_ISOMORPHISM_H
+//
+// Created by ramizouari on 24/10/23.
+//
+
+#ifndef CPLIBRARY_TREE_H
+#define CPLIBRARY_TREE_H
+
+#include <optional>
+#include <stdexcept>
+//
+// Created by ramizouari on 21/11/22.
+//
+
+#ifndef CPLIBRARY_GRAPH_H
+#define CPLIBRARY_GRAPH_H
 
 #include <vector>
-#include <array>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <unordered_set>
+#include <algorithm>
+#include <span>
+//
+// Created by ramizouari on 21/11/22.
+//
+
+#ifndef CPLIBRARY_UNION_FIND_H
+#define CPLIBRARY_UNION_FIND_H
+#include <vector>
+#include <map>
+#include <unordered_map>
+namespace cp
+{
+    class UnionFind
+    {
+        int n;
+        std::vector<int> parent,rank;
+    public:
+        UnionFind(int n):n(n),rank(n),parent(n)
+        {
+            for(int i=0;i<n;i++)
+                parent[i]=i;
+        }
+
+        void connect(int a,int b)
+        {
+            auto u= representative(a),v= representative(b);
+            if(u==v)
+                return;
+            if(rank[u]<rank[u])
+                parent[u]=parent[v];
+            else if(rank[v]<rank[u])
+                parent[v]=parent[u];
+            else
+            {
+                parent[u]=parent[v];
+                rank[v]++;
+            }
+        }
+
+        int representative(int a)
+        {
+            if(parent[a]==a)
+                return a;
+            else return parent[a]= representative(parent[a]);
+        }
+
+        bool equivalent(int a,int b)
+        {
+            return representative(a)== representative(b);
+        }
+    };
+
+    template<typename OrderedSet>
+    class OrderedUnionFind
+    {
+        struct ParentData
+        {
+            const OrderedSet* parent;
+            int rank;
+        };
+        std::map<OrderedSet,ParentData> data{};
+    public:
+        void connect(const OrderedSet& A,const OrderedSet&B)
+        {
+            if(equivalent(A,B))
+                return;
+            auto &[C,NodeData1]=get(representative(A));
+            auto &[D,NodeData2]=get(representative(B));
+            auto &[p1,r1]=NodeData1;
+            auto &[p2,r2]=NodeData2;
+            if(r1<r2)
+                p1=p2;
+            else if(r1>r2)
+                p2=p1;
+            else
+            {
+                p1=p2;
+                r2++;
+            }
+        }
+        std::pair<const OrderedSet,ParentData>& get(const OrderedSet &A)
+        {
+            if(!data.contains(A))
+            {
+                auto [it,_]=data.emplace(A,ParentData{nullptr,0});
+                auto &[B,NodeData]=*it;
+                NodeData.parent=&B;
+                return *it;
+            }
+            return *data.find(A);
+        }
+        const OrderedSet& representative(const OrderedSet&A)
+        {
+            auto &[B,NodeData]=get(A);
+            auto &C=NodeData.parent;
+            if(&B==C)
+                return B;
+            else {
+                NodeData.parent = &representative(*NodeData.parent);
+                return *NodeData.parent;
+            }
+        }
+
+        bool equivalent(const OrderedSet&A,const OrderedSet&B)
+        {
+            return &representative(get(A).first)== &representative(get(B).first);
+        }
+
+    };
+
+    template<typename UnorderedSet>
+    class UnorderedUnionFind
+    {
+        struct ParentData
+        {
+            const UnorderedSet* parent;
+            int rank;
+        };
+        std::unordered_map<UnorderedSet,ParentData> data{};
+    public:
+        void connect(const UnorderedSet& A,const UnorderedSet&B)
+        {
+            if(equivalent(A,B))
+                return;
+            auto &[C,NodeData1]=get(representative(A));
+            auto &[D,NodeData2]=get(representative(B));
+            auto &[p1,r1]=NodeData1;
+            auto &[p2,r2]=NodeData2;
+            if(r1<r2)
+                p1=p2;
+            else if(r1>r2)
+                p2=p1;
+            else
+            {
+                p1=p2;
+                r2++;
+            }
+        }
+        std::pair<const UnorderedSet,ParentData>& get(const UnorderedSet &A)
+        {
+            if(!data.contains(A))
+            {
+                auto [it,_]=data.emplace(A,ParentData{nullptr,0});
+                auto &[B,NodeData]=*it;
+                NodeData.parent=&B;
+                return *it;
+            }
+            return *data.find(A);
+        }
+        const UnorderedSet& representative(const UnorderedSet&A)
+        {
+            auto &[B,NodeData]=get(A);
+            auto &C=NodeData.parent;
+            if(&B==C)
+                return B;
+            else {
+                NodeData.parent = &representative(*NodeData.parent);
+                return *NodeData.parent;
+            }
+        }
+
+        bool equivalent(const UnorderedSet&A,const UnorderedSet&B)
+        {
+            return &representative(get(A).first)== &representative(get(B).first);
+        }
+
+    };
+}
+
+
+#endif //CPLIBRARY_UNION_FIND_H
+//
+// Created by ramizouari on 27/10/23.
+//
+
+#ifndef CPLIBRARY_GENERAL_H
+#define CPLIBRARY_GENERAL_H
+#include <span>
+#include <variant>
+#include <vector>
+namespace cp
+{
+    template<typename T>
+    struct view_or_value
+    {
+        std::variant<std::vector<T>,std::span<const T>> value;
+        view_or_value(std::vector<T> _value):value(std::move(_value)){}
+        view_or_value(std::span<const T> _value):value(std::move(_value)){}
+        std::span<const T> get() const
+        {
+            if(value.index()==0) return std::span<const T>(std::get<0>(value).data(),std::get<0>(value).size());
+            return std::get<1>(value);
+        }
+        operator std::span<const T>() const
+        {
+            return get();
+        }
+
+        auto begin() const
+        {
+            return get().begin();
+        }
+        auto end() const
+        {
+            return get().end();
+        }
+
+    };
+
+
+
+    namespace graph
+    {
+        template<typename T>
+        struct AbstractGraph
+        {
+            [[nodiscard]] virtual int size() const = 0;
+            virtual view_or_value<T> adjacentNodes(const T&u, bool direction) const =0;
+            virtual view_or_value<T> adjacentNodes(const T&u) const =0;
+            virtual view_or_value<T> nodes() const =0;
+        };
+
+        template<typename T,typename Weight>
+        struct AbstractWeightedGraph
+        {
+            [[nodiscard]] virtual int size() const = 0;
+            using AdjacentType=std::pair<T,Weight>;
+            virtual view_or_value<AdjacentType> adjacentNodes(const T&u, bool direction) const =0;
+            virtual view_or_value<AdjacentType> adjacentNodes(const T&u) const =0;
+            virtual view_or_value<T> nodes() const =0;
+        };
+    }
+
+}
+#endif //CPLIBRARY_GENERAL_H
+
+/**
+ * @brief This the class of directed Graphs
+ * @details Each Graph is a couple G=(V,E) where V={0,...,n-1} are nodes, and E is a subset of VxV
+ * @param n the size of the Graph
+ * */
+
+namespace cp::graph
+{
+    struct Graph : public AbstractGraph<int>
+    {
+        int n;
+        std::vector<std::vector<int>> adjacencyList,reverseList;
+    protected:
+
+        void topologicalSort(int r,std::vector<int> &L,std::vector<bool> &visited)
+        {
+            if(!visited[r])
+            {
+                visited[r]=true;
+                for(auto s:adjacencyList[r])
+                    topologicalSort(s,L,visited);
+                L.push_back(r);
+            }
+        }
+
+        void assignComponents(int a,int u,UnionFind& C,std::vector<bool> &visited)
+        {
+            if(!visited[a])
+            {
+                visited[a]=true;
+                C.connect(a,u);
+                for(auto s:reverseList[a])
+                    assignComponents(s,u,C,visited);
+            }
+        }
+
+    public:
+        Graph(int _n):n(_n),adjacencyList(n),reverseList(n){}
+        void connect(int a,int b)
+        {
+            adjacencyList[a].emplace_back(b);
+            reverseList[b].emplace_back(a);
+        }
+
+        std::vector<int> topologicalSort()
+        {
+            std::vector<bool> visited(n);
+            std::vector<int> L;
+            for(int i=0;i<n;i++)
+                topologicalSort(i,L,visited);
+            std::reverse(L.begin(),L.end());
+            return L;
+        }
+
+        struct ConnectedComponentMetaData
+        {
+            std::vector<std::vector<int>> components;
+            std::vector<int> componentId;
+            UnionFind classes;
+            std::vector<int> topologicalOrder;
+            ConnectedComponentMetaData(std::vector<std::vector<int>> && A,std::vector<int> &&B, UnionFind&&C, std::vector<int> &&D):components(std::move(A)),
+                                                                                                                                    componentId(std::move(B)), classes(std::move(C)),topologicalOrder(std::move(D)){}
+        };
+
+
+        ConnectedComponentMetaData getConnectedComponentsWithMetaData()
+        {
+
+            std::vector<bool> componentAssigned(n);
+            UnionFind C(n);
+            std::vector<int> topologicalOrder;
+            for(auto l: topologicalSort())
+            {
+                assignComponents(l, l, C, componentAssigned);
+                if(l==C.representative(l))
+                    topologicalOrder.push_back(l);
+            }
+            std::vector<bool> idAssigned(n);
+            std::vector<int> componentId(n);
+            std::vector<std::vector<int>> components;
+            for(int i=0;i<n;i++)
+            {
+                auto r=C.representative(i);
+                if(!idAssigned[r])
+                {
+                    idAssigned[r]=true;
+                    componentId[r]=components.size();
+                    components.emplace_back();
+                }
+                componentId[i]=componentId[r];
+                components[componentId[r]].push_back(i);
+            }
+            return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+        }
+
+        std::pair<Graph,std::vector<int>> condensationGraph()
+        {
+            auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+            Graph DAG(components.size());
+            std::vector<std::set<int>> S(components.size());
+            for(int i=0;i<n;i++) for(auto j:adjacencyList[i]) if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
+            {
+                auto u=componentId[i],v=componentId[j];
+                S[u].insert(v);
+                DAG.connect(u,v);
+            }
+            return std::make_pair(DAG,componentId);
+        }
+
+        std::vector<std::vector<int>> getConnectedComponents()
+        {
+            return getConnectedComponentsWithMetaData().components;
+        }
+
+        int size() const override
+        {
+            return n;
+        }
+
+        view_or_value<int> adjacentNodes(const int&u, bool direction) const override
+        {
+            if(direction)
+                return std::span<const int>(adjacencyList[u].data(),adjacencyList[u].size());
+            return std::span<const int>(reverseList[u].data(),reverseList[u].size());
+        }
+
+        view_or_value<int> adjacentNodes(const int&u) const override
+        {
+            return adjacentNodes(u,true);
+        }
+
+        view_or_value<int> nodes() const override
+        {
+            std::vector<int> A(n);
+            for(int i=0;i<n;i++)
+                A[i]=i;
+            return A;
+        }
+    };
+
+    class PlanarGraph
+    {
+        int n,m;
+        using couple=std::pair<int,int>;
+        std::vector<std::vector<std::vector<couple>>> adjacencyList,reverseList;
+    public:
+        PlanarGraph(int n,int m):n(n),m(m),adjacencyList(n,std::vector<std::vector<couple>>(m)),reverseList(n,std::vector<std::vector<couple>>(m)){}
+        void connect(int u1,int v1,int u2,int v2)
+        {
+            adjacencyList[u1][v1].emplace_back(u2,v2);
+        }
+    };
+
+
+/**
+ * @brief This the class of directed Graphs over an ordered set
+ * @details Each Graph is a couple G=(V,E) where V is an ordered set
+ * @tparam OrderedSet The ordered set V
+ * */
+    template<typename OrderedSet>
+    class OrderedGraph
+    {
+        std::map<OrderedSet,std::vector<OrderedSet>> adjacencyList,reverseList;
+        std::set<OrderedSet> states;
+
+        void topologicalSort(const OrderedSet& r,std::vector<OrderedSet> &L,std::set<OrderedSet> &visited)
+        {
+            if(!visited.contains(r))
+            {
+                visited.insert(r);
+                for(const auto& s:adjacencyList[r])
+                    topologicalSort(s,L,visited);
+                L.push_back(r);
+            }
+        }
+
+        void assignComponents(const OrderedSet& a,const OrderedSet& u,OrderedUnionFind<OrderedSet>& C,std::set<OrderedSet> &visited)
+        {
+            if(!visited.contains(a))
+            {
+                visited.insert(a);
+                C.connect(a,u);
+                for(auto s:reverseList[a])
+                    assignComponents(s,u,C,visited);
+            }
+        }
+
+    public:
+        void connect(const OrderedSet&A,const OrderedSet&B)
+        {
+            if(!states.contains(A))
+                states.insert(A);
+            if(!states.contains(B))
+                states.insert(B);
+            adjacencyList[A].push_back(B);
+            reverseList[B].push_back(A);
+        }
+
+        void addState(const OrderedSet&A)
+        {
+            states.insert(A);
+        }
+
+        std::vector<OrderedSet> topologicalSort()
+        {
+            std::set<OrderedSet> visited;
+            std::vector<OrderedSet> L;
+            for(auto &u:states)
+                topologicalSort(u,L,visited);
+            std::reverse(L.begin(),L.end());
+            return L;
+        }
+
+        struct ConnectedComponentMetaData
+        {
+            std::vector<std::vector<OrderedSet>> components;
+            std::vector<OrderedSet> componentId;
+            OrderedUnionFind<OrderedSet> classes;
+            std::vector<OrderedSet> topologicalOrder;
+            ConnectedComponentMetaData(std::vector<std::vector<OrderedSet>> && A,std::vector<OrderedSet> &&B, OrderedUnionFind<OrderedSet>&&C,
+                                       std::vector<OrderedSet>&&topologicalOrder):
+                    components(std::move(A)),componentId(std::move(B)), classes(std::move(C)),topologicalOrder(std::move(topologicalOrder)){}
+        };
+
+        ConnectedComponentMetaData getConnectedComponentsWithMetaData()
+        {
+            std::set<OrderedSet> componentAssigned;
+            OrderedUnionFind<OrderedSet> C;
+            std::vector<OrderedSet> topologicalOrder;
+            for(auto l: topologicalSort()) {
+                assignComponents(l, l, C, componentAssigned);
+                if(l==C.representative(l))
+                    topologicalOrder.push_back(l);
+            }
+            std::set<OrderedSet> idAssigned;
+            std::map<OrderedSet,int> componentId;
+            std::vector<std::vector<OrderedSet>> components;
+            for(auto &u:states)
+            {
+                auto r=C.representative(u);
+                if(!idAssigned.contains(r))
+                {
+                    idAssigned.insert(r);
+                    componentId[r]=components.size();
+                    components.emplace_back();
+                }
+                components[componentId[r]].push_back(u);
+            }
+            return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+        }
+
+        std::pair<OrderedGraph,OrderedUnionFind<OrderedSet>> condensationGraph()
+        {
+            auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+            OrderedGraph DAG(components.size());
+            for(auto [u,v]:adjacencyList) if(!classes.equivalent(u,v))
+                    DAG.connect(classes.representative(u),classes.representative(v));
+            return std::make_pair(DAG,classes);
+        }
+
+        std::vector<std::vector<OrderedSet>> getConnectedComponents()
+        {
+            return getConnectedComponentsWithMetaData().components;
+        }
+    };
+
+
+/**
+ * @brief This the class of directed Graphs over a hashable set
+ * @details Each Graph is a couple G=(V,E) where V is a hashable set
+ * @tparam UnorderedSet The hashable set V
+ * */
+    template<typename UnorderedSet>
+    class UnorderedGraph
+    {
+        std::unordered_map<UnorderedSet,std::vector<UnorderedSet>> adjacencyList,reverseList;
+        std::set<UnorderedSet> states;
+
+        void topologicalSort(const UnorderedSet& r,std::vector<UnorderedSet> &L,std::unordered_set<UnorderedSet> &visited)
+        {
+            if(!visited.contains(r))
+            {
+                visited.insert(r);
+                for(const auto& s:adjacencyList[r])
+                    topologicalSort(s,L,visited);
+                L.push_back(r);
+            }
+        }
+
+        void assignComponents(const UnorderedSet& a,const UnorderedSet& u,UnorderedUnionFind<UnorderedSet>& C,std::unordered_set<UnorderedSet> &visited)
+        {
+            if(!visited.contains(a))
+            {
+                visited.insert(a);
+                C.connect(a,u);
+                for(auto s:reverseList[a])
+                    assignComponents(s,u,C,visited);
+            }
+        }
+
+    public:
+        void connect(const UnorderedSet&A,const UnorderedSet&B)
+        {
+            if(!states.contains(A))
+                states.insert(A);
+            if(!states.contains(B))
+                states.insert(B);
+            adjacencyList[A].push_back(B);
+            reverseList[B].push_back(A);
+        }
+
+        void addState(const UnorderedSet&A)
+        {
+            states.insert(A);
+        }
+
+        std::vector<UnorderedSet> topologicalSort()
+        {
+            std::unordered_set<UnorderedSet> visited;
+            std::vector<UnorderedSet> L;
+            for(auto &u:states)
+                topologicalSort(u,L,visited);
+            std::reverse(L.begin(),L.end());
+            return L;
+        }
+
+        struct ConnectedComponentMetaData
+        {
+            std::vector<std::vector<UnorderedSet>> components;
+            std::vector<UnorderedSet> componentId;
+            UnorderedUnionFind<UnorderedSet> classes;
+            std::vector<UnorderedSet> topologicalOrder;
+            ConnectedComponentMetaData(std::vector<std::vector<UnorderedSet>> && A,std::vector<UnorderedSet> &&B, OrderedUnionFind<UnorderedSet>&&C,
+                                       std::vector<UnorderedSet> &&D):
+                    components(std::move(A)),componentId(std::move(B)), classes(std::move(C)),
+                    topologicalOrder(std::move(D)){}
+        };
+
+        ConnectedComponentMetaData getConnectedComponentsWithMetaData()
+        {
+            std::set<UnorderedSet> componentAssigned;
+            UnorderedUnionFind<UnorderedSet> C;
+            std::vector<UnorderedSet> topologicalOrder;
+            for(auto l: topologicalSort()) {
+                assignComponents(l, l, C, componentAssigned);
+                if(l==C.representative(l))
+                    topologicalOrder.push_back(l);
+            }
+            std::unordered_set<UnorderedSet> idAssigned;
+            std::unordered_map<UnorderedSet,int> componentId;
+            std::vector<std::vector<UnorderedSet>> components;
+            for(auto &u:states)
+            {
+                auto r=C.representative(u);
+                if(!idAssigned.contains(r))
+                {
+                    idAssigned.insert(r);
+                    componentId[r]=components.size();
+                    components.emplace_back();
+                }
+                components[componentId[r]].push_back(u);
+            }
+            return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+        }
+
+        std::pair<UnorderedGraph,UnorderedUnionFind<UnorderedSet>> condensationGraph()
+        {
+            auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+            UnorderedGraph DAG(components.size());
+            for(auto [u,v]:adjacencyList) if(!classes.equivalent(u,v))
+                    DAG.connect(classes.representative(u),classes.representative(v));
+            return std::make_pair(DAG,classes);
+        }
+
+        std::vector<std::vector<UnorderedSet>> getConnectedComponents()
+        {
+            return getConnectedComponentsWithMetaData().components;
+        }
+    };
+
+
+/**
+ * @brief This the class of directed Graphs
+ * @details Each Graph is a couple G=(V,E) where V={0,...,n-1} are nodes, and E is a subset of VxV
+ * @param n the size of the Graph
+ * */
+    template<typename Weight>
+    struct WeightedGraph : public AbstractWeightedGraph<int,Weight>
+    {
+        int n;
+        using AdjacentType=std::pair<int,Weight>;
+        std::vector<std::vector<AdjacentType>> adjacencyList,reverseList;
+    protected:
+
+        void topologicalSort(int r,std::vector<int> &L,std::vector<bool> &visited)
+        {
+            if(!visited[r])
+            {
+                visited[r]=true;
+                for(auto s:adjacencyList[r])
+                    topologicalSort(s,L,visited);
+                L.push_back(r);
+            }
+        }
+
+        void assignComponents(int a,int u,UnionFind& C,std::vector<bool> &visited)
+        {
+            if(!visited[a])
+            {
+                visited[a]=true;
+                C.connect(a,u);
+                for(const auto& [s,_]:reverseList[a])
+                    assignComponents(s,u,C,visited);
+            }
+        }
+
+    public:
+        explicit WeightedGraph(int _n):n(_n),adjacencyList(n),reverseList(n){}
+        void connect(int a,int b, const Weight & w)
+        {
+            adjacencyList[a].emplace_back(b,w);
+            reverseList[b].emplace_back(a,w);
+        }
+
+        std::vector<int> topologicalSort()
+        {
+            std::vector<bool> visited(n);
+            std::vector<int> L;
+            for(int i=0;i<n;i++)
+                topologicalSort(i,L,visited);
+            std::reverse(L.begin(),L.end());
+            return L;
+        }
+
+        struct ConnectedComponentMetaData
+        {
+            std::vector<std::vector<int>> components;
+            std::vector<int> componentId;
+            UnionFind classes;
+            std::vector<int> topologicalOrder;
+            ConnectedComponentMetaData(std::vector<std::vector<int>> && A,std::vector<int> &&B, UnionFind&&C, std::vector<int> &&D):components(std::move(A)),
+                                                                                                                                    componentId(std::move(B)), classes(std::move(C)),topologicalOrder(std::move(D)){}
+        };
+
+
+        ConnectedComponentMetaData getConnectedComponentsWithMetaData()
+        {
+
+            std::vector<bool> componentAssigned(n);
+            UnionFind C(n);
+            std::vector<int> topologicalOrder;
+            for(auto l: topologicalSort())
+            {
+                assignComponents(l, l, C, componentAssigned);
+                if(l==C.representative(l))
+                    topologicalOrder.push_back(l);
+            }
+            std::vector<bool> idAssigned(n);
+            std::vector<int> componentId(n);
+            std::vector<std::vector<int>> components;
+            for(int i=0;i<n;i++)
+            {
+                auto r=C.representative(i);
+                if(!idAssigned[r])
+                {
+                    idAssigned[r]=true;
+                    componentId[r]=components.size();
+                    components.emplace_back();
+                }
+                componentId[i]=componentId[r];
+                components[componentId[r]].push_back(i);
+            }
+            return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+        }
+
+        std::pair<Graph,std::vector<int>> condensationGraph()
+        {
+            auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
+            Graph DAG(components.size());
+            std::vector<std::set<int>> S(components.size());
+            for(int i=0;i<n;i++) for(auto j:adjacencyList[i])
+                    if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
+                    {
+                        auto u=componentId[i],v=componentId[j];
+                        S[u].insert(v);
+                        DAG.connect(u,v);
+                    }
+            return std::make_pair(DAG,componentId);
+        }
+
+        std::vector<std::vector<int>> getConnectedComponents()
+        {
+            return getConnectedComponentsWithMetaData().components;
+        }
+
+        int size() const override
+        {
+            return n;
+        }
+
+        view_or_value<AdjacentType> adjacentNodes(const int&u, bool direction) const override
+        {
+            if(direction)
+                return std::span<const AdjacentType>(adjacencyList[u].data(),adjacencyList[u].size());
+            return std::span<const AdjacentType>(reverseList[u].data(),reverseList[u].size());
+        }
+
+        view_or_value<AdjacentType> adjacentNodes(const int&u) const override
+        {
+            return adjacentNodes(u,true);
+        }
+
+        view_or_value<int> nodes() const override
+        {
+            std::vector<int> A(n);
+            for(int i=0;i<n;i++)
+                A[i]=i;
+            return A;
+        }
+    };
+
+}
+
+#endif //CPLIBRARY_GRAPH_H
+//
+// Created by ramizouari on 26/10/23.
+//
+
+#ifndef CPLIBRARY_DYN_SPARSE_ARRAY_H
+#define CPLIBRARY_DYN_SPARSE_ARRAY_H
+#include <vector>
+//
+// Created by ASUS on 01/12/2021.
+//
+#ifndef __OPERATION_H__
+#define __OPERATION_H__
+#include <numeric>
 //
 // Created by ramizouari on 01/12/2021.
 //
 
-
-
+#ifndef ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#define ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
 #include <complex>
 #include <functional>
 #include <cstdint>
@@ -204,2604 +998,8 @@ namespace cp
 }
 
 
-
-//
-// Created by ramizouari on 01/12/2021.
-//
-
-
-#include <vector>
-#include <map>
-
-namespace cp
-{
-    /**
-* @brief Polynomial class
-* @details This is the class of polynomials over a commutative ring R
-* @tparam R the type of the coefficients
-* @Requirements
-* <strong>R</strong> is a commutative ring
-* @Notes
-* Formally this class is simply R[x]
-*/
-    template<typename R>
-    struct polynomial
-    {
-        std::vector<R> p;
-
-    public:
-
-        const std::vector<R>& data() const
-        {
-            return p;
-        }
-        std::vector<R>& data()
-        {
-            return p;
-        }
-
-        bool operator==(const R& a) const
-        {
-            if (is_zero(a))
-                return p.empty();
-            else return degree() == 0 && p.front() == a;
-        }
-
-        bool operator==(const polynomial<R> &) const = default;
-
-        polynomial& reduce()
-        {
-            while(!p.empty() && is_zero(p.back()))
-                p.pop_back();
-            return *this;
-        }
-        polynomial(R k):p(1,k)
-        {
-            reduce();
-        }
-
-        polynomial(int k) :p(1, k)
-        {
-            reduce();
-        }
-
-        polynomial()=default;
-
-        polynomial(std::vector<R> _p):p(std::move(_p))
-        {
-            reduce();
-        }
-
-        int degree() const
-        {
-            return p.size()-1;
-        }
-
-        int dim() const
-        {
-            return p.size();
-        }
-
-        auto& operator+=(const polynomial &O)
-        {
-            int r=std::max(p.size(),O.p.size());
-            p.resize(r);
-            for(int i=0;i<O.p.size();i++)
-                p[i]+=O.p[i];
-            reduce();
-            return *this;
-        }
-
-        auto& operator-=(const polynomial &O)
-        {
-            int r=std::max(p.size(),O.p.size());
-            p.resize(r);
-            for(int i=0;i<O.p.size();i++)
-                p[i]-=O.p[i];
-            reduce();
-            return *this;
-        }
-
-        polynomial operator*(const polynomial &O) const
-        {
-            if(O.p.empty() || p.empty())
-                return polynomial(0);
-            int n=degree(),m=O.degree();
-            polynomial q;
-            q.p.resize(n+m+1);
-            for(int i=0;i<=n;i++) for(int j=0;j<=m;j++)
-                    q.p[i+j]+=p[i]*O.p[j];
-            q.reduce();
-            return q;
-        }
-
-        auto& operator*=(const polynomial &O)
-        {
-            auto r=(*this)*O;
-            p.swap(r.p);
-            return *this;
-        }
-
-        auto operator+(const polynomial &O) const
-        {
-            auto r=*this;
-            return r+=O;
-        }
-
-        auto operator-(const polynomial &O) const
-        {
-            auto r=*this;
-            return r-=O;
-        }
-
-        auto operator-() const
-        {
-            auto r=*this;
-            for(auto &s:r.p)
-                s=-s;
-            return r;
-        }
-
-        auto operator*=(R a)
-        {
-            if(is_zero(a))
-                p.clear();
-            else for(auto& s:p)
-                    s*=a;
-            reduce();
-            return *this;
-        }
-
-        bool operator!=(R a) const
-        {
-            return !(*this==a);
-        }
-
-        auto& operator+=(R a)
-        {
-            return *this+=polynomial({a});
-        }
-
-        auto& operator-=(R a)
-        {
-            return *this-=polynomial({a});
-        }
-
-        auto operator+(R a) const
-        {
-            auto q=*this;
-            return q+=a;
-        }
-
-        auto operator-(R a) const
-        {
-            auto q=*this;
-            return q-=a;
-        }
-
-        /**
-        * @details creates a preorder between polynomials based on the degree
-        * @Requirements:
-        * None
-        * @Notes
-        * This function is essential for the euclidean algorithm to work
-        */
-        bool operator<(const polynomial &O) const
-        {
-            return degree() < O.degree();
-        }
-
-        /**
-         * @brief Polynomial self division
-        * @details Divides the polynomial by a constant and stores the result in itself
-        * @Requirements
-        * One of the following:
-         * <ul>
-        * <li> R is an integral ring [2]
-        * <li> k is invertible
-         * </ul>
-        */
-
-        auto& operator/=(R k)
-        {
-            for(auto &s:p)
-                s/=k;
-            return *this;
-        }
-
-        auto operator/(R k) const
-        {
-            auto q=*this;
-            return q/=k;
-        }
-
-        /**
-         * @brief Euclidean division
-        * @details Applies euclidean division between two polynomials
-        * @Requirements
-        * One of the following
-        * <ul>
-        * <li> R is a field [1]
-        * <li> R is an euclidean domain [2]
-        * <li> R is a commutative ring, and the dominant coefficient of <strong>O</strong> is inversible
-        * <ul/>
-        * @Notes
-        * Even that condition [1] is a special case of [2], given that some properties of euclidean division are
-        * guaranteed only if <strong>R</strong> is a field, We will seperate the two cases
-        */
-        std::pair<polynomial,polynomial> euclidean_division(const polynomial &O) const
-        {
-            if(degree() < O.degree())
-                return {R(0),*this};
-            polynomial q,r=*this;
-            int n=degree(),m=O.degree();
-            q.p.resize(n-m+1);
-            for(int i=n;i>=m;i--)
-            {
-                q.p[i-m]=r[i]/O.p[m];
-                for(int j=0;j<=m;j++)
-                    r.p[i+j-m]-=q.p[i-m]*O.p[j];
-            }
-            r.reduce();
-            return {q,r};
-        }
-
-        //Get the quotient of the euclidean division
-        polynomial operator/(const polynomial &O) const
-        {
-            return euclidean_division(O).first;
-        }
-
-        //Get the remainder of the euclidean division
-        polynomial operator%(const polynomial &O) const
-        {
-            return euclidean_division(O).second;
-        }
-
-        auto& operator/=(polynomial &O)
-        {
-            p.swap(((*this)/O).p);
-            return *this;
-        }
-
-        auto &operator[](int k)
-        {
-            return p[k];
-        }
-
-        const auto& operator[](int k) const
-        {
-            return p[k];
-        }
-
-        polynomial derivative() const
-        {
-            if (p.empty())
-                return {};
-            polynomial D;
-            D.p.resize(degree());
-            for(int i=1;i<=degree();i++)
-                D.p[i-1]=p[i]*R(i);
-            return D;
-        }
-
-        /**
-        * @brief Polynomial Evaluation
-        * @details Evaluates the polynomial at a given point
-        * Evaluates the polynomial over an associative R-algebra H
-        * @Requirements
-        * <strong>H</strong> is an associative algebra over <strong>R</strong>
-        */
-        template<typename H>
-        H operator()(H a) const
-        {
-            H r{};
-            for(int i=degree();i>=0;i--)
-                r=r*a+p[i];
-            return r;
-        }
-
-        auto begin()
-        {
-            return p.begin();
-        }
-
-        auto end()
-        {
-            return p.end();
-        }
-
-        auto begin() const
-        {
-            return p.begin();
-        }
-
-        auto end() const
-        {
-            return p.end();
-        }
-
-        explicit operator std::vector<R>&()
-        {
-            return p;
-        }
-
-        explicit operator const std::vector<R>&() const
-        {
-            return p;
-        }
-    };
-
-    template<typename R>
-    polynomial<R> operator*(R a,const polynomial<R> &p)
-    {
-        auto q=p;
-        return q*=a;
-    }
-
-/**
-* @brief The functional identity polynomial
-* @details This constant is the generator of all polynomials over R.
-* @Notes
-* Formally, it is simply the polynomial X:x->x
-*/
-    template<typename R>
-    const polynomial<R> X=polynomial<R>(std::vector<R>{0,1});
-
-/**
-* @brief Newton Interpolation
-* @details Applies Lagrange Interpolation over points (x,y) using Newton's method
-* @Requirements
- * <ol>
-* <li> x does not have a duplicate element
-* <li> One of the following
- * <ul>
-*   <li> R is a field
-*   <li> (s-t) is invertible for all elements s,t in x
- *  </ul>
- * </ol>
-*/
-    template<typename R>
-    polynomial<R> newton_interpolation(const std::vector<R> &x,const std::vector<R> &y)
-    {
-        int n=x.size()-1;
-        std::vector<std::vector<R>> d(n+1,std::vector<R>(n+1));
-        for(int i=0;i<=n;i++)
-            d[i][i]=y[i];
-        for(int r=1;r<=n;r++) for(int i=0;i+r<=n;i++)
-                d[i][i+r]=(d[i+1][i+r]-d[i][i+r-1])/(x[i+r]-x[i]);
-        polynomial<R> p,u=R(1);
-        for(int i=0;i<=n;i++) {
-            p +=d[0][i]*u;
-            u*=(X<R>-x[i]);
-        }
-        return p;
-    }
-}
-
-
-//
-// Created by ramizouari on 09/12/22.
-//
-
-
-
-
-#include <vector>
-#include <cstddef>
-#include <array>
-
-namespace cp::linalg
-{
-    struct v_shape
-    {
-        int n;
-    };
-
-/**
- * @brief Dynamic Vector
- * @detail Dynamic Vector is a vector in the mathematical sense,
- * @formal It is the union of R^k for all k, where k is the dimension of the vector.
- * <ul>
- * <li> Addition between 2 vectors are defined with respect to the first vector's shape <br>
- * <li> for all k, the set of all vectors of shape k is a vector space
- * </ul>
- * @Requirements
- * R is a commutative ring
- * */
-    template<typename R>
-    class d_vector
-    {
-        std::vector<R> u;
-    public:
-        using base_field=R;
-        using base_ring=R;
-        inline static int n=0;
-        d_vector():u(n){}
-        d_vector(std::vector<R> _u):u(std::move(_u)){}
-        d_vector(v_shape shape):u(shape.n){}
-
-        bool operator==(const d_vector<R>& other) const
-        {
-            return u==other.u;
-        }
-        auto dim() const
-        {
-            return u.size();
-        }
-
-        auto& operator[](int k)
-        {
-            return u[k];
-        }
-
-        const auto& operator[](int k) const
-        {
-            return u[k];
-        }
-
-        auto& operator+=(const d_vector &o)
-        {
-            for(int i=0;i<dim();i++)
-                u[i]+=o.u[i];
-            return *this;
-        }
-
-        auto& operator-=(const d_vector &o)
-        {
-            for(int i=0;i<dim();i++)
-                u[i]-=o.u[i];
-            return *this;
-        }
-
-        auto& operator*=(R k)
-        {
-            for(auto &s:u)
-                s*=k;
-            return *this;
-        }
-
-        auto operator+(const d_vector &o) const
-        {
-            auto v=*this;
-            return v+=o;
-        }
-
-        auto operator-(const d_vector &o) const
-        {
-            auto v=*this;
-            return v-=o;
-        }
-
-        auto operator-() const
-        {
-            auto v=*this;
-            for(auto &s:v.u)
-                s=-s;
-            return v;
-        }
-
-        auto& operator/=(R k)
-        {
-            for(auto &s:u)
-                s/=k;
-            return *this;
-        }
-
-        auto operator/(R k) const
-        {
-            auto v=*this;
-            return v/=k;
-        }
-
-        auto begin() {
-            return u.begin();
-        }
-
-        auto begin() const
-        {
-            return u.cbegin();
-        }
-
-        auto end()
-        {
-            return u.end();
-        }
-
-        auto end() const
-        {
-            return u.cend();
-        }
-    };
-
-    template<typename R>
-    auto operator*(const R&k,const d_vector<R>& u)
-    {
-        auto v=u;
-        return v*=k;
-    }
-
-/**
- * @brief Static Vector:
- * @tparam R is the base field
- * @tparam n is the dimension of the vector space
- * @details It is a member of an R-vector space E where dim(E)= n
- * @Requirements
- * <strong>R</strong> is a commutative ring. <br>
- * @Formal <strong>E</strong> is an <strong>R</strong>-module, and it is a vector space only if <strong>R</strong> is a field. <br>
- * In fact, the name s_vector is used for consistency with the computer science's name.
- */
-
-    template<typename R,int n>
-    class s_vector
-    {
-        std::array<R,n> u;
-    public:
-        using base_field=R;
-        using base_ring=R;
-        inline static constexpr int dim()
-        {
-            return n;
-        }
-
-        s_vector()
-        {
-            for(int i=0;i<n;i++)
-                u[i]=0;
-        }
-
-        s_vector(std::array<R,n>_u):u(std::move(_u)){}
-
-        bool operator==(const s_vector&) const = default;
-
-        auto& operator[](int k)
-        {
-            return u[k];
-        }
-
-        const auto& operator[](int k) const
-        {
-            return u[k];
-        }
-
-        auto& operator+=(const s_vector &o)
-        {
-            auto r=std::min(dim(),o.dim());
-            for(int i=0;i<r;i++)
-                u[i]+=o.u[i];
-            return *this;
-        }
-
-        auto& operator-=(const s_vector &o)
-        {
-            auto r=std::min(dim(),o.dim());
-            for(int i=0;i<r;i++)
-                u[i]-=o.u[i];
-            return *this;
-        }
-
-        auto& operator*=(R k)
-        {
-            for(auto &s:u)
-                s*=k;
-            return *this;
-        }
-
-        auto operator+(const s_vector &o) const
-        {
-            auto v=*this;
-            return v+=o;
-        }
-
-        auto operator-(const s_vector &o) const
-        {
-            auto v=*this;
-            return v-=o;
-        }
-
-        auto operator-() const
-        {
-            auto v=*this;
-            for(auto &s:v.u)
-                s=-s;
-            return v;
-        }
-
-        auto& operator/=(R k)
-        {
-            for(auto &s:u)
-                s/=k;
-            return *this;
-        }
-
-        auto operator/(R k) const
-        {
-            auto v=*this;
-            return v/=k;
-        }
-
-        auto begin()
-        {
-            return u.begin();
-        }
-
-        auto begin() const
-        {
-            return u.cbegin();
-        }
-
-        auto end()
-        {
-            return u.end();
-        }
-
-        auto end() const
-        {
-            return u.cend();
-        }
-
-        template <size_t k>
-        auto& get()& {
-            return u[k];
-        }
-
-        template <size_t k>
-        const auto& get() const& {
-            return u[k];
-        }
-
-        template <size_t k>
-        auto&& get() const&& {
-            return u[k];
-        }
-
-        template <size_t k>
-        auto&& get() && {
-            return u[k];
-        }
-    };
-
-    template<typename R,int n>
-    auto operator*(const R&k,const s_vector<R,n>& u)
-    {
-        auto v=u;
-        return v*=k;
-    }
-}
-
-namespace std
-{
-    template<typename R,int n>
-    struct tuple_size<cp::linalg::s_vector<R, n>> : std::integral_constant<size_t, n>{};
-    template<size_t k,typename R,int n>
-    struct tuple_element<k, cp::linalg::s_vector<R, n>>
-    {
-        using type = R;
-    };
-}
-
-
-
-
-namespace cp::linalg
-{
-    struct m_shape
-    {
-        int n,m;
-    };
-
-/**
- * @brief Matrix:
-* @details This is the union of R^(n*m) for all n and m
-* @Requirements
-* <strong>R</strong> is a commutative ring.
-* @formal it is the set of matrices over the commutative ring <strong>R</strong> <br>
- * In fact, It is the union of L(R^a,R^b) over all a and b where L(E,F) is the set of matrices acting on E with values over F
-*/
-    template<typename R>
-    struct d_matrix
-    {
-        std::vector<std::vector<R>> M;
-
-    public:
-        using base_field=R;
-        using base_ring=R;
-        inline static int n=0,m=0;
-        const auto& data() const
-        {
-            return M;
-        }
-        auto &data()
-        {
-            return M;
-        }
-        d_matrix(R k=0,m_shape shape ={n,m}):M(shape.n,std::vector<R>(shape.m))
-        {
-            for(int i=0;i<std::min(shape.n,shape.m);i++)
-                M[i][i]=k;
-        }
-        d_matrix(std::vector<std::vector<R>> &&_M):M(std::move(_M)){}
-        d_matrix(const std::vector<std::vector<R>> &_M) :M(_M) {}
-        auto row_dim() const
-        {
-            return M.size();
-        }
-
-        auto col_dim() const
-        {
-            return M.empty()?0:M[0].size();
-        };
-
-        auto& operator[](int k)
-        {
-            return M[k];
-        }
-
-        R tr() const
-        {
-            int m=col_dim(),n=row_dim();
-            R r=0;
-            for(int i=0;i<std::min(n,m);i++)
-                r+=M[i][i];
-            return r;
-        }
-
-        d_matrix T() const
-        {
-            int m=col_dim(),n=row_dim();
-            d_matrix P(0,m_shape{m,n});
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    P.M[j][i]=M[i][j];
-            return P;
-        }
-
-        d_matrix H() const
-        {
-            int m = col_dim(), n = row_dim();
-            d_matrix P(0, m_shape{ m,n });
-            for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
-                    P.M[j][i] = conj<R,R>(M[i][j]);
-            return P;
-        }
-
-        const auto& operator[](int k) const
-        {
-            return M[k];
-        }
-
-        auto &operator+=(const d_matrix &O)
-        {
-            int r1=std::min(row_dim(),O.row_dim()),r2=std::min(col_dim(),O.col_dim());
-            for(int i=0;i<r1;i++) for(int j=0;j<r2;j++)
-                    M[i][j]+=O.M[i][j];
-            return *this;
-        }
-
-        auto &operator-=(const R &O)
-        {
-            int r=std::min(row_dim(),col_dim());
-            for(int i=0;i<r;i++)
-                M[i][i]-=O;
-            return *this;
-        }
-
-        auto &operator-=(const d_matrix &O)
-        {
-            int r1=std::min(row_dim(),O.row_dim()),r2=std::min(col_dim(),O.col_dim());
-            for(int i=0;i<r1;i++) for(int j=0;j<r2;j++)
-                    M[i][j]-=O.M[i][j];
-            return *this;
-        }
-
-        auto operator+(const d_matrix &O) const
-        {
-            auto N=*this;
-            return N+=O;
-        }
-
-        auto operator-(const d_matrix &O) const
-        {
-            auto N=*this;
-            return N-=O;
-        }
-
-        auto operator-(const R &O) const
-        {
-            auto N=*this;
-            return N-=O;
-        }
-
-        auto operator-() const
-        {
-            auto N=*this;
-            for(auto &row:N.M) for(auto &s:row)
-                    s=-s;
-            return N;
-        }
-
-        auto operator*(const d_matrix &O) const
-        {
-            int n=row_dim(),m=col_dim(),p=O.col_dim();
-            d_matrix N(0,m_shape{n,p});
-            for(int i=0;i<n;i++) for(int k=0;k<m;k++) for(int j=0;j<p;j++)
-                        N.M[i][j]+=M[i][k]*O.M[k][j];
-            return N;
-        }
-
-        auto &operator*=(const d_matrix &O)
-        {
-            auto N=(*this)*O;
-            M.swap(N.M);
-            return *this;
-        }
-
-        auto & operator*=(R k)
-        {
-            for(auto &row:M) for(auto &u:row)
-                    u*=k;
-            return *this;
-        }
-
-        d_vector<R>operator*(const d_vector<R> &u) const
-        {
-            int n=row_dim(),m=col_dim();
-            d_vector<R> v(v_shape{n});
-            for(int j=0;j<m;j++) for(int i=0;i<n;i++)
-                    v[i]+=M[i][j]*u[j];
-            return v;
-        }
-
-        auto &operator/=(R k)
-        {
-            for(auto &row:M) for(auto &u:row)
-                    u/=k;
-            return *this;
-        }
-
-        auto operator/(R k) const
-        {
-            auto N=*this;
-            return N/=k;
-        }
-
-        auto& operator/=(const d_matrix& O)
-        {
-            return *this *= O.inv();
-        }
-
-        auto operator/(const d_matrix &O) const
-        {
-            return (*this) * O.inv();
-        }
-
-        auto begin()
-        {
-            return M.begin();
-        }
-
-        auto begin() const
-        {
-            return M.cbegin();
-        }
-
-        auto end()
-        {
-            return M.end();
-        }
-
-        auto end() const
-        {
-            return M.cend();
-        }
-
-        auto row_echelon_form() const
-        {
-            int n=row_dim(),m=col_dim();
-            auto P=*this;
-            int s=0;
-            for(int i=0;i<n;i++)
-            {
-                int p=s;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                std::swap(P.M[p],P.M[s]);
-                R w=P.M[s][i];
-                for(int j=s+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = i; k < m; k++)
-                        P.M[j][k]-=r*P.M[i][k];
-                }
-                s++;
-            }
-            return P;
-        }
-
-        int rank() const
-        {
-            auto E=row_echelon_form();
-            int r=0;
-            int n=row_dim(),m=col_dim();
-            for(int i=0,j=0;i<n&&j<m;j++)
-                if(!is_zero(E.M[i][j]))
-                {
-                    r++;
-                    i++;
-                }
-            return r;
-        }
-
-        int nullity() const
-        {
-            return row_dim()-rank();
-        }
-
-        R det() const
-        {
-            int n=row_dim(),m=col_dim();
-            auto P=*this;
-            bool invert=false;
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    return 0;
-                if(p!=i)
-                {
-                    std::swap(P.M[p], P.M[i]);
-                    invert=!invert;
-                }
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = i; k < m; k++)
-                        P.M[j][k]-=r*P.M[i][k];
-                }
-            }
-            R d=1;
-            for(int i=0;i<n;i++)
-                d*=P.M[i][i];
-            return invert?-d:d;
-        }
-
-
-        d_matrix inv() const
-        {
-            int n=row_dim(),m=col_dim();
-            d_matrix P=*this,Q(1,m_shape{n,m});
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                std::swap(P.M[p], P.M[i]);
-                std::swap(Q.M[p],Q.M[i]);
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = 0; k < m; k++)
-                    {
-                        P.M[j][k] -= r*P.M[i][k];
-                        Q.M[j][k] -= r*Q.M[i][k];
-                    }
-                }
-            }
-            for(int i=n-1;i>=0;i--)
-            {
-                R w=P.M[i][i];
-                for(int j=0;j<n;j++)
-                    Q.M[i][j]/=w;
-                for(int k=i-1;k>=0;k--)
-                {
-                    R r=P.M[k][i];
-                    for (int j = 0; j < n; j++)
-                        Q.M[k][j] -= r*Q.M[i][j];
-                }
-            }
-            return Q;
-        }
-
-        d_vector<R> solve(d_vector<R> A)
-        {
-            int n=col_dim(),m=row_dim();
-            d_matrix P=*this;
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                std::swap(P.M[p], P.M[i]);
-                std::swap(A[p],A[i]);
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    if(is_zero(w))
-                        continue;
-                    R r=P.M[j][i]/w;
-                    for (int k = 0; k < m; k++)
-                        P.M[j][k] -= r*P.M[i][k];
-                    A[j]-=r*A[i];
-                }
-            }
-            for(int i=n-1;i>=0;i--)
-            {
-                R w=P.M[i][i];
-                if(is_zero(w))
-                    continue;
-                A[i]/=w;
-                for(int k=i-1;k>=0;k--)
-                {
-                    R r=P.M[k][i];
-                    A[k] -= r*A[i];
-                }
-            }
-            return A;
-        }
-    };
-
-    template<typename R>
-    d_matrix<R> operator*(const R&a,const d_matrix<R> &M)
-    {
-        auto N=M;
-        return N*=a;
-    }
-
-/**
- * @details Static Matrix
- * It is an element of the vector space L(R^n,R^m)
- * @tparam R the base commutative ring
- * @tparam n the number of rows
- * @tparam m the number of columns
- * @Requirements R is a commutative ring
- * @Requirements n>=0
- * @Requirements m>=0
- * @Formal
- * <ul>
- * <li> Multiplication between 2 matrices is defined if the shapes are compatible
- * <li> Multiplication between a matrix and a vector is defined if the shapes are compatible
- * <li> It is an associative algebra if n=m
- * </ul>
- * */
-
-    template<typename R,int n,int m>
-    class s_matrix
-    {
-        std::array<std::array<R,m>,n> M;
-    public:
-        using base_field=R;
-        using base_ring=R;
-        bool operator==(const s_matrix&) const = default;
-        s_matrix(R k=0)
-        {
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]=i==j?k:0;
-        }
-        s_matrix(std::array<std::array<R,m>,n> _M):M(std::move(_M)){}
-
-        inline static constexpr int row_dim()
-        {
-            return n;
-        }
-
-        s_matrix(const std::vector<std::array<R,m>> &_M)
-        {
-            int counter=0;
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]=_M[i][j];
-        }
-
-        inline static constexpr int col_dim()
-        {
-            return m;
-        };
-
-        auto& operator[](int k)
-        {
-            return M[k];
-        }
-
-        const auto& operator[](int k) const
-        {
-            return M[k];
-        }
-
-        R tr() const
-        {
-            R r=0;
-            for(int i=0;i<std::min(n,m);i++)
-                r+=M[i][i];
-            return r;
-        }
-
-        s_matrix<R,m,n> T() const
-        {
-            s_matrix<R,m,n> P;
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    P.M[j][i]=M[i][j];
-            return P;
-        }
-
-        s_matrix<R, m, n> H() const
-        {
-            s_matrix<R, m, n> P;
-            for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
-                    P.M[j][i] = conj(M[i][j]);
-            return P;
-        }
-
-        auto &operator+=(const s_matrix &O)
-        {
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]+=O.M[i][j];
-            return *this;
-        }
-
-        auto &operator-=(const s_matrix &O)
-        {
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]-=O.M[i][j];
-            return *this;
-        }
-
-        auto operator+(const s_matrix &O) const
-        {
-            auto N=*this;
-            return N+=O;
-        }
-
-        auto operator-(const s_matrix &O) const
-        {
-            auto N=*this;
-            return N-=O;
-        }
-
-        auto operator-() const
-        {
-            auto N=*this;
-            for(auto &row:N.M) for(auto &s:row)
-                    s=-s;
-            return N;
-        }
-
-        template<int p>
-        s_matrix<R,n,p> operator*(const s_matrix<R,m,p> &O) const
-        {
-            s_matrix<R,n,p> N(0);
-            for(int i=0;i<n;i++) for(int k=0;k<m;k++) for(int j=0;j<p;j++)
-                        N[i][j]+=M[i][k]*O[k][j];
-            return N;
-        }
-
-        auto &operator*=(const s_matrix &O)
-        {
-            static_assert(n==m);
-            auto N=(*this)*O;
-            M.swap(N.M);
-            return *this;
-        }
-
-        auto & operator*=(R k) {
-            for (auto &row: M)
-                for (auto &u: row)
-                    u *= k;
-            return *this;
-        }
-        s_vector<R,n> operator*(const s_vector<R,m> &u) const
-        {
-            s_vector<R,n> v;
-            for(int j=0;j<m;j++) for(int i=0;i<n;i++)
-                    v[i]+=M[i][j]*u[j];
-            return v;
-        }
-
-        auto &operator/=(R k)
-        {
-            for(auto &row:M) for(auto &u:row)
-                    u/=k;
-            return *this;
-        }
-
-        auto operator/(R k) const
-        {
-            auto N=*this;
-            return N/=k;
-        }
-
-        auto& operator/=(const s_matrix &O)
-        {
-            return *this*=O.inv();
-        }
-
-        auto operator/(const s_matrix &O) const
-        {
-            return (*this) * O.inv();
-        }
-
-        auto begin()
-        {
-            return M.begin();
-        }
-
-        auto begin() const
-        {
-            return M.cbegin();
-        }
-
-        auto end()
-        {
-            return M.end();
-        }
-
-        auto end() const
-        {
-            return M.cend();
-        }
-
-        auto row_echelon_form() const
-        {
-            auto P=*this;
-            int s=0;
-            for(int i=0;i<n;i++)
-            {
-                int p=s;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                P.M[p].swap(P.M[s]);
-                R w=P.M[s][i];
-                for(int j=s+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = i; k < m; k++)
-                        P.M[j][k]-=r*P.M[i][k];
-                }
-                s++;
-            }
-            return P;
-        }
-
-        int rank() const
-        {
-            auto E=row_echelon_form();
-            int r=0;
-            for(int i=0,j=0;i<n&&j<m;j++)
-                if(! is_zero(E.M[i][j]))
-                {
-                    r++;
-                    i++;
-                }
-            return r;
-        }
-
-        int nullity() const
-        {
-            return row_dim()-rank();
-        }
-
-        R det() const
-        {
-            static_assert(n==m);
-            auto P=*this;
-            bool invert=false;
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                if(p!=i)
-                {
-                    std::swap(P.M[p], P.M[i]);
-                    invert=!invert;
-                }
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = i; k < m; k++)
-                        P.M[j][k]-=r*P.M[i][k];
-                }
-            }
-            R d=1;
-            for(int i=0;i<n;i++)
-                d*=P.M[i][i];
-            return invert?-d:d;
-        }
-
-        s_matrix inv() const
-        {
-            static_assert(n==m);
-            s_matrix P=*this,Q(1);
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                std::swap(P.M[p], P.M[i]);
-                std::swap(Q.M[p],Q.M[i]);
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = 0; k < m; k++)
-                    {
-                        P.M[j][k] -= r*P.M[i][k];
-                        Q.M[j][k] -= r*Q.M[i][k];
-                    }
-                }
-            }
-            for(int i=n-1;i>=0;i--)
-            {
-                R w=P.M[i][i];
-                for(int j=0;j<n;j++)
-                    Q.M[i][j]/=w;
-                for(int k=i-1;k>=0;k--)
-                {
-                    R r=P.M[k][i];
-                    for (int j = 0; j < n; j++)
-                        Q.M[k][j] -= r*Q.M[i][j];
-                }
-            }
-            return Q;
-        }
-
-        s_vector<R,m> solve(s_vector<R,n> A) const
-        {
-            static_assert(n==m);
-            s_matrix P=*this;
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && P.M[p][i]==R(0))
-                    p++;
-                if(p==n)
-                    continue;
-                std::swap(P.M[p], P.M[i]);
-                std::swap(A[p],A[i]);
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    if(is_zero(w))
-                        continue;
-                    R r=P.M[j][i]/w;
-                    for (int k = 0; k < m; k++)
-                        P.M[j][k] -= r*P.M[i][k];
-                    A[j]-=r*A[i];
-                }
-            }
-            for(int i=n-1;i>=0;i--)
-            {
-                R w=P.M[i][i];
-                if(w==R(0))
-                    continue;
-                A[i]/=w;
-                for(int k=i-1;k>=0;k--)
-                {
-                    R r=P.M[k][i];
-                    A[k] -= r*A[i];
-                }
-            }
-            return A;
-        }
-
-    };
-
-    template<typename R,int n,int m>
-    s_matrix<R,n,m> operator*(const R&a,const s_matrix<R,n,m> &M)
-    {
-        auto N=M;
-        return N*=a;
-    }
-
-    template<int n=-1>
-    using IE = std::conditional_t<n >= 0, s_vector<real, n>, d_vector<real>>;
-
-    template<int n = -1>
-    using IH = std::conditional_t<n >= 0, s_vector<IC, n>, d_vector<IC>>;
-
-    template<int n = -1,int m=n>
-    using IM_IR = std::conditional_t<n >= 0 && m>=0, s_matrix<real, n,m>, d_matrix<real>>;
-
-    template<int n = -1, int m = n>
-    using IM_IC = std::conditional_t<n >= 0 && m >= 0, s_matrix<IC, n, m>, d_matrix<IC>>;
-}
-
-//
-// Created by ramizouari on 09/12/22.
-//
-
-
-
-
-namespace cp::linalg
-{
-    template<typename R>
-    polynomial<R> faddev_lerrier_characteristic_polynomial(const d_matrix<R>&A)
-    {
-        int n=A.row_dim();
-        std::vector<R> S(n + 1);
-        S[n] = 1;
-        d_matrix<R> C(0,m_shape{n,n});
-        for (int i = n - 1; i >= 0; i--)
-        {
-            for (int j = 0; j < n; j++)
-                C[j][j] += S[i + 1];
-            C = A * C;
-            S[i] = -C.tr() / R(n - i);
-        }
-        return S;
-    }
-
-    template<typename R,int n>
-    polynomial<R> faddev_lerrier_characteristic_polynomial(const s_matrix<R,n,n>&A)
-    {
-        std::vector<R> S(n + 1);
-        S[n] = 1;
-        s_matrix<R,n,n> C;
-        for (int i = n - 1; i >= 0; i--)
-        {
-            for (int j = 0; j < n; j++)
-                C[j][j] += S[i + 1];
-            C = A * C;
-            S[i] = -C.tr() / R(n - i);
-        }
-        return S;
-    }
-
-    template<typename R>
-    polynomial<R> interpolation_characteristic_polynomial(d_matrix<R> M)
-    {
-        int n=M.row_dim();
-        std::vector<R> X(n+1), Y(n+1);
-        for (int i = 0; i <= n; i++)
-        {
-            X[i] = i;
-            Y[i] = M.det();
-            for (int j = 0; j < n; j++)
-                M[j][j] = M[j][j] - 1;
-        }
-        return newton_interpolation(X, Y);
-    }
-
-    template<typename R,int n>
-    polynomial<R> interpolation_characteristic_polynomial(s_matrix<R,n,n> M)
-    {
-        std::vector<R> X(n+1), Y(n+1);
-        for (int i = 0; i <= n; i++)
-        {
-            X[i] = i;
-            Y[i] = M.det();
-            for (int j = 0; j < n; j++)
-                M[j][j] = M[j][j] - 1;
-        }
-        return newton_interpolation(X, Y);
-    }
-
-    template<typename IK>
-    bool annihilable(const d_matrix<IK> &T, const d_vector<IK> &u,int m)
-    {
-        d_matrix<IK> A(0,m_shape{m+1,(int)u.dim()});
-        A[0]=(std::vector<IK>&)u;
-        for(int i=1;i<=m;i++)
-        {
-            auto v=T * A[i - 1];
-            std::copy(v.begin(),v.end(),A[i].begin());
-        }
-        return A.nullity()!=0;
-    }
-
-    template<typename IK>
-    polynomial<IK> minimal_polynomial(const d_matrix<IK> &T, const d_vector<IK> &u)
-    {
-        int n=u.dim();
-        std::vector<int> D(n+1);
-        for(int i=0;i<=n;i++)
-            D[i]=i;
-        auto d=*std::upper_bound(D.begin(),D.end(),0,[&T,&u](const auto &x,const auto &y){return annihilable(T,u,x) < annihilable(T,u,y);});
-        std::vector<int> mapper(d+1);
-        std::vector<polynomial<IK>> Z(d+1);
-        std::vector<d_vector<IK>> U(d+1);
-        U[0]=u;
-        for(int i=1;i<=d;i++)
-            U[i] = T * U[i - 1];
-        for(int i=0;i<=d;i++)
-        {
-            mapper[i]=i;
-            Z[i].p.resize(d+1);
-            Z[i][i]=1;
-        }
-        int r=0,t=0;
-        while(r<=d && t<n)
-        {
-            if(std::all_of(U[mapper[r]].begin(),U[mapper[r]].end(),[](const auto &x){return is_zero(x);}))
-                break;
-            int s=r;
-            while(s<=d && is_zero(U[mapper[s]][t]))
-                s++;
-            if(s==d+1)
-            {
-                t++;
-                continue;
-            }
-            std::swap(mapper[s],mapper[r]);
-            Z[mapper[r]]/=U[mapper[r]][t];
-            for(int j=t+1;j<n;j++)
-                U[mapper[r]][j]/=U[mapper[r]][t];
-            U[mapper[r]][t]=1;
-            for(int i=r+1;i<=d;i++)
-            {
-                auto w=U[mapper[i]][t];
-                for(int j=t;j<n;j++)
-                    U[mapper[i]][j]-=w*U[mapper[r]][j];
-                U[mapper[i]][t]=0;
-                Z[mapper[i]]-=w*Z[mapper[r]];
-            }
-            r++;
-            t++;
-        }
-        return Z[mapper[d]]/Z[mapper[d]][Z[mapper[d]].degree()];
-    }
-
-    template<typename IK>
-    polynomial<IK> minimal_polynomial(const d_matrix<IK> &T, const std::vector<d_vector<IK>> &U)
-    {
-        polynomial<IK> mu=1;
-        for(auto &u:U)
-            mu=lcm(mu, minimal_polynomial(T,u));
-        return mu;
-    }
-
-    template<typename IK>
-    polynomial<IK> minimal_polynomial(const d_matrix<IK> &T)
-    {
-        std::vector<d_vector<IK>> E;
-        int n=T.row_dim();
-        for(int i=0;i<n;i++)
-        {
-            E.emplace_back(v_shape{n});
-            E.back()[i]=1;
-        }
-        return minimal_polynomial(T,E);
-    }
-}
-
-
-
-
-//
-// Created by ASUS on 30/11/2021.
-//
-
-
-#include <cstdint>
-#include <utility>
-//
-// Created by ramizouari on 28/11/23.
-//
-
-
-
-
-
-namespace cp
-{
-    template<integer mod>
-    struct cyclic
-    {
-        integer n;
-        inline static bool assume_prime=true;
-        inline static constexpr integer m = mod;
-        constexpr cyclic(integer o=0):n((o+m)%m){}
-        bool operator==(int O) const
-        {
-            return n==(m+O)%m;
-        }
-
-        bool operator!=(int O) const
-        {
-            return n!=(m+O)%m;
-        }
-
-        bool operator==(cyclic O) const
-        {
-            return n==O.n;
-        }
-
-        bool operator!=(cyclic O) const
-        {
-            return n!=O.n;
-        }
-
-        cyclic operator-() const
-        {
-            return cyclic(-n);
-        }
-
-        auto& operator+=(const cyclic &O)
-        {
-            n=(n+O.n)%m;
-            return *this;
-        }
-        auto& operator-=(const cyclic &O)
-        {
-            n=(n+m-O.n)%m;
-            return *this;
-        }
-
-        auto& operator*=(const cyclic &O)
-        {
-            n=(n*O.n)%m;
-            return *this;
-        }
-
-        auto& operator/=(const cyclic &O)
-        {
-            return (*this)*=O.inv();
-        }
-
-        auto operator*(const cyclic &O) const
-        {
-            auto w=*this;
-            return w*=O;
-        }
-
-        auto operator+(const cyclic &O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
-        auto operator-(const cyclic &O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        auto operator/(const cyclic &O) const
-        {
-            return (*this)*O.inv();
-        }
-
-        cyclic pinv() const
-        {
-            return egcd(n,m).a;
-        }
-
-        auto inv() const
-        {
-            if(assume_prime)
-                return pow(*this,m-2);
-            else return pinv();
-        }
-
-        auto& operator++()
-        {
-            return *this+=1;
-        }
-
-        auto& operator--()
-        {
-            return *this-=1;
-        }
-
-        auto operator++(int)
-        {
-            cyclic r(n);
-            *this += 1;
-            return r;
-        }
-
-        auto operator--(int)
-        {
-            cyclic r(n);
-            *this -= 1;
-            return r;
-        }
-
-        explicit operator integer&()
-        {
-            return n;
-        }
-
-        explicit operator const integer&() const
-        {
-            return n;
-        }
-
-        static constexpr integer modulus()
-        {
-            return m;
-        }
-    };
-
-    template<integer m>
-    auto operator*(integer k,cyclic<m> s)
-    {
-        return s*k;
-    }
-
-    template<integer m>
-    auto operator+(integer k,cyclic<m> s)
-    {
-        return s+k;
-    }
-
-    template<integer m>
-    auto operator-(integer k,cyclic<m> s)
-    {
-        return (-s)+k;
-    }
-}
-
-
-//
-// Created by ramizouari on 28/11/23.
-//
-
-
-
-namespace cp
-{
-    inline static constexpr integer dynamic_modulus=-2;
-    template<>
-    struct cyclic<dynamic_modulus>
-    {
-        integer m,n;
-        bool assume_prime=true;
-    public:
-        cyclic(integer o=0,integer q=0):m(q),n(m?(o+m)%m:o){}
-        bool operator==(integer O) const
-        {
-            if(!m) return n==O;
-            else return n==(m+O)%m;
-        }
-
-        bool operator==(cyclic O) const
-        {
-            return n==O.n;
-        }
-
-        cyclic& operator+=(const cyclic &O)
-        {
-            if(!m) m=O.m;
-            n+=O.n;
-            if(m)
-                n%=m;
-            return *this;
-        }
-
-        cyclic& operator+=(integer O)
-        {
-            n=n+O;
-            if(m) n%=m;
-            return *this;
-        }
-
-        cyclic& operator-=(const cyclic &O)
-        {
-            if(!m)
-                m=O.m;
-            n+=m-O.n;
-            if(m)
-                n%=m;
-            return *this;
-        }
-
-        cyclic& operator-=(integer O)
-        {
-            n+=m-O;
-            if(m) n%=m;
-            return *this;
-        }
-
-        cyclic& operator*=(const cyclic &O)
-        {
-            if(!m) m=O.m;
-            n*=O.n;
-            if(m) n%=m;
-            return *this;
-        }
-
-        cyclic& operator*=(integer O)
-        {
-            n*=O;
-            if(m) n%=m;
-            return *this;
-        }
-
-        cyclic& operator=(integer O)
-        {
-            n=O;
-            if(m) n%=m;
-            return *this;
-        }
-
-        cyclic inv() const
-        {
-            if(m==1)
-                return *this;
-            else if(assume_prime)
-                return pow(*this,m-2,m);
-            else return pinv();
-        }
-
-        cyclic& operator/=(const cyclic &O)
-        {
-            return (*this)*=O.inv();
-        }
-
-        cyclic& operator/=(integer O)
-        {
-            return (*this)*=cyclic(O,m).inv();
-        }
-
-        cyclic operator*(const cyclic &O) const
-        {
-            auto w=*this;
-            return w*=O;
-        }
-
-        cyclic operator+(const cyclic &O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
-        cyclic operator+(integer O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
-        cyclic operator-() const
-        {
-            return {m-n,m};
-        }
-
-        cyclic operator-(const cyclic &O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        cyclic operator-(integer O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        cyclic operator/(const cyclic &O) const
-        {
-            return (*this)*O.inv();
-        }
-
-        cyclic operator/(integer O) const
-        {
-            return (*this)*cyclic(O,m).inv();
-        }
-
-        cyclic pinv() const
-        {
-            return {egcd(n,m).a,m};
-        }
-
-        cyclic& operator++()
-        {
-            return *this+=1;
-        }
-
-        cyclic& operator--()
-        {
-            return *this-=1;
-        }
-
-        cyclic operator++(int)
-        {
-            cyclic r(n,m);
-            *this += 1;
-            return r;
-        }
-
-        cyclic operator--(int)
-        {
-            cyclic r(n,m);
-            *this -= 1;
-            return r;
-        }
-
-        explicit operator integer&()
-        {
-            return n;
-        }
-
-        explicit operator const integer&() const
-        {
-            return n;
-        }
-
-        integer modulus() const
-        {
-            return m;
-        }
-    };
-
-}
-
-
-//
-// Created by ramizouari on 28/11/23.
-//
-
-
-
-namespace cp
-{
-    inline static constexpr integer static_modulus=-1;
-    template<>
-    struct cyclic<static_modulus>
-    {
-        integer n;
-    public:
-        inline static integer m=1;
-        inline static bool assume_prime=true;
-        cyclic(integer o=0):n((o+m)%m){}
-        bool operator==(integer O) const
-        {
-            return n==(m+O)%m;
-        }
-
-        bool operator!=(integer O) const
-        {
-            return n!=(m+O)%m;
-        }
-
-        bool operator==(cyclic O) const
-        {
-            return n==O.n;
-        }
-
-        bool operator!=(cyclic O) const
-        {
-            return n!=O.n;
-        }
-
-        cyclic& operator+=(const cyclic &O)
-        {
-            n=(n+O.n)%m;
-            return *this;
-        }
-        cyclic& operator-=(const cyclic &O)
-        {
-            n=(n+m-O.n)%m;
-            return *this;
-        }
-
-        cyclic& operator*=(const cyclic &O)
-        {
-            n=(n*O.n)%m;
-            return *this;
-        }
-
-        cyclic inv() const
-        {
-            if(assume_prime)
-                return pow(*this,m-2);
-            else return pinv();
-        }
-
-        cyclic& operator/=(const cyclic &O)
-        {
-            return (*this)*=O.inv();
-        }
-
-        cyclic operator*(const cyclic &O) const
-        {
-            auto w=*this;
-            return w*=O;
-        }
-
-        cyclic operator+(const cyclic &O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
-        cyclic operator-() const
-        {
-            return cyclic(m-n);
-        }
-
-        cyclic operator-(const cyclic &O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        cyclic operator/(const cyclic &O) const
-        {
-            return (*this)*O.inv();
-        }
-
-        cyclic pinv() const
-        {
-            return egcd(n,m).a;
-        }
-
-        cyclic& operator++()
-        {
-            return *this+=1;
-        }
-
-        cyclic& operator--()
-        {
-            return *this-=1;
-        }
-
-        cyclic operator++(int)
-        {
-            cyclic r(n);
-            *this += 1;
-            return r;
-        }
-
-        cyclic operator--(int)
-        {
-            cyclic r(n);
-            *this -= 1;
-            return r;
-        }
-
-        explicit operator integer&()
-        {
-            return n;
-        }
-
-        explicit operator const integer&() const
-        {
-            return n;
-        }
-
-        static integer modulus()
-        {
-            return m;
-        }
-        static void set_modulus(integer _m)
-        {
-            m=_m;
-        }
-    };
-
-    using d_cyclic=cyclic<static_modulus>;
-
-}
-
-
-
-//
-// Created by ASUS on 01/12/2021.
-//
-
-
-
-//
-// Created by ASUS on 01/12/2021.
-//
-
-
-
-#include <numbers>
-//
-// Created by ASUS on 01/12/2021.
-//
-
-
-#include <cstdint>
-#include <vector>
-#include <map>
-#include <numeric>
-#include <cmath>
-#include <stack>
-#include <algorithm>
+#endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
 #include <memory>
-
-namespace cp
-{
-    using couple =std::pair<integer,integer>;
-
-    class abstract_factoriser
-    {
-    public:
-        virtual ~abstract_factoriser()=default;
-        virtual std::vector<integer> prime_factors(integer m) const
-        {
-            std::vector<integer> P;
-            auto p=smallest_divisor(m);
-            while(m>1)
-            {
-                if(P.empty()||P.back()!=p)
-                    P.push_back(p);
-                m/=p;
-            }
-            return P;
-        }
-        virtual integer smallest_divisor(integer m) const=0;
-        virtual bool is_prime(integer m) const
-        {
-            return smallest_divisor(m)==m;
-        }
-        virtual std::vector<couple> prime_decomposition(integer m) const
-        {
-            std::vector<couple> P;
-            auto p=smallest_divisor(m);
-            while(m>1)
-            {
-                int s=0;
-                while(m%p==0)
-                {
-                    m/=p;
-                    s++;
-                }
-                P.emplace_back(p,s);
-            }
-            return P;
-        }
-        virtual std::vector<integer> divisors_list(integer m) const
-        {
-            std::vector<integer> D;
-            divisors_list_rec(m, D, prime_factors(m));
-            return D;
-        }
-    protected:
-        void divisors_list_rec(integer n,std::vector<integer> &D,const std::vector<integer> &P, int o=0) const
-        {
-            auto r=P.size();
-            for(int i=o;i<r;i++) if(n%P[i]==0)
-                    divisors_list_rec(n/P[i],D,P,i);
-            D.push_back(n);
-
-        }
-
-    };
-
-    struct default_factoriser_t
-    {
-        inline static std::shared_ptr<abstract_factoriser> default_factoriser;
-    };
-
-
-    class factoriser : public abstract_factoriser
-    {
-        int n;
-        std::vector<integer> p_list,smallest_d;
-        std::vector<std::vector<integer>> p_factors;
-
-
-    public:
-        factoriser(int _n):n(_n),smallest_d(n+1),p_factors(n+1)
-        {
-            p_list.reserve(n/log(n));
-            std::vector<bool> is_prime(n+1,true);
-            for(integer i=2;i<=n;i++) if(is_prime[i])
-                {
-                    p_list.push_back(i);
-                    smallest_d[i]=i;
-                    p_factors[i]={i};
-                    for(integer j=2*i;j<=n;j+=i)
-                    {
-                        if(is_prime[j])
-                        {
-                            smallest_d[j] = i;
-                            is_prime[j]=false;
-                        }
-                        p_factors[j].push_back(i);
-                    }
-                }
-        }
-
-        [[nodiscard]] std::vector<integer> prime_factors(integer m) const override
-        {
-            if(m<=n)
-                return p_factors[m];
-            std::vector<integer> result={};
-            while(m>1)
-            {
-                auto p= smallest_divisor(m);
-                if(result.empty()||result.back()!=p)
-                    result.push_back(p);
-                m/=p;
-            }
-            return result;
-        }
-
-        std::vector<std::pair<integer,integer>> prime_decomposition(integer m) const override
-        {
-            integer r=m;
-            std::vector<std::pair<integer,integer>> p_dec;
-            for(auto p: prime_factors(m))
-            {
-                int s=0;
-                while(r%p==0)
-                {
-                    r/=p;
-                    s++;
-                }
-                p_dec.emplace_back(p,s);
-            }
-            return p_dec;
-        }
-
-        std::vector<integer> divisors_list_sorted(integer m) const
-        {
-            auto D=divisors_list(m);
-            std::sort(D.begin(),D.end());
-            return D;
-        }
-
-        [[nodiscard]] integer smallest_divisor(integer m) const override
-        {
-            if(m<=n)
-                return smallest_d[m];
-            integer L=std::ceil(std::sqrt(m));
-            for(auto p:p_list)
-            {
-                if(p>L)
-                    break;
-                else if(m%p==0)
-                    return p;
-            }
-            return m;
-        }
-
-        [[nodiscard]] bool is_prime(integer m) const override
-        {
-            if(m<n)
-                return m>1 && smallest_d[m]==m;
-            else
-            {
-                integer L=std::ceil(std::sqrt(m));
-                for(auto p:p_list)
-                    if(m%p==0)
-                        return false;
-                    else if(p>L)
-                        break;
-                return true;
-            }
-        }
-
-        integer totient_rec(integer n,const std::vector<integer> &P, integer o=0)
-        {
-            if(n==0)
-                return 0;
-            integer S=n;
-            for(int i=o;i<P.size();i++)
-                S-= totient_rec(n/P[i],P,i+1);
-            return S;
-        }
-
-        integer totient(integer n)
-        {
-            integer R=1;
-            for(auto [p,m]: prime_decomposition(n))
-                R*=pow(p,m-1)*(p-1);
-            return R;
-        }
-
-        integer totient(integer n,integer m)
-        {
-            if(n==0)
-                return 0;
-            auto r=m%n;
-            auto P= prime_factors(n);
-            return (m/n)*totient(n)+totient_rec(r,P);
-        }
-
-        integer carmichael_totient(integer n)
-        {
-            integer R=1;
-            for(auto [p,m]: prime_decomposition(n))
-            {
-                if(p==2 && m>2)
-                    R=std::lcm(R,pow(p,m-2));
-                else R=std::lcm(R,pow(p,m-1)*(p-1));
-            }
-            return R;
-        }
-
-        integer divisors_count(integer n)
-        {
-            integer R=1;
-            for(auto [_,m]: prime_decomposition(n))
-                R*=(m+1);
-            return R;
-        }
-
-        integer divisor_function(integer n,integer s)
-        {
-            if(s==0)
-                return divisors_count(n);
-            integer R=1;
-            for(auto [p,m]: prime_decomposition(n))
-                R*=(pow(p,(m+1)*s)-1)/(pow(p,s)-1);
-            return R;
-        }
-
-        integer divisors_sum(integer n)
-        {
-            return divisor_function(n,1);
-        }
-
-        [[nodiscard]] integer count_primes() const
-        {
-            return p_list.size();
-        }
-
-        [[nodiscard]] const auto& prime_list() const
-        {
-            return p_list;
-        }
-
-        void generate_radicals_rec(std::vector<integer> &R,integer a,integer L,int o=0)
-        {
-            for(int s=o;s<p_list.size() && a*p_list[s] <= L;s++)
-            {
-                R.push_back(a*p_list[s]);
-                generate_radicals_rec(R,a*p_list[s],L,s+1);
-            }
-        }
-
-        std::vector<integer> genereate_radicals(integer L)
-        {
-            std::vector<integer> radicals;
-            generate_radicals_rec(radicals,1,L);
-            return radicals;
-        }
-
-    };
-
-    inline integer chinese_remainder(const std::vector<std::pair<integer,integer>> &S)
-    {
-        std::stack<std::pair<integer,integer>> Q;
-        for(auto s:S)
-            Q.push(s);
-        while(Q.size() > 1)
-        {
-            auto [a1,p1]=Q.top();
-            Q.pop();
-            auto [a2,p2]=Q.top();
-            Q.pop();
-            auto [k1,k2]=bezout(p1,p2);
-            k2*=(a1-a2);
-            Q.push({(k2*p2+a2)%(p1*p2),p1*p2});
-        }
-        return Q.top().first;
-    }
-
-    inline integer chinese_remainder(const std::vector<integer>& A,const std::vector<integer>& P)
-    {
-        std::vector<std::pair<integer,integer>> S;
-        int n=A.size(),m=P.size();
-        S.reserve(n);
-        for(int i=0;i<n;i++)
-            S.emplace_back(A[i],P[i]);
-        return chinese_remainder(S);
-    }
-}
-
-
-
-#include <algorithm>
-#include <optional>
-//
-// Created by ramizouari on 28/11/23.
-//
-
-
-
-//
-// Created by ramizouari on 01/12/2021.
-//
-
-
-
-
-//
-// Created by ramizouari on 28/11/23.
-//
-
-
-
-namespace cp
-{
-    inline integer totient(integer n,abstract_factoriser &F)
-    {
-        integer r=1;
-        for(auto [p,k]:F.prime_decomposition(n))
-            r*=pow(p,k-1)*(p-1);
-        return r;
-    }
-
-    inline integer carmichael_totient(integer n,abstract_factoriser &F)
-    {
-        integer r=1;
-        for(auto [p,k]:F.prime_decomposition(n))
-        {
-            if(p==2&&k>=3)
-                r=std::lcm(r,pow(2,k-2));
-            else
-                r = std::lcm(r, pow(p, k - 1) * (p - 1));
-        }
-        return r;
-    }
-
-    inline integer divisors_count(integer n,abstract_factoriser &F)
-    {
-        integer r=1;
-        for(auto [p,k]:F.prime_decomposition(n))
-            r*=k+1;
-        return r;
-    }
-
-    inline integer divisors_sum(integer n,abstract_factoriser &F)
-    {
-        integer r=1;
-        for(auto [p,k]:F.prime_decomposition(n))
-            r*=(pow(p,k+1)-1)/(p-1);
-        return r;
-    }
-
-    inline integer prime_multiplicity(integer n,integer p,abstract_factoriser &F)
-    {
-        for(auto [q,k]:F.prime_decomposition(n))
-            if(q==p)
-                return k;
-        return 0;
-    }
-
-    inline integer prime_multiplicity(integer n,integer p)
-    {
-        integer r=0;
-        while(n%p==0)
-        {
-            n/=p;
-            r++;
-        }
-        return r;
-    }
-
-
-}
-
-
-#include <random>
-
-template<cp::integer m>
-struct std::hash<cp::cyclic<m>>
-{
-    inline static std::random_device dev=std::random_device();
-    inline static std::mt19937 g=std::mt19937(dev());
-    inline static constexpr cp::integer M=1e9+7;
-    std::uniform_int_distribution<cp::integer> d=std::uniform_int_distribution<cp::integer>(1,M);
-    cp::integer a=d(g),b=d(g);
-    public:
-    size_t operator()(const cp::cyclic<m> &x) const noexcept
-    {
-        return (a*static_cast<cp::integer>(x)+b)%M;
-    }
-};
-
-namespace cp
-{
-    template<typename cyclic_ring>
-    integer discrete_log(cyclic_ring a, cyclic_ring r)
-    {
-        integer s=std::ceil(std::sqrt(cyclic_ring::m));
-        cyclic_ring u=pow(a,s),w=1;
-        std::unordered_map<cyclic_ring,integer> mapper;
-        for(integer i=0;i<=s;i++,w*=a)
-            mapper[r*w]=i;
-        w=u;
-        for(integer i=1;i<=s;i++,w*=u)
-            if(mapper.count(w))
-                return i*s-mapper[w];
-        return -1;
-    }
-
-    inline std::vector<integer> inverse_table(int n,int prime)
-    {
-        std::vector<integer> I(n + 1);
-        I[0] = I[1] = 1;
-        for (int i = 2; i <= n; i++)
-            I[i] = I[prime % i] *
-                   (prime - prime / i) % prime;
-        return I;
-    }
-
-    inline integer primitive_root_of_unity(integer p,abstract_factoriser &F)
-    {
-        auto phi=carmichael_totient(p,F);
-        auto D=F.divisors_list(phi);
-        for(integer k=2;k<p-1;k++) if(std::gcd(k,p)==1)
-        {
-            bool is_primitive=true;
-            for (auto d: D)
-                if(d< phi && pow(cyclic<dynamic_modulus>(k,p),d,p)==1)
-                {
-                    is_primitive=false;
-                    break;
-                }
-            if(is_primitive)
-                return k;
-        }
-        return 0;
-    }
-
-    template <integer p>
-    integer primitive_root_of_unity(factoriser& F)
-    {
-        static auto phi = F.totient(p);
-        static auto D = F.divisors_list(phi);
-        for (integer k = 2; k < p - 1; k++)
-        {
-            bool is_primitive = true;
-            for (auto d : D)
-                if (d < phi && pow<d_cyclic>(k, d) == 1)
-                {
-                    is_primitive = false;
-                    break;
-                }
-            if (is_primitive)
-                return k;
-        }
-        return 0;
-    }
-
-    template<integer m>
-    integer legendre_symbol(cyclic<m> a)
-    {
-        integer r;
-        if constexpr (m==dynamic_modulus)
-            r= (integer) pow(a, (a.modulus() - 1) / 2,a.modulus());
-        else
-            r= (integer)pow(a, (a.modulus() - 1) / 2);
-        if (r > a.modulus() / 2)
-            r -= a.modulus();
-        return r;
-    }
-
-}
-
-
-
-
-
-//
-// Created by ramizouari on 28/11/23.
-//
-
-
-
-
-
-//
-// Created by ASUS on 01/12/2021.
-//
-
-
-
 namespace cp
 {
     template<typename T>
@@ -2897,6 +1095,159 @@ namespace cp
     {
     };
 
+    template<typename T>
+    struct max_t:public binary_operation<T>
+    {
+        T e;
+        explicit max_t(T _e):e(_e){}
+        max_t(): max_t(T{}){}
+        T reduce(const T&a,const T&b) const override
+        {
+            return std::max(a,b);
+        }
+
+        inline static T neutral{0};
+        T neutral_element() const override
+        {
+            return e;
+        }
+    };
+
+    template<typename T>
+    struct min_t:public binary_operation<T>
+    {
+        T e;
+        explicit min_t(T _e):e(_e){}
+        min_t(): min_t(T{}){}
+
+        T reduce(const T&a,const T&b) const override
+        {
+            return std::min(a,b);
+        }
+
+        inline static T neutral{};
+
+        T neutral_element() const override
+        {
+            return e;
+        }
+    };
+
+    template<typename T>
+    struct gcd_t:public binary_operation<T>
+    {
+        T reduce(const T&a,const T&b) const override
+        {
+            return gcd(a,b);
+        }
+
+        inline static T neutral{0};
+    };
+
+    template<typename T>
+    struct lcm_t:public binary_operation<T>
+    {
+        T reduce(const T&a,const T&b) const override
+        {
+            return lcm(a,b);
+        }
+
+        inline static T neutral{1};
+        T neutral_element() const override
+        {
+            return neutral;
+        }
+    };
+
+    template<typename T>
+    struct xor_t:public binary_operation<T>,public invertible_operation<T>
+    {
+        T reduce(const T&a,const T&b) const
+        {
+            return a^b;
+        }
+
+        T inv(const T&a) const
+        {
+            return a;
+        }
+
+        inline static T neutral{};
+    };
+
+    template<typename T>
+    struct and_t:public binary_operation<T>
+    {
+        T reduce(const T&a,const T&b) const override
+        {
+            return a&b;
+        }
+
+        inline static T neutral=static_cast<T>(-1);
+        T neutral_element() const override
+        {
+            return neutral;
+        }
+    };
+
+    template<typename T>
+    struct or_t:public binary_operation<T>
+    {
+        T reduce(const T&a,const T&b) const override
+        {
+            return a|b;
+        }
+
+        inline static T neutral{};
+    };
+
+    template<typename T>
+    struct logical_and_t :public binary_operation<T>
+    {
+        T reduce(const T& a, const T& b) const override
+        {
+            return a && b;
+        }
+
+        inline static T neutral{true};
+        T neutral_element() const override
+        {
+            return neutral;
+        }
+    };
+
+    template<typename T>
+    struct logical_or_t :public binary_operation<T>
+    {
+        T reduce(const T& a, const T& b) const override
+        {
+            return a || b;
+        }
+
+        inline static T neutral{false};
+        T neutral_element() const override
+        {
+            return neutral;
+        }
+    };
+
+    template<typename T>
+    struct logical_xor_t :public binary_operation<T>,public invertible_operation<T>
+    {
+        T reduce(const T& a, const T& b) const override
+        {
+            return !a && b || a && !b;
+        }
+        T inv(const T&a) const
+        {
+            return !a;
+        }
+        inline static T neutral{false};
+        T neutral_element() const override
+        {
+            return neutral;
+        }
+    };
 
     template<typename T>
     class binary_operation_ptr
@@ -2937,35 +1288,14 @@ namespace cp
     };
 }
 
-
-//
-// Created by ASUS on 01/12/2021.
-//
-
-
-#include <vector>
+#endif
+#include <memory>
 //
 // Created by ramizouari on 26/10/23.
 //
 
-
-
-#include <vector>
-
-
-//
-// Created by ramizouari on 26/10/23.
-//
-
-
-
-#include <vector>
-//
-// Created by ramizouari on 26/10/23.
-//
-
-
-
+#ifndef CPLIBRARY_BITS_H
+#define CPLIBRARY_BITS_H
 namespace cp
 {
     inline unsigned int bit_log(unsigned int n)
@@ -3001,1854 +1331,911 @@ namespace cp
     }
 }
 
+#endif //CPLIBRARY_BITS_H
 
+namespace cp::data_structures::dynamic
+{
+    template<typename T>
+    struct sparse_array
+    {
+        int n,h;
+        std::vector<std::vector<T>> S;
+        binary_operation_ptr<T> F;
+    public:
+        sparse_array(const std::vector<T>&A, std::shared_ptr<binary_operation<T>> _F):n(bit_ceil(A.size())),h(bit_log(n)),S(h+1),F(_F)
+        {
+            int r=1;
+            for(int i=h;i>=0;i--,r*=2)
+                S[i].resize(n-r+1,F->neutral_element());
+            for(int i=0;i<A.size();i++)
+                S[h][i]=A[i];
+            r=1;
+            for(int i=h-1;i>=0;i--,r*=2) for(int j=0;j<=n-2*r;j++)
+                    S[i][j]=F(S[i+1][j],S[i+1][j+r]);
+        }
 
+        T query(int l,int r) const
+        {
+            if(l>=r)
+                return F->neutral_element();
+            auto d=r-l;
+            auto s=bit_floor(d);
+            auto b=bit_log(s);
+            return F(S[h-b][l],S[h-b][r-s]);
+        }
+    };
+}
+
+#endif //CPLIBRARY_SPARSE_ARRAY_H
 //
 // Created by ramizouari on 26/10/23.
 //
 
-
-
+#ifndef CPLIBRARY_FIXED_SPARSE_ARRAY_H
+#define CPLIBRARY_FIXED_SPARSE_ARRAY_H
 #include <vector>
 namespace cp::data_structures::fixed
 {
     template<typename O>
-    struct segment_tree
+    struct sparse_array
     {
-        using R=typename O::type;
-        using type=R;
-        std::vector<std::vector<R>> S;
-        std::vector<R> A;
-        int n,h;
-        segment_tree(const std::vector<R> &_A):A(_A)
-        {
-            n=bit_ceil(A.size());
-            A.resize(n,O::neutral);
-            int m=n;
-            h=0;
-            while(m)
-            {
-                m/=2;
-                h++;
-            }
-            S.resize(h);
-            for(int i=0;i<h;i++)
-                S[i].resize(1<<i);
-            build();
-        }
-
-        void update(int i,R u)
-        {
-            A[i]=u;
-            S[h-1][i]=u;
-            int m=h-2;
-            i/=2;
-            while(m>=0)
-            {
-                S[m][i]=F(S[m+1][2*i],S[m+1][2*i+1]);
-                m--;
-                i/=2;
-            }
-        }
-
-        R query(int l,int r)
-        {
-            return query(std::max(l,0),std::min(r,n),0,n,0);
-        }
-    private:
+        using T=typename O::type;
+        using type = T;
         inline static O F=O();
-        void build()
+        int n,h;
+        std::vector<std::vector<T>> S;
+    public:
+        sparse_array(const std::vector<T>&A):n(bit_ceil(A.size())),h(bit_log(n)),S(h+1)
         {
-            for(int i=0;i<n;i++)
-                S.back()[i]=A[i];
-            for(int i=h-2;i>=0;i--) for(int k=0;k<(1<<i);k++)
-                    S[i][k]=F(S[i+1][2*k],S[i+1][2*k+1]);
+            int r=1;
+            for(int i=h;i>=0;i--,r*=2)
+                S[i].resize(n-r+1,O::neutral);
+            for(int i=0;i<A.size();i++)
+                S[h][i]=A[i];
+            r=1;
+            for(int i=h-1;i>=0;i--,r*=2) for(int j=0;j<=n-2*r;j++)
+                    S[i][j]=F(S[i+1][j],S[i+1][j+r]);
         }
-        R query(int l,int r,int a,int b,int depth)
+
+        T query(int l,int r) const
         {
             if(l>=r)
                 return O::neutral;
-            if(l==a && r==b)
-                return S[depth][l>>(h-1-depth)];
-            int mid=(a+b)/2;
-            if(mid>r)
-                return query(l,r,a,mid,depth+1);
-            else if(mid<l)
-                return query(l,r,mid,b,depth+1);
+            auto d=r-l;
+            auto s=bit_floor(d);
+            auto b=bit_log(s);
+            return F(S[h-b][l],S[h-b][r-s]);
+        }
+    };
+
+
+}
+#endif //CPLIBRARY_SPARSE_ARRAY_H
+#include <memory>
+#include <queue>
+#include <random>
+#include <chrono>
+
+namespace cp::graph
+{
+
+    namespace ds= data_structures;
+
+    struct HLDIndex
+    {
+        int hld_id;
+        int index;
+        HLDIndex(int _hld_id, int _index): hld_id(_hld_id), index(_index){}
+    };
+
+    template<typename Weight>
+    struct HeavyLightDecomposition
+    {
+        std::vector<bool> is_heavy;
+        std::vector<std::pair<int,int>> heavy_path_endpoints;
+        std::vector<int> component_size;
+        std::vector<HLDIndex> HLD_mapper;
+        std::vector<std::vector<Weight>> components;
+    };
+
+    template<>
+    struct HeavyLightDecomposition<void>
+    {
+        std::vector<bool> is_heavy;
+        std::vector<std::pair<int,int>> heavy_path_endpoints;
+        std::vector<int> component_size;
+        std::vector<HLDIndex> HLD_mapper;
+    };
+
+    enum class TreeStats
+    {
+        NONE=0,
+        SIZE=0b00001,
+        HEAVY_EDGES=0b00011,
+        LCA=0b00100,
+        HLD=0b01111,
+        RANGE_QUERIES=0b11111,
+    };
+    bool operator &(TreeStats a,TreeStats b)
+    {
+        return static_cast<int>(a) & static_cast<int>(b);
+    }
+
+    struct Tree : Graph
+    {
+
+        bool reversed=false;
+        std::vector<int> subtree_size;
+        std::vector<std::optional<int>> parent;
+        int root;
+        HeavyLightDecomposition<void> HLD;
+        Tree(int n,int _root):Graph(n),root(_root),subtree_size(n),parent(n)
+        {
+            HLD.is_heavy.resize(n,false);
+        }
+        explicit Tree(int n):Tree(n,0){}
+
+        void setParent(int u,int v)
+        {
+            if(reversed) std::swap(u,v);
+            this->connect(u,v);
+            parent[u].emplace(v);
+        }
+
+        std::vector<int> &children(int u)
+        {
+            return reversed?this->adjacencyList[u] : this->reverseList[u] ;
+        }
+
+        [[nodiscard]] const std::vector<int> &children(int u) const
+        {
+            return reversed?this->adjacencyList[u] : this->reverseList[u] ;
+        }
+
+        void buildStatistics(TreeStats stats=TreeStats::HLD)
+        {
+            updateRoot();
+            if(stats & TreeStats::SIZE) updateSize(root);
+            //TODO: Optimize heavy edges
+            if(stats & TreeStats::HEAVY_EDGES) updateHeavyEdges(root);
+            if(stats & TreeStats::LCA) buildLCA();
+            auto t1=std::chrono::high_resolution_clock::now();
+            //TODO: Optimize HLD
+            if(stats & TreeStats::HLD) buildHeavyLightDecomposition();
+        }
+
+        void adjacentReRoot(int new_root)
+        {
+            if(parent[new_root] != root)
+                throw std::invalid_argument("new root must be adjacent to old root");
+            auto u=*parent[new_root];
+            parent[new_root]=std::nullopt;
+            parent[root].emplace(new_root);
+            auto delta=subtree_size[new_root];
+            subtree_size[new_root]=subtree_size[root];
+            subtree_size[root]-=delta;
+            root=new_root;
+        }
+
+        void reRoot(int new_root)
+        {
+            std::queue<int> Q;
+            std::vector<bool> visited(n);
+            Q.push(new_root);
+            visited[new_root]=true;
+            std::vector<std::vector<int>> newAdjacencyList(n),newReverseList(n);
+            while(!Q.empty())
+            {
+                auto u=Q.front();
+                Q.pop();
+                for(auto v:this->adjacencyList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.push(v);
+                        newReverseList[u].emplace_back(v);
+                        newAdjacencyList[v].emplace_back(u);
+                    }
+                for(auto v:this->reverseList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.push(v);
+                        newReverseList[u].emplace_back(v);
+                        newAdjacencyList[v].emplace_back(u);
+                    }
+            }
+            this->adjacencyList=std::move(newAdjacencyList);
+            this->reverseList=std::move(newReverseList);
+            updateRoot();
+        }
+
+        int leastCommonAncestor(int u,int v)
+        {
+            if(lca_data)
+            {
+                auto [a,b]=euler_tour_endpoints[u];
+                auto [c,d]=euler_tour_endpoints[v];
+                if(a>c)
+                {
+                    std::swap(a,c);
+                    std::swap(b,d);
+                }
+                if(b<d)
+                    return lca_data->query(a,c).second;
+                else
+                    return lca_data->query(a,d).second;
+            }
             else
-                return F(query(l,mid,a,mid,depth+1),query(mid,r,mid,b,depth+1));
+            {
+                while(u!=v)
+                {
+                    if(subtree_size[u]>subtree_size[v])
+                        u=*parent[u];
+                    else
+                        v=*parent[v];
+                }
+                return u;
+            }
         }
-    };
-}
+        void updateSize(int u)
+        {
+            subtree_size[u]=1;
+            for(auto v:children(u))
+            {
+                updateSize(v);
+                subtree_size[u]+=subtree_size[v];
+            }
+        }
 
-
-//
-// Created by ramizouari on 26/10/23.
-//
-
-
-
-#include <vector>
-namespace cp::data_structures::fixed
-{
-    template<typename T,typename O>
-    struct fenwick_tree {
-        int n;
-        std::vector<T> bit;
-        inline static O F = O();
-
-        fenwick_tree(int _n):n(_n),bit(n,O::neutral){}
-        fenwick_tree(const std::vector<T> &X) : fenwick_tree(X.size())
+        void updateRoot()
         {
             for(int i=0;i<n;i++)
-                update(i,X[i]);
-        }
-        T sum(int x) {
-            if(x<0)
-                return O::neutral;
-            T ret = O::neutral;
-            for (int i = x; i >= 0; i = (i & (i + 1)) - 1)
-                ret = F(ret,bit[i]);
-            return ret;
+                parent[i]=this->adjacencyList[i].empty()?std::nullopt:std::make_optional(this->adjacencyList[i][0]);
+            for(int i=0;i< n;i++)
+                if(!parent[i])
+                    root=i;
         }
 
-        T query(int a,int b)
+        void updateHeavyEdges(int u)
         {
-            return F(F.inv(sum(a-1)),sum(b));
-        }
-
-        T sum(int a,int b)
-        {
-            return query(a,b);
-        }
-
-        void add(int x, T delta) {
-            for (int i = x; i < n; i = i | (i + 1))
-                bit[i] = F(bit[i], delta);
-        }
-
-        void update(int x, T delta) {
-            add(x,F(F.inv(sum(x,x)),delta));
-        }
-    };
-}
-
-
-
-
-
-//
-// Created by ramizouari on 27/11/23.
-//
-
-
-
-//
-// Created by ramizouari on 27/11/23.
-//
-
-
-
-#include <array>
-#include <utility>
-#include <vector>
-#include <numeric>
-namespace cp::linalg
-{
-    inline constexpr std::size_t dynamic_extent = -1;
-    template<typename R,std::size_t Rank>
-    struct tensor_subview;
-    template<typename R,std::size_t Rank>
-    struct tensor_view
-    {
-        virtual R& at(std::array<std::size_t,Rank> indexes) = 0;
-        virtual const R& at(std::array<std::size_t,Rank> indexes) const = 0;
-        virtual ~tensor_view()= default;
-        template<typename ...Args>
-        R& at(Args... args)
-        {
-            return at(std::array<std::size_t,Rank>{args...});
-        }
-        template<typename ...Args>
-        const R& at(Args... args) const
-        {
-            return at(std::array<std::size_t,Rank>{args...});
-        }
-
-        template<typename ...Args>
-        R& operator()(Args... args)
-        {
-            return at(std::array<std::size_t,Rank>{static_cast<std::size_t>(args)...});
-        }
-
-        template<typename ...Args>
-        const R& operator()(Args... args) const
-        {
-            return at(std::array<std::size_t,Rank>{static_cast<std::size_t>(args)...});
-        }
-
-
-        const R& operator()(std::array<std::size_t,Rank> args) const
-        {
-            return at(std::move(args));
-        }
-
-        R& operator()(std::array<std::size_t,Rank> args)
-        {
-            return at(std::move(args));
-        }
-
-        virtual std::array<std::size_t,Rank> shape() const = 0;
-        static constexpr std::size_t rank()
-        {
-            return Rank;
-        }
-        virtual std::size_t size() const
-        {
-            auto s=shape();
-            return std::accumulate(s.begin(),s.end(),1,std::multiplies<>());
-        }
-
-        struct iterator
-        {
-            tensor_view<R,Rank> &src;
-            std::array<std::size_t,Rank> indexes;
-            bool is_end=false;
-            iterator(tensor_view<R,Rank> &src,std::array<std::size_t,Rank> indexes,bool is_end=false):src(src),indexes(indexes),is_end(is_end){}
-            iterator& operator++()
+            for(int i=0;i<children(u).size();i++)
             {
-                auto shape=src.shape();
-                for(int i=Rank-1;i>=0;i--)
+                auto v=children(u)[i];
+                if(subtree_size[v]>=(subtree_size[u]+1)/2)
+                    HLD.is_heavy[v]=true;
+                updateHeavyEdges(v);
+            }
+        }
+        void buildLCA()
+        {
+            std::vector<HeightData> A;
+            euler_tour_endpoints.resize(n);
+            eulerTour(root,0,A);
+            min_t<HeightData>::neutral.first=std::numeric_limits<int>::max();
+            lca_data=std::make_unique<ds::fixed::sparse_array<min_t<HeightData>>>(A);
+        }
+
+        void buildHeavyLightDecomposition()
+        {
+            std::vector<int> stack;
+            stack.push_back(root);
+            HLD.HLD_mapper.resize(n, HLDIndex(-1, -1));
+            HLD.HLD_mapper[root]={0, 0};
+            HLD.heavy_path_endpoints.emplace_back(root,root);
+            int components=1;
+            while(!stack.empty())
+            {
+                auto u=stack.back();
+                stack.pop_back();
+                for(auto v:children(u))
                 {
-                    if(indexes[i]+1<shape[i])
+                    if(HLD.is_heavy[v])
                     {
-                        indexes[i]++;
-                        return *this;
+                        auto &[_,y] = HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id];
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]={HLD.HLD_mapper[u].hld_id, HLD.HLD_mapper[u].index + 1};
+                        y=v;
                     }
                     else
-                        indexes[i]=0;
-                }
-                is_end=true;
-                return *this;
-            }
-            iterator operator++(int)
-            {
-                iterator tmp=*this;
-                ++(*this);
-                return tmp;
-            }
-            bool operator==(const iterator& rhs) const
-            {
-                return is_end==rhs.is_end && indexes==rhs.indexes;
-            }
-
-            bool operator!=(const iterator& rhs) const
-            {
-                return !(*this==rhs);
-            }
-
-            R& operator*()
-            {
-                return src.at(indexes);
-            }
-
-            R* operator->()
-            {
-                return &src.at(indexes);
-            }
-        };
-        iterator begin()
-        {
-            return iterator(*this,std::array<std::size_t,Rank>{},false);
-        }
-        iterator end()
-        {
-            auto shape=this->shape();
-            return iterator(*this,std::array<std::size_t,Rank>{},true);
-        }
-        virtual tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end);
-        virtual tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,std::array<std::size_t,Rank> step);
-    };
-
-
-    template <typename R,std::size_t Rank>
-    struct tensor_subview: public tensor_view<R,Rank>
-    {
-        tensor_view<R,Rank> &src;
-        std::array<std::size_t,Rank> m_start,m_end,m_step;
-        tensor_subview(tensor_view<R,Rank> &src,std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end):src(src),m_start(start),m_end(end)
-        {
-            std::fill(m_step.begin(),m_step.end(),1);
-        }
-        tensor_subview(tensor_view<R,Rank> &src,std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,
-                       std::array<std::size_t,Rank> step):src(src),m_start(start),m_end(end),m_step(step){}
-
-        R& at(std::array<std::size_t,Rank> indexes) override
-        {
-            std::array<std::size_t,Rank> new_indexes;
-            for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i]*m_step[i] + m_start[i];
-            return src.at(new_indexes);
-        }
-        const R& at(std::array<std::size_t,Rank> indexes) const override
-        {
-            std::array<std::size_t,Rank> new_indexes;
-            for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i]*m_step[i] + m_start[i];
-            return src.at(new_indexes);
-        }
-        std::array<std::size_t,Rank> shape() const override
-        {
-            std::array<std::size_t,Rank> new_shape;
-            for(int i=0;i<Rank;i++)
-                new_shape[i]=(m_end[i]-m_start[i]+m_step[i]-1)/m_step[i];
-            return new_shape;
-        }
-        tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end) override
-        {
-            std::array<std::size_t,Rank> new_start,new_end;
-            for(int i=0;i<Rank;i++)
-            {
-                new_start[i]=this->m_start[i]+start[i]*m_step[i];
-                new_end[i]=this->m_start[i]+end[i]*m_step[i];
-            }
-            return tensor_subview<R,Rank>(src,new_start,new_end,m_step);
-        }
-        tensor_subview<R,Rank> slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,std::array<std::size_t,Rank> step) override
-        {
-            std::array<std::size_t,Rank> new_start,new_end,new_step;
-            for(int i=0;i<Rank;i++)
-            {
-                new_start[i]=this->m_start[i]+start[i]*m_step[i];
-                new_end[i]=this->m_start[i]+end[i]*m_step[i];
-                new_step[i]=this->m_step[i]*step[i];
-            }
-            return tensor_subview<R,Rank>(src,new_start,new_end,new_step);
-        }
-    };
-
-    template<typename R,std::size_t Rank>
-    tensor_subview<R,Rank> tensor_view<R,Rank>::slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end)
-    {
-        return tensor_subview<R,Rank>(*this,start,end);
-    }
-
-    template<typename R,std::size_t Rank>
-    tensor_subview<R,Rank> tensor_view<R,Rank>::slice(std::array<std::size_t,Rank> start,std::array<std::size_t,Rank> end,std::array<std::size_t,Rank> step)
-    {
-        return tensor_subview<R,Rank>(*this,start,end,step);
-    }
-
-    template<typename R>
-    struct tensor_view<R,dynamic_extent>
-    {
-        virtual ~tensor_view()= default;
-
-        template<typename ...Args>
-        R& at(Args... args)
-        {
-            return at(std::vector<std::size_t>{args...});
-        }
-        template<typename ...Args>
-        const R& at(Args... args) const
-        {
-            return at(std::vector<std::size_t>{args...});
-        }
-
-        template<typename ...Args>
-        R& operator()(Args... args)
-        {
-            return at(args...);
-        }
-
-        template<typename ...Args>
-        const R& operator()(Args... args) const
-        {
-            return at(args...);
-        }
-        virtual R& at(std::vector<std::size_t> indexes) = 0;
-        virtual const R& at(std::vector<std::size_t> indexes) const = 0;
-
-        [[nodiscard]] virtual std::vector<std::size_t> shape() const = 0;
-        virtual std::size_t rank() const
-        {
-            return shape().size();
-        }
-        virtual std::size_t size() const
-        {
-            auto s=shape();
-            return std::accumulate(s.begin(),s.end(),1,std::multiplies<>());
-        }
-
-        struct iterator
-        {
-            tensor_view<R,dynamic_extent> &src;
-            std::vector<std::size_t> indexes;
-            bool is_end=false;
-            iterator(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> indexes,bool is_end=false):src(src),indexes(std::move(indexes)),is_end(is_end){}
-            iterator& operator++()
-            {
-                for(int i=src.rank()-1;i>=0;i--)
-                {
-                    if(indexes[i]+1<src.shape()[i])
                     {
-                        indexes[i]++;
-                        return *this;
+                        HLD.heavy_path_endpoints.emplace_back(v,v);
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]=HLDIndex(components, 0);
+                        components++;
+                    }
+                }
+            }
+        }
+
+        int distance(int a,int b)
+        {
+            auto lca=leastCommonAncestor(a,b);
+            return distance_with_lca(a,lca)+distance_with_lca(b,lca);
+        }
+
+        int distance_with_lca(int u,int lca)
+        {
+            int d=0;
+            while(HLD.HLD_mapper[u].hld_id != HLD.HLD_mapper[lca].hld_id)
+            {
+                if(HLD.is_heavy[u])
+                {
+                    d+=HLD.HLD_mapper[u].index;
+                    u=HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id].first;
+                }
+                else
+                {
+                    d++;
+                    u=*parent[u];
+                }
+            }
+            return d+= HLD.HLD_mapper[u].index - HLD.HLD_mapper[lca].index;
+        }
+
+        int centroid()
+        {
+            reRoot(centroid(root,root));
+            return root;
+        }
+
+    protected:
+        int centroid(int u,std::optional<int> p)
+        {
+            for(auto v:children(u)) if(v!= p && subtree_size[v]>=(subtree_size[u]+1)/2)
+                {
+                    adjacentReRoot(v);
+                    return centroid(v,u);
+                }
+            return u;
+        }
+        using HeightData=std::pair<int,int>;
+        using EnpointsData = std::pair<int,int>;
+        std::unique_ptr<ds::fixed::sparse_array<min_t<HeightData>>> lca_data;
+        std::vector<EnpointsData> euler_tour_endpoints;
+        void eulerTour(int u,int height,std::vector<HeightData> &A)
+        {
+            euler_tour_endpoints[u].first=A.size();
+            for(auto v: children(u))
+            {
+                A.emplace_back(height,u);
+                eulerTour(v,height+1,A);
+            }
+            A.emplace_back(height,u);
+            euler_tour_endpoints[u].second=A.size();
+        }
+    };
+
+    template<typename Weight>
+    struct WeightedTree : public WeightedGraph<Weight>
+    {
+
+        bool reversed=false;
+        std::vector<int> subtree_size;
+        using AdjacentType=WeightedGraph<Weight>::AdjacentType;
+        std::vector<std::optional<AdjacentType>> parent;
+        int root;
+        HeavyLightDecomposition<Weight> HLD;
+        WeightedTree(int n,int _root):WeightedGraph<Weight>(n),root(_root),subtree_size(n),parent(n)
+        {
+            HLD.is_heavy.resize(n);
+        }
+        explicit WeightedTree(int n):WeightedTree(n,0){}
+
+        void setParent(int u,int v,Weight w)
+        {
+            if(reversed) std::swap(u,v);
+            this->connect(u,v,w);
+            parent[u].emplace(v,w);
+        }
+
+        std::vector<AdjacentType> &children(int u)
+        {
+            return reversed?this->adjacencyList[u] : this->reverseList[u] ;
+        }
+
+        void buildStatistics(TreeStats stats=TreeStats::HLD)
+        {
+            updateRoot();
+            if(stats & TreeStats::SIZE) updateSize(root);
+            if(stats & TreeStats::HEAVY_EDGES) updateHeavyEdges(root);
+            if(stats & TreeStats::LCA) buildLCA();
+            if(stats & TreeStats::HLD) buildHeavyLightDecomposition();
+        }
+
+        void adjacentReRoot(int new_root)
+        {
+            if(!parent[new_root] || parent[new_root]->first != root)
+                throw std::invalid_argument("new root must be adjacent to old root");
+            auto [u,w]=*parent[new_root];
+            parent[new_root]=std::nullopt;
+            parent[root].emplace(new_root,w);
+            auto delta=subtree_size[new_root];
+            subtree_size[new_root]=subtree_size[root];
+            subtree_size[root]-=delta;
+        }
+
+        void reRoot(int new_root)
+        {
+            std::queue<int> Q;
+            std::vector<bool> visited(WeightedGraph<Weight>::n);
+            Q.emplace(new_root);
+            visited[new_root]=true;
+            std::vector<std::vector<AdjacentType>> newAdjacencyList(WeightedGraph<Weight>::n),newReverseList(WeightedGraph<Weight>::n);
+            while(!Q.empty())
+            {
+                auto u=Q.front();
+                Q.pop();
+                for(auto [v,w]:this->adjacencyList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.emplace(v);
+                        newReverseList[u].emplace_back(v,w);
+                        newAdjacencyList[v].emplace_back(u,w);
+                    }
+                for(auto [v,w]:this->reverseList[u]) if(!visited[v])
+                    {
+                        visited[v]=true;
+                        Q.emplace(v);
+                        newReverseList[u].emplace_back(v,w);
+                        newAdjacencyList[v].emplace_back(u,w);
+                    }
+            }
+            this->adjacencyList=std::move(newAdjacencyList);
+            this->reverseList=std::move(newReverseList);
+            updateRoot();
+        }
+
+        int leastCommonAncestor(int u,int v)
+        {
+            if(lca_data)
+            {
+                auto [a,b]=euler_tour_endpoints[u];
+                auto [c,d]=euler_tour_endpoints[v];
+                if(a>c)
+                {
+                    std::swap(a,c);
+                    std::swap(b,d);
+                }
+                if(b<d)
+                    return lca_data->query(a,c).second;
+                else
+                    return lca_data->query(a,d).second;
+            }
+            else
+            {
+                while(u!=v)
+                {
+                    if(subtree_size[u]>subtree_size[v])
+                        u=parent[u]->first;
+                    else
+                        v=parent[v]->first;
+                }
+                return u;
+            }
+        }
+        void updateSize(int u)
+        {
+            subtree_size[u]=1;
+            for(auto [v,_]:children(u))
+            {
+                updateSize(v);
+                subtree_size[u]+=subtree_size[v];
+            }
+        }
+
+        void updateRoot()
+        {
+            for(int i=0;i<WeightedGraph<Weight>::n;i++)
+                parent[i]=this->adjacencyList[i].empty()?std::nullopt:std::make_optional(this->adjacencyList[i][0]);
+            for(int i=0;i<WeightedGraph<Weight>::n;i++)
+                if(!parent[i])
+                    root=i;
+        }
+
+        void updateHeavyEdges(int u)
+        {
+            for(int i=0;i<children(u).size();i++)
+            {
+                auto [v,_]=children(u)[i];
+                if(subtree_size[v]>=(subtree_size[u]+1)/2)
+                    HLD.is_heavy[v]=true;
+                updateHeavyEdges(v);
+            }
+        }
+        void buildLCA()
+        {
+            std::vector<HeightData> A;
+            euler_tour_endpoints.resize(WeightedGraph<Weight>::n);
+            eulerTour(root,0,A);
+            min_t<HeightData>::neutral.first=std::numeric_limits<int>::max();
+            lca_data=std::make_unique<ds::fixed::sparse_array<min_t<HeightData>>>(A);
+        }
+
+        void buildHeavyLightDecomposition()
+        {
+            std::vector<int> stack;
+            stack.push_back(root);
+            HLD.HLD_mapper.resize(WeightedTree<Weight>::n, HLDIndex(-1, -1));
+            HLD.HLD_mapper[root]={0, 0};
+            HLD.components.emplace_back();
+            HLD.heavy_path_endpoints.emplace_back(root,root);
+            while(!stack.empty())
+            {
+                auto u=stack.back();
+                stack.pop_back();
+                for(auto [v,w]:children(u))
+                {
+                    if(HLD.is_heavy[v])
+                    {
+                        auto &C=HLD.components[HLD.HLD_mapper[u].hld_id];
+                        auto &[_,y] = HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id];
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]={HLD.HLD_mapper[u].hld_id, HLD.HLD_mapper[u].index + 1};
+                        y=v;
+                        C.push_back(w);
                     }
                     else
-                        indexes[i]=0;
+                    {
+                        HLD.heavy_path_endpoints.emplace_back(v,v);
+                        stack.push_back(v);
+                        HLD.HLD_mapper[v]=HLDIndex(HLD.components.size(), 0);
+                        HLD.components.emplace_back();
+                    }
                 }
-                is_end=true;
-                return *this;
             }
-            iterator operator++(int)
+            for(const auto &C:HLD.components)
+                HLD.component_size.push_back(C.size());
+        }
+
+        int distance(int a,int b)
+        {
+            auto lca=leastCommonAncestor(a,b);
+            return distance_with_lca(a,lca)+distance_with_lca(b,lca);
+        }
+
+        int distance_with_lca(int u,int lca)
+        {
+            int d=0;
+            while(HLD.HLD_mapper[u].hld_id != HLD.HLD_mapper[lca].hld_id)
             {
-                iterator tmp=*this;
-                ++(*this);
-                return tmp;
+                if(WeightedTree<Weight>::HLD.is_heavy[u])
+                {
+                    d+=HLD.HLD_mapper[u].index;
+                    u=HLD.heavy_path_endpoints[HLD.HLD_mapper[u].hld_id].first;
+                }
+                else
+                {
+                    d++;
+                    u=parent[u]->first;
+                }
             }
-            bool operator==(const iterator& rhs) const
+            return d+= HLD.HLD_mapper[u].index - HLD.HLD_mapper[lca].index;
+        }
+
+
+    protected:
+        using HeightData=std::pair<int,int>;
+        using EnpointsData = std::pair<int,int>;
+        std::unique_ptr<ds::fixed::sparse_array<min_t<HeightData>>> lca_data;
+        std::vector<EnpointsData> euler_tour_endpoints;
+        void eulerTour(int u,int height,std::vector<HeightData> &A)
+        {
+            euler_tour_endpoints[u].first=A.size();
+            for(auto [v,_]: children(u))
             {
-                return is_end==rhs.is_end && indexes==rhs.indexes;
+                A.emplace_back(height,u);
+                eulerTour(v,height+1,A);
             }
-
-            bool operator!=(const iterator& rhs) const
-            {
-                return !(*this==rhs);
-            }
-
-            R& operator*()
-            {
-                return src.at(indexes);
-            }
-        };
-        iterator begin()
-        {
-            auto zeros=shape();
-            for(auto &x:zeros)
-                x=0;
-            return iterator(*this,zeros,false);
-        }
-        iterator end()
-        {
-            auto zeros=shape();
-            for(auto &x:zeros)
-                x=0;
-            return iterator(*this,zeros,true);
-        }
-        virtual tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end);
-        virtual tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end,std::vector<std::size_t> step);
-    };
-
-    template<typename R>
-    struct vector_view : public tensor_view<R,1>
-    {
-        R* m_data;
-        std::size_t m_size;
-        vector_view(R* _data,std::size_t _size):m_data(_data),m_size(_size){}
-        vector_view(std::vector<R> &v):m_data(v.data()),m_size(v.size()){}
-        template<std::size_t N>
-        vector_view(std::array<R,N> &v):m_data(v.data()),m_size(v.size()){}
-        std::size_t size() const override
-        {
-            return m_size;
-        }
-        virtual R& at(std::size_t i)
-        {
-            return m_data[i];
-        }
-        virtual const R& at(std::size_t i) const
-        {
-            return m_data[i];
-        }
-        virtual ~vector_view()= default;
-        R& at(std::array<std::size_t,1> indexes) override
-        {
-            return at(indexes[0]);
-        }
-        const R& at(std::array<std::size_t,1> indexes) const override
-        {
-            return at(indexes[0]);
-        }
-        std::array<std::size_t,1> shape() const override
-        {
-            return {size()};
-        }
-        tensor_subview<R,1> slice(std::array<std::size_t,1> start,std::array<std::size_t,1> end) override
-        {
-            return tensor_subview<R,1>(*this,start,end);
-        }
-
-        tensor_subview<R,1> slice(std::array<std::size_t,1> start,std::array<std::size_t,1> end, std::array<std::size_t,1> step) override
-        {
-            return tensor_subview<R,1>(*this,start,end,step);
-        }
-
-        vector_view& operator=(const std::vector<R>& O)
-        {
-            for(int i=0;i<size();i++)
-                at(i)=O.at(i);
-            return *this;
+            A.emplace_back(height,u);
+            euler_tour_endpoints[u].second=A.size();
         }
     };
 
-    template<typename R>
-    struct tensor_subview<R,dynamic_extent>:tensor_view<R,dynamic_extent>
-    {
-        tensor_view<R,dynamic_extent> &src;
-        std::vector<std::size_t> m_start,m_end,m_step;
-        tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end):src(src),m_start(start),m_end(end),m_step(src.rank())
-        {
-            std::fill(m_step.begin(),m_step.end(),1);
-        }
-        tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end,
-                       std::vector<std::size_t> step):src(src),m_start(start),m_end(end),m_step(step){}
-
-        R& at(std::vector<std::size_t> indexes) override
-        {
-            std::vector<std::size_t> new_indexes(src.rank());
-            for(int i=0;i<src.rank();i++)
-                new_indexes[i]=indexes[i] + m_start[i];
-            return src.at(new_indexes);
-        }
-        const R& at(std::vector<std::size_t> indexes) const override
-        {
-            std::vector<std::size_t> new_indexes(src.rank());
-            for(int i=0;i<src.rank();i++)
-                new_indexes[i]=indexes[i] + m_start[i];
-            return src.at(new_indexes);
-        }
-        std::vector<std::size_t> shape() const override
-        {
-            std::vector<std::size_t> new_shape(src.rank());
-            for(int i=0;i<src.rank();i++)
-                new_shape[i]=m_end[i]-m_start[i];
-            return new_shape;
-        }
-        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end) override
-        {
-            std::vector<std::size_t> new_start(src.rank()),new_end(src.rank());
-            for(int i=0;i<src.rank();i++)
-            {
-                new_start[i]=this->m_start[i]+start[i];
-                new_end[i]=this->m_start[i]+end[i];
-            }
-            return tensor_subview<R,dynamic_extent>(src,new_start,new_end);
-        }
-
-        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end,std::vector<std::size_t> step) override
-        {
-            auto Rank=src.rank();
-            std::vector<std::size_t> new_start(Rank),new_end(Rank),new_step(Rank);
-            for(int i=0;i<Rank;i++)
-            {
-                new_start[i]=this->m_start[i]+start[i]*m_step[i];
-                new_end[i]=this->m_start[i]+end[i]*m_step[i];
-                new_step[i]=this->m_step[i]*step[i];
-            }
-            return tensor_subview<R,dynamic_extent>(src,new_start,new_end,new_step);
-        }
-
-    };
-
-    template<typename R,std::size_t Rank>
-    struct to_dynamic_view_t : public tensor_view<R,dynamic_extent>
-    {
-        tensor_view<R,Rank> &src;
-        to_dynamic_view_t(tensor_view<R,Rank> &src):src(src){}
-        R& at(std::vector<std::size_t> indexes) override
-        {
-            std::array<std::size_t,Rank> new_indexes;
-            for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i];
-            return src.at(new_indexes);
-        }
-        const R& at(std::vector<std::size_t> indexes) const override
-        {
-            std::array<std::size_t,Rank> new_indexes;
-            for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i];
-            return src.at(new_indexes);
-        }
-        std::vector<std::size_t> shape() const override
-        {
-            return std::vector<std::size_t>(src.shape().begin(),src.shape().end());
-        }
-        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end) override
-        {
-            std::vector<std::size_t> new_start(Rank),new_end(Rank);
-            for(int i=0;i<Rank;i++)
-            {
-                new_start[i]=start[i];
-                new_end[i]=end[i];
-            }
-            return tensor_subview<R,dynamic_extent>(*this,new_start,new_end);
-        }
-
-        tensor_subview<R,dynamic_extent> slice(std::vector<std::size_t> start,std::vector<std::size_t> end, std::vector<std::size_t> step) override
-        {
-            std::vector<std::size_t> new_start(Rank),new_end(Rank),new_step(Rank);
-            for(int i=0;i<Rank;i++)
-            {
-                new_start[i]=start[i];
-                new_end[i]=end[i];
-                new_step[i]=step[i];
-            }
-            return tensor_subview<R,dynamic_extent>(*this,new_start,new_end,new_step);
-        }
-    };
-
-    template<typename R>
-    struct to_dynamic_view_t<R,dynamic_extent>: public tensor_view<R,dynamic_extent>{};
-
-    template<typename R,std::size_t Rank>
-    struct to_static_view_t : public tensor_view<R,Rank>
-    {
-        tensor_view<R,dynamic_extent> &src;
-        std::array<std::size_t,Rank> _shape;
-        to_static_view_t(tensor_view<R,dynamic_extent> &src,std::array<std::size_t,Rank> _shape):src(src),_shape(_shape){}
-        to_static_view_t(tensor_view<R,dynamic_extent> &src):src(src)
-        {
-            auto s=src.shape();
-            for(int i=0;i<std::min(Rank,src.rank());i++)
-                _shape[i]=s[i];
-        }
-        R& at(std::array<std::size_t,Rank> indexes) override
-        {
-            std::vector<std::size_t> new_indexes(Rank);
-            for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i];
-            return src.at(new_indexes);
-        }
-        const R& at(std::array<std::size_t,Rank> indexes) const override
-        {
-            std::vector<std::size_t> new_indexes(Rank);
-            for(int i=0;i<Rank;i++)
-                new_indexes[i]=indexes[i];
-            return src.at(new_indexes);
-        }
-        std::array<std::size_t,Rank> shape() const override
-        {
-            return _shape;
-        }
-    };
-
-    template<typename R>
-    tensor_subview<R,dynamic_extent> tensor_view<R,dynamic_extent>::slice(std::vector<std::size_t> start,std::vector<std::size_t> end)
-    {
-        return tensor_subview<R,dynamic_extent>(*this,start,end);
-    }
-
-    template<typename R>
-    tensor_subview<R,dynamic_extent> tensor_view<R,dynamic_extent>::slice(std::vector<std::size_t> start,std::vector<std::size_t> end,std::vector<std::size_t> step)
-    {
-        return tensor_subview<R,dynamic_extent>(*this,start,end,step);
-    }
-
-    template<typename R,std::size_t Rank>
-    to_dynamic_view_t<R,Rank> to_dynamic_view(tensor_view<R,Rank> &src)
-    {
-        return to_dynamic_view_t<R,Rank>(src);
-    }
-
-    template<typename R,std::size_t Rank>
-    to_static_view_t<R,Rank> to_static_view(tensor_view<R,dynamic_extent> &src,std::array<std::size_t,Rank> _shape)
-    {
-        return to_static_view_t<R,Rank>(src,_shape);
-    }
-
-    template<std::size_t Rank,typename R>
-    to_static_view_t<R,Rank> to_static_view(tensor_view<R,dynamic_extent> &src)
-    {
-        return to_static_view_t<R,Rank>(src);
-    }
 }
 
 
-#include <complex>
-#include <cstdint>
-namespace cp::signals
+#endif //CPLIBRARY_TREE_H
+
+namespace cp::graph
 {
+    using char_deque=std::deque<char>;
 
-    enum class FFTNormalization
+    std::shared_ptr<char_deque> string_encode(const graph::Tree & T, int u)
     {
-        None,
-        Sqrt,
-        Normalized,
-        Auto
-    };
-
-    using cp::linalg::dynamic_extent;
-
-    template<typename R>
-    struct abstract_fft
-    {
-        virtual void transform(linalg::tensor_view<R,1> &&v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const
+        std::vector<std::shared_ptr<char_deque>> X;
+        const auto &C=T.children(u);
+        if(C.empty())
+            return std::make_shared<char_deque>(char_deque{'(', ')'});
+        X.reserve(C.size());
+        for(auto v:C) X.push_back(string_encode(T,v));
+        std::sort(X.begin(),X.end(),[](const auto &x,const auto &y)
         {
-            transform(v,inverse,normalization);
-        }
-        virtual void transform(linalg::tensor_view<R,1> &v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const = 0;
-        virtual void transform(linalg::tensor_view<R,dynamic_extent> &&v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const
-        {
-            transform(v,inverse,normalization);
-        }
-        virtual void transform(linalg::tensor_view<R,dynamic_extent> &v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const
-        {
-            if(v.rank()>1)
-                throw std::invalid_argument("rank must be one");
-            auto x=to_static_view<1,R>(v);
-            transform(x,inverse,normalization);
-        }
-        R& operator()(R &x, bool inverse=false, FFTNormalization normalization=FFTNormalization::None) const
-        {
-            transform(x,inverse,normalization);
-            return x;
-        }
-        virtual ~abstract_fft()= default;
-    };
-
-    template<typename R>
-    void normalize(linalg::tensor_view<std::complex<R>,1> &v,FFTNormalization normalized)
-    {
-        R r;
-        switch (normalized)
-        {
-            case FFTNormalization::None:
-                r=1;
-                break;
-            case FFTNormalization::Sqrt:
-                r=std::sqrt(v.size());
-                break;
-            case FFTNormalization::Normalized:
-                r=v.size();
-                break;
-            case FFTNormalization::Auto:
-                throw std::invalid_argument("cannot normalize with auto");
-        }
-        if(normalized!=FFTNormalization::None) for (std::complex<R> & x : v)
-            x /= r;
+            return *x < *y;
+        });
+        auto it=std::max_element(X.begin(),X.end(),[](const auto &x,const auto &y) {
+            return x->size() < y->size();
+        });
+        auto r=std::distance(X.begin(),it);
+        std::shared_ptr<char_deque> Z=X[r];
+        for(int i=r-1;i>=0;i--)
+            std::copy(X[i]->rbegin(),X[i]->rend(),std::front_inserter(*Z));
+        for(int i=r+1;i<X.size();i++)
+            std::copy(X[i]->begin(),X[i]->end(),std::back_inserter(*Z));
+        Z->push_back(')');
+        Z->push_front('(');
+        return Z;
     }
 
-    template<typename R>
-    void normalize(linalg::tensor_view<std::complex<R>,1> &&v,FFTNormalization normalized)
+
+    std::string string_encode(const graph::Tree &T)
     {
-        normalize(v,normalized);
+        auto E=string_encode(T,T.root);
+        return std::string(E->begin(),E->end());
     }
 
-    template<typename R>
-    void inplace_fft2(cp::linalg::tensor_view<std::complex<R>,1> & a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
+    template<typename Container>
+    int int_encode(const graph::Tree &T,int u, Container &M)
     {
-        if(normalized==FFTNormalization::Auto)
-            normalized=FFTNormalization::Sqrt;
-        int n = a.size();
-        for (int i = 1, j = 0; i < n; i++)
-        {
-            int bit = n >> 1;
-            for (; j & bit; bit >>= 1)
-                j ^= bit;
-            j ^= bit;
-            if (i < j)
-                swap(a(i), a(j));
-        }
-        for (int len = 2; len <= n; len <<= 1)
-        {
-            R ang = 2 * std::numbers::pi / len * (inverse ? -1 : 1);
-            std::complex<R> wlen = std::polar<R>(1.,ang);
-            for (int i = 0; i < n; i += len)
-            {
-                std::complex<R> w(1);
-                for (int j = 0; j < len / 2; j++)
-                {
-                    std::complex<R> u = a(i+j), v = a(i+j+len/2) * w;
-                    a(i+j) = u + v;
-                    a(i+j+len/2) = u - v;
-                    w *= wlen;
-                }
-            }
-        }
-        normalize(a,normalized);
+        const auto &C=T.children(u);
+        typename Container::key_type X;
+        build_children(T,u,X,M);
+        auto [it,inserted]=M.emplace(X,M.size());
+        return it->second;
     }
 
-    template<typename R>
-    void inplace_fft2(cp::linalg::tensor_view<std::complex<R>,1> && a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
+    template<typename Container>
+    int int_encode(const graph::Tree &T, Container &M)
     {
-        inplace_fft2(a,inverse,normalized);
+        return int_encode(T,T.root,M);
     }
 
-    template<typename R>
-    struct radix2_fft: public abstract_fft<R>
+    template<typename Container>
+    void build_children(const graph::Tree &T,int u, std::vector<int> &X, Container &M)
     {
-        using abstract_fft<R>::transform;
-        void transform(linalg::tensor_view<R,1> &v,bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const override
-        {
-            if(v.size()!= bit_ceil(v.size()))
-                throw std::invalid_argument("size of vector must be a power of 2");
-            inplace_fft2(v,inverse,normalization);
-        }
-    };
-
-    template<typename R>
-    struct mixed_radix_fft;
-
-
-    template<std::floating_point Real>
-    struct mixed_radix_fft<std::complex<Real>> : public cp::signals::abstract_fft<std::complex<Real>>, protected cp::default_factoriser_t
-    {
-        using R=std::complex<Real>;
-        using cp::signals::abstract_fft<R>::transform;
-        std::shared_ptr<cp::abstract_factoriser> F;
-        mixed_radix_fft(std::shared_ptr<cp::abstract_factoriser> _F=default_factoriser):F(_F){}
-        void transform_rec(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const
-        {
-            auto n=v.size();
-            if(n==1)
-                return;
-            std::uint32_t p = F->smallest_divisor(n);
-            auto q=n/p;
-            std::vector<cp::linalg::tensor_subview<R,1>> V;
-            for(unsigned i=0;i<p;i++)
-                V.push_back(v.slice({i},{n},{p}));
-            for(auto &v:V)
-                transform_rec(v,inverse,normalization);
-            R w=std::polar(1.0,2*std::numbers::pi/n);
-            R z=std::polar(1.0,2*std::numbers::pi/p);
-            if(inverse)
-            {
-                w = std::conj(w);
-                z = std::conj(z);
-            }
-            R t=1;
-            std::vector<R> result(n);
-            for(int i=0;i<p;i++,t*=z)
-            {
-                R h1=1,h2=1;
-                for (int j = 0; j < p; j++,h1*=t,h2*=w)
-                {
-                    R h3=1;
-                    for (int k = 0; k < q; k++,h3*=h2)
-                        result[i*q+k] += h1 * h3 * V[j](k);
-                }
-            }
-            for(int i=0;i<n;i++)
-                v(i)=result[i];
-        }
-
-        void transform(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const override
-        {
-            transform_rec(v,inverse,normalization);
-            normalize(v,normalization);
-        }
-    };
-
-    template<typename R>
-    R mod_operator(R x, R y)
-    {
-        return (x%y+y)%y;
+        const auto &C=T.children(u);
+        X.reserve(C.size());
+        for(auto v:C) X.push_back(int_encode(T,v,M));
+        std::sort(X.begin(),X.end());
     }
 
-    //Bluestein's algorithm
-    template<typename R>
-    std::vector<std::complex<R>> general_fft(const cp::linalg::tensor_view<std::complex<R>,1> &a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
+
+    template<typename Container>
+    void build_children(const graph::Tree &T,int u, std::set<int> &X, Container &M)
     {
-        using cp::linalg::vector_view;
-        unsigned int n = a.size();
-        if(bit_ceil(n)==n)
+        const auto &C=T.children(u);
+        for(auto v:C) X.emplace(int_encode(T,v,M));
+    }
+
+    std::optional<int> second_centroid(graph::Tree & T)
+    {
+        auto u=T.root;
+        auto X=T.children(u);
+        for(auto v:X)
         {
-            std::vector<std::complex<R>> b(n);
-            for(int i=0;i<n;i++)
-                b[i]=a(i);
-            inplace_fft2(vector_view(b),inverse);
-            return b;
+            bool is_centroid=true;
+            T.adjacentReRoot(v);
+            if(T.subtree_size[u]>T.subtree_size[v]/2)
+                is_centroid=false;
+            T.adjacentReRoot(u);
+            if(is_centroid)
+                return v;
         }
-        //m>=2*n
-        auto m=bit_ceil(2*n-1);
-        std::vector<std::complex<R>> w(m);
-        R ang = std::numbers::pi  / n * (inverse ? 1 : -1);
-        w[1]=std::polar<R>(1.,ang);
-        w[0]=1;
-        for(int i=2;i<m;i++)
-            w[i]=w[i-1]*w[1];
-        std::vector<std::complex<R>> A(m),B(m),W(m);
-        for(size_t i=0;i<n;i++)
+        return std::nullopt;
+    }
+
+    std::vector<std::string> full_string_encoding(graph::Tree &T)
+    {
+        T.centroid();
+        T.buildStatistics(graph::TreeStats::SIZE);
+        std::vector<std::string> A;
+        A.push_back(string_encode(T));
+        auto p= second_centroid(T);
+        if(p.has_value())
         {
-            auto r=mod_operator<std::int64_t>(i*i,2*n);
-            W[i]=w[r];
-            A[i]=a(i)*w[2*n-r];
-            B[i]=w[r];
+            T.reRoot(*p);
+            T.buildStatistics(graph::TreeStats::SIZE);
+            A.push_back(string_encode(T));
+            if(A[0] > A[1])
+                std::swap(A[0],A[1]);
         }
-        for(size_t i=1;i<n;i++)
-            B[m-i]=B[i];
-        inplace_fft2(vector_view(A),false,FFTNormalization::None);
-        inplace_fft2(vector_view(B),false,FFTNormalization::None);
-        for(size_t i=0;i<m;i++)
-            A[i]*=B[i];
-        inplace_fft2(vector_view(A),true,FFTNormalization::Normalized);
-        for(size_t i=0;i<n;i++)
-            A[i]*=std::conj(W[i]);
-        A.resize(n);
-        normalize(vector_view(A),normalized);
         return A;
     }
 
-    template<typename R>
-    struct bluestein_fft : public abstract_fft<R>
+    std::pair<int,int> full_int_encoding(graph::Tree &T,std::map<std::vector<int>,int> &M)
     {
-        using abstract_fft<R>::transform;
-        void transform(linalg::tensor_view<R,1> &v,bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const override
+        T.centroid();
+        T.buildStatistics(graph::TreeStats::SIZE);
+        auto x=int_encode(T,T.root,M);
+        auto p= second_centroid(T);
+        int y=x;
+        if(p.has_value())
         {
-            auto b=general_fft(v,inverse,normalization);
-            for(int i=0;i<v.size();i++)
-                v(i)=b[i];
+            T.reRoot(*p);
+            T.buildStatistics(graph::TreeStats::SIZE);
+            y=int_encode(T,T.root,M);
+            if(x>y) std::swap(x,y);
+        }
+        return {x,y};
+    }
+
+
+    struct TreeHolder
+    {
+        std::shared_ptr<Tree> tree;
+        TreeHolder(Tree&& t): tree(std::make_shared<Tree>(std::move(t))){}
+        TreeHolder(int n): tree(std::make_shared<Tree>(n)){}
+
+        Tree* operator->() const
+        {
+            return tree.get();
+        }
+        Tree& operator*() const
+        {
+            return *tree;
         }
     };
 
-    template<typename R>
-    struct chirpz_transform
+
+    struct IsoTreeEq
     {
-        radix2_fft<R> fft;
-        R z;
-        template<typename ...Args>
-        chirpz_transform(R _z,Args&&... args):z(_z),fft(std::forward<Args>(args)...)
+        bool operator()(Tree &a, Tree &b) const
         {
-        }
-
-        std::vector<R> transform(const cp::linalg::tensor_view<R,1> &a)
-        {
-            using linalg::vector_view;
-            auto n=a.size();
-            auto m=bit_ceil(2*n-1);
-            std::vector<R> A(m),B(m),W(m);
-            for(size_t i=0;i<n;i++)
-            {
-                W[i]=pow(z,i*i);
-                A[i]=a(i)*W[i];
-            }
-            for(size_t i=0;i<n;i++)
-                B[i]=R(1)/W[i];
-            for(size_t i=1;i<n;i++)
-                B[m-i]=B[i];
-            fft.transform(vector_view(A),false,FFTNormalization::None);
-            fft.transform(vector_view(B),false,FFTNormalization::None);
-            for(size_t i=0;i<m;i++)
-                A[i]*=B[i];
-            fft.transform(vector_view(A),true,FFTNormalization::Normalized);
-            for(size_t i=0;i<n;i++)
-                A[i]/=W[i];
-            A.resize(n);
-            return A;
-        }
-
-        std::vector<R> transform(const cp::linalg::tensor_view<R,1> &&a)
-        {
-            return transform(a);
-        }
-
-    };
-
-}
-
-
-//
-// Created by ramizouari on 26/10/23.
-//
-
-
-
-#include <vector>
-#include <memory>
-
-namespace cp::data_structures::dynamic
-{
-    template<typename R>
-    struct segment_tree
-    {
-        std::vector<std::vector<R>> S;
-        std::vector<R> A;
-        int n,h;
-        binary_operation_ptr<R> F;
-        segment_tree(const std::vector<R> &_A, std::shared_ptr<binary_operation<R>> _F):A(_A),F(_F)
-        {
-            n=bit_ceil(A.size());
-            A.resize(n,F.neutral_element());
-            int m=n;
-            h=0;
-            while(m)
-            {
-                m/=2;
-                h++;
-            }
-            S.resize(h);
-            for(int i=0;i<h;i++)
-                S[i].resize(1<<i);
-            build();
-        }
-
-        void update(int i,R u)
-        {
-            A[i]=u;
-            S[h-1][i]=u;
-            int m=h-2;
-            i/=2;
-            while(m>=0)
-            {
-                S[m][i]=F(S[m+1][2*i],S[m+1][2*i+1]);
-                m--;
-                i/=2;
-            }
-        }
-
-        R query(int l,int r)
-        {
-            return query(std::max(l,0),std::min(r,n),0,n,0);
-        }
-    private:
-        void build()
-        {
-            for(int i=0;i<n;i++)
-                S.back()[i]=A[i];
-            for(int i=h-2;i>=0;i--) for(int k=0;k<(1<<i);k++)
-                    S[i][k]=F(S[i+1][2*k],S[i+1][2*k+1]);
-        }
-        R query(int l,int r,int a,int b,int depth)
-        {
-            if(l>=r)
-                return F.neutral_element();
-            if(l==a && r==b)
-                return S[depth][l>>(h-1-depth)];
-            int mid=(a+b)/2;
-            if(mid>r)
-                return query(l,r,a,mid,depth+1);
-            else if(mid<l)
-                return query(l,r,mid,b,depth+1);
-            else
-                return F(query(l,mid,a,mid,depth+1),query(mid,r,mid,b,depth+1));
-        }
-    };
-}
-
-
-
-namespace cp
-{
-
-    /**
- * @brief Karatsuba multiplication
-* @details Applies Karatsuba multiplication between two polynomials
-* @Requirements
-* None
-*/
-
-    template<typename R>
-    polynomial<R> karatsuba_multiplication(const polynomial<R> &p,const polynomial<R> &q)
-    {
-        constexpr int L=64;
-        if(std::min(p.degree(),q.degree())<=L)
-            return p*q;
-        polynomial<R> a1,b1,a2,b2;
-        int n=p.degree(),m=q.degree(),r=std::max(n,m)+1;
-        std::vector<R> &u1=a1.data(),&u2=a2.data(),
-                &v1=b1.data(),&v2=b2.data();
-        u1.resize(std::min(n+1,r/2));
-        u2.resize(std::min(m+1,r/2));
-        v1.resize(std::max(n+1-r/2,0));
-        v2.resize(std::max(m+1-r/2,0));
-        for(int i=0;i<u1.size();i++)
-            u1[i]=p[i];
-        for(int i=0;i<u2.size();i++)
-            u2[i]=q[i];
-        for(int i=0;i<v1.size();i++)
-            v1[i]=p[i+r/2];
-        for(int i=0;i<v2.size();i++)
-            v2[i]=q[i+r/2];
-        polynomial<R> r1= karatsuba_multiplication(a1,a2),
-                r3= karatsuba_multiplication(b1,b2),
-                t=karatsuba_multiplication(a1+b1,a2+b2),
-                r2=t-r1-r3;
-        polynomial<R> h;
-        int s=r-r%2;
-        auto &c=h.data();
-        c.resize(n+m+1);
-        for(int i=0;i<=r1.degree();i++)
-            c[i]+=r1[i];
-        for(int i=0;i<=r2.degree();i++)
-            c[i+r/2]+=r2[i];
-        for(int i=0;i<=r3.degree();i++)
-            c[i+s]+=r3[i];
-        return h;
-    }
-
-    template<typename R>
-    struct polynomial_operation;
-    template<typename R>
-    struct polynomial_operation<polynomial<R>> : public binary_operation<polynomial<R>>
-    {
-        std::shared_ptr<binary_operation<std::vector<R>>> m_op;
-        std::shared_ptr<invertible_operation<R>> m_inv;
-        polynomial_operation(std::shared_ptr<binary_operation<std::vector<R>>> _op,std::shared_ptr<invertible_operation<R>> _inv):m_op(_op),m_inv(_inv){}
-        polynomial_operation(std::shared_ptr<binary_operation<std::vector<R>>> _op):m_op(_op),m_inv(nullptr){}
-        polynomial<R> reduce(const polynomial<R>&a,const polynomial<R>&b) const override
-        {
-            return m_op->reduce(a.data(),b.data());
-        }
-
-        R inv(const R&a) const
-        {
-            return m_inv->inv(a);
-        }
-
-        polynomial<R> neutral_element() const override
-        {
-            return polynomial<R>(m_op->neutral_element());
-        }
-        std::shared_ptr<binary_operation<std::vector<R>>> underlying_operator() const
-        {
-            return m_op;
-        }
-        std::shared_ptr<invertible_operation<R>> scalar_inverter() const
-        {
-            return m_inv;
-        }
-    };
-
-    template<typename R>
-    struct karatsuba_multiplies_t : public polynomial_operation<R>
-    {
-        R reduce(const R&a,const R&b) const override
-        {
-            return karatsuba_multiplication(a,b);
-        }
-    };
-
-    template<typename R>
-    struct fast_multiplies_t;
-
-    template<typename R>
-    struct fast_multiplies_t<std::vector<R>> : public binary_operation<std::vector<R>>
-    {
-        signals::radix2_fft<R> fft;
-        template<typename ...Args>
-        fast_multiplies_t(Args&&...args):fft(std::forward<Args>(args)...){}
-        std::vector<R> reduce(const std::vector<R>&a,const std::vector<R>&b) const override
-        {
-            if(a.size()==0 || b.size()==0)
-                return {};
-            std::vector<R> A(a),B(b);
-            auto r=std::bit_ceil<unsigned>(A.size()+B.size()-1);
-            A.resize(r);
-            B.resize(r);
-            linalg::vector_view U(A),V(B);
-            fft.transform(U,false,signals::FFTNormalization::None);
-            fft.transform(V,false,signals::FFTNormalization::None);
-            for(int i=0;i<r;i++)
-                A[i]*=B[i];
-            fft.transform(U,true,signals::FFTNormalization::Normalized);
-            A.resize(a.size()+b.size()-1);
-            return A;
-        }
-        inline static std::vector<R> neutral=std::vector<R>{1};
-        std::vector<R> neutral_element() const override
-        {
-            return neutral;
-        }
-    };
-
-    template<std::floating_point R>
-    struct fast_multiplies_t<std::vector<R>> : public binary_operation<std::vector<R>>
-    {
-        signals::radix2_fft<std::complex<R>> fft;
-        std::vector<R> reduce(const std::vector<R>&a,const std::vector<R>&b) const override
-        {
-            if(a.size()==0 || b.size()==0)
-                return {};
-            auto r=std::bit_ceil<unsigned>(a.size()+b.size()-1);
-            std::vector<std::complex<R>> A(r);
-            for(int i=0;i<a.size();i++)
-            {
-                A[i].real(a[i]);
-                A[i].imag(b[i]);
-            }
-            linalg::vector_view U(A);
-            fft.transform(U,false,signals::FFTNormalization::None);
-            std::vector<std::complex<R>> C(r);
-            for(unsigned i=0;i<r;i++)
-            {
-                auto j=(r-i)&(r-1);
-                C[i]=A[i]*A[i]-std::conj(A[j]*A[j]);
-                C[i]*=std::complex<R>(0,-0.25);
-            }
-            linalg::vector_view V(C);
-            fft.transform(V,true,signals::FFTNormalization::Normalized);
-            std::vector<R> C_real(r);
-            for(int i=0;i<r;i++)
-                C_real[i]=C[i].real();
-            C_real.resize(a.size()+b.size()-1);
-            return C_real;
-        }
-        inline static std::vector<R> neutral=std::vector<R>{1};
-        std::vector<R> neutral_element() const override
-        {
-            return neutral;
-        }
-    };
-
-    template<typename R>
-    struct fast_multiplies_t<polynomial<R>> : public binary_operation<polynomial<R>>
-    {
-        fast_multiplies_t<std::vector<R>> fft;
-        polynomial<R> reduce(const polynomial<R>&a,const polynomial<R>&b) const override
-        {
-            return polynomial<R>(fft.reduce(a.data(),b.data()));
-        }
-        inline static polynomial<R> neutral=polynomial<R>{1};
-    };
-
-    template<typename R>
-    std::vector<R> fast_multiplication(const std::vector<R> &A,const std::vector<R> &B)
-    {
-        static fast_multiplies_t<std::vector<R>> multiplies;
-        return multiplies.reduce(A,B);
-    }
-
-    template<typename R>
-    polynomial<R> fast_multiplication(const polynomial<R> &A,const polynomial<R> &B)
-    {
-        static fast_multiplies_t<polynomial<R>> multiplies;
-        return multiplies.reduce(A,B);
-    }
-
-    template<typename Real=real,cp::integer decompositions=2, cp::integer m>
-    std::vector<cp::cyclic<m>> fast_modular_multiplication_real(const std::vector<cp::cyclic<m>> &a,const std::vector<cp::cyclic<m>> &b)
-    {
-        if(a.size()==0)
-            return {};
-        using namespace cp;
-        std::array<std::vector<Real>,decompositions> A,B;
-        integer block=std::ceil(std::pow<Real>(a.front().modulus(),1./decompositions));
-        for(int i=0;i<a.size();i++)
-        {
-            auto z=static_cast<integer>(a[i]);
-            for(int j=0;j<decompositions;j++)
-            {
-                auto [q,r]=std::div(z,block);
-                A[j].push_back(r);
-                z=q;
-            }
-        }
-        for(int i=0;i<b.size();i++)
-        {
-            auto z=static_cast<integer>(b[i]);
-            for(int j=0;j<decompositions;j++)
-            {
-                auto [q,r]=std::div(z,block);
-                B[j].push_back(r);
-                z=q;
-            }
-        }
-        std::array<std::array<std::vector<Real>,decompositions>,decompositions> C;
-        for(int i=0;i<decompositions;i++) for(int j=0;j<decompositions;j++)
-            C[i][j]= fast_multiplication(A[i],B[j]);
-        std::vector<cyclic<m>> R(a.size()+b.size()-1);
-        for(int i=0;i<R.size();i++)
-        {
-            integer x=0;
-            integer t1=1;
-            for(int j=0;j<decompositions;j++)
-            {
-                integer t2=t1;
-                for(int k=0;k<decompositions;k++)
-                {
-                    x+=std::llround(C[j][k][i])%m*t2%m;
-                    t2*=block;
-                }
-                t1*=block;
-            }
-            R[i]=x;
-        }
-        return R;
-    }
-
-
-    template<typename R>
-    std::vector<R> formal_inv_2(const std::vector<R> &A,int m)
-    {
-        if(m==1)
-            return {R(1)/A.front()};
-        auto B=A;
-        for(int i=1;i<A.size();i+=2)
-            B[i]=-B[i];
-        auto C= fast_multiplication(A,B);
-        std::vector<R> T;
-        T.resize(m/2);
-        for(int i=0;i<T.size() && 2*i < C.size();i++)
-            T[i]=C[2*i];
-        auto S=formal_inv_2(T,m/2);
-        std::vector<R> Q;
-        Q.resize(m);
-        for(int i=0;i<m/2;i++)
-            Q[2*i]=S[i];
-        return fast_multiplication(B, Q);
-    }
-
-    template<typename R>
-    std::vector<R> formal_inv_2(const std::vector<R> &A,int m,std::shared_ptr<binary_operation<std::vector<R>>> multiplies,std::shared_ptr<invertible_operation<R>> inv)
-    {
-        if(m==1)
-            return {inv->inv(A.front())};
-        auto B=A;
-        for(int i=1;i<A.size();i+=2)
-            B[i]=-B[i];
-        auto C= multiplies->reduce(A,B);
-        std::vector<R> T;
-        T.resize(m/2);
-        for(int i=0;i<T.size() && 2*i < C.size();i++)
-            T[i]=C[2*i];
-        auto S=formal_inv_2(T,m/2,multiplies,inv);
-        std::vector<R> Q;
-        Q.resize(m);
-        for(int i=0;i<m/2;i++)
-            Q[2*i]=S[i];
-        return multiplies->reduce(B, Q);
-    }
-
-    template<typename R>
-    polynomial<R> formal_inv_2(const polynomial<R> &A,int m)
-    {
-        return formal_inv_2(A.data(),m);
-    }
-
-    template<typename R>
-    polynomial<R> formal_inv_2(const polynomial<R> &A,int m,std::shared_ptr<polynomial_operation<polynomial<R>>> multiplies)
-    {
-        return formal_inv_2(A.data(),m,multiplies->underlying_operator(),multiplies->scalar_inverter());
-    }
-
-    template<typename R>
-    std::vector<R> formal_inv(const std::vector<R> &A,int m)
-    {
-        auto C=formal_inv_2(A,std::bit_ceil<unsigned>(m));
-        C.resize(m);
-        return C;
-    }
-
-    template<typename R>
-    std::vector<R> formal_inv(const std::vector<R> &A,int m,std::shared_ptr<binary_operation<std::vector<R>>> multiplies,std::shared_ptr<invertible_operation<R>> inv)
-    {
-        auto C=formal_inv_2(A,std::bit_ceil<unsigned>(m),multiplies,inv);
-        C.resize(m);
-        return C;
-    }
-
-    template<typename R>
-    polynomial<R> formal_inv(const polynomial<R> &A,int m)
-    {
-        auto C=formal_inv_2(A,std::bit_ceil<unsigned>(m));
-        C.data().resize(m);
-        return C;
-    }
-
-    template<typename R>
-    polynomial<R> formal_inv(const polynomial<R> &A,int m,std::shared_ptr<polynomial_operation<polynomial<R>>> multiplies)
-    {
-        auto C=formal_inv_2(A,std::bit_ceil<unsigned>(m),multiplies, multiplies->scalar_inverter());
-        C.data().resize(m);
-        return C;
-    }
-
-    template<typename R>
-    std::vector<R> fast_division(std::vector<R> A,std::vector<R> Q)
-    {
-        if(A.size()<Q.size())
-            return {};
-        int m=A.size()-Q.size()+1;
-        std::reverse(A.begin(),A.end());
-        std::reverse(Q.begin(),Q.end());
-        auto P= fast_multiplication(A, formal_inv(Q,m));
-        P.resize(m);
-        std::reverse(P.begin(),P.end());
-        return P;
-    }
-
-    template<typename R>
-    std::vector<R> fast_division(std::vector<R> A,std::vector<R> Q,std::shared_ptr<binary_operation<std::vector<R>>> multiplies,std::shared_ptr<invertible_operation<R>> inv)
-    {
-        if(A.size()<Q.size())
-            return {};
-        int m=A.size()-Q.size()+1;
-        std::reverse(A.begin(),A.end());
-        std::reverse(Q.begin(),Q.end());
-        auto P= multiplies->reduce(A, formal_inv(Q,m,multiplies,inv));
-        P.resize(m);
-        std::reverse(P.begin(),P.end());
-        return P;
-    }
-
-    template<typename R>
-    polynomial<R> fast_division(const polynomial<R> &A,const polynomial<R> &B)
-    {
-        return fast_division(A.data(),B.data());
-    }
-
-    template<typename R>
-    polynomial<R> fast_division(const polynomial<R> &A,const polynomial<R> &B, std::shared_ptr<polynomial_operation<polynomial<R>>> multiplies)
-    {
-        return fast_division(A.data(),B.data(), multiplies->underlying_operator(),multiplies->scalar_inverter());
-    }
-
-
-    template<typename R>
-    polynomial<R> fast_mod(const polynomial<R>&A,const polynomial<R>& B)
-    {
-        auto P= fast_division(A,B);
-        auto Z= A - fast_multiplication(B,P);
-        Z.data().resize(B.degree());
-        return Z;
-    }
-
-    template<typename R>
-    polynomial<R> fast_mod(const polynomial<R>&A, const polynomial<R>& B, std::shared_ptr<polynomial_operation<polynomial<R>>> multiplies)
-    {
-        auto P= fast_division(A,B,multiplies);
-        auto Z= A - multiplies->reduce(B,P);
-        Z.data().resize(B.degree());
-        return Z;
-    }
-
-    template<typename R>
-    std::pair<polynomial<R>,polynomial<R>> fast_euclidean_division(const polynomial<R> &A,const polynomial<R>& B)
-    {
-        auto P= fast_division(A,B);
-        auto Q=A- fast_multiplication(B,P);
-        Q.data().resize(B.degree());
-        return std::make_pair(P,Q);
-    }
-
-    template<typename R>
-    polynomial<R> fast_gcd(const polynomial<R> &A,const polynomial<R> &B)
-    {
-        if(B==R{})
-            return A;
-        return fast_gcd(B,fast_mod(A,B).reduce());
-    }
-
-    template<typename R>
-    polynomial<R> fast_polynomial_expansion(const std::vector<R> &X)
-    {
-        int n=X.size();
-        std::vector<polynomial<R>> P(X.size());
-        for(int i=0;i<n;i++)
-            P[i]=polynomial<R>({-X[i],1});
-        data_structures::fixed::segment_tree<fast_multiplies_t<polynomial<R>>> S(P);
-        return S.S[0][0];
-    }
-
-    template<typename R>
-    polynomial<R> fast_polynomial_expansion(const std::vector<R> &X,std::shared_ptr<polynomial_operation<polynomial<R>>> multiplies)
-    {
-        int n=X.size();
-        std::vector<polynomial<R>> P(X.size());
-        for(int i=0;i<n;i++)
-            P[i]=polynomial<R>({-X[i],1});
-        data_structures::dynamic::segment_tree S(P,multiplies);
-        return S.S[0][0];
-    }
-
-
-    template<typename R>
-    std::vector<R> fast_multi_evaluation(const polynomial<R> &A,const std::vector<R> &X)
-    {
-        int n=X.size();
-        std::vector<polynomial<R>> P(X.size());
-        for(int i=0;i<n;i++)
-            P[i]=polynomial<R>({-X[i],1});
-        data_structures::fixed::segment_tree<fast_multiplies_t<polynomial<R>>> S(P);
-        std::vector<polynomial<R>> Z(1<<(S.h-1));
-        Z[0]=fast_mod(A,S.S[0][0]);
-        for(int i=1;i<S.h;i++)
-            for(int j=(1<<i)-1;j>=0;j--)
-                Z[j]=fast_mod(Z[j>>1],S.S[i][j]);
-        std::vector<R> Y;
-        Y.reserve(n);
-        for(int i=0;i<n;i++)
-            Y.push_back(Z[i](R{}));
-        return Y;
-    }
-
-    template<typename R>
-    std::vector<R> fast_multi_evaluation(const polynomial<R> &A,const std::vector<R> &X,std::shared_ptr<polynomial_operation<polynomial<R>>> multiplies)
-    {
-        int n=X.size();
-        std::vector<polynomial<R>> P(X.size());
-        for(int i=0;i<n;i++)
-            P[i]=polynomial<R>({-X[i],1});
-        data_structures::dynamic::segment_tree S(P,std::dynamic_pointer_cast<binary_operation<polynomial<R>>>(multiplies));
-        std::vector<polynomial<R>> Z(1<<(S.h-1));
-        Z[0]=fast_mod(A,S.S[0][0],multiplies);
-        for(int i=1;i<S.h;i++)
-            for(int j=(1<<i)-1;j>=0;j--)
-                Z[j]=fast_mod(Z[j>>1],S.S[i][j],multiplies);
-        std::vector<R> Y;
-        Y.reserve(n);
-        for(int i=0;i<n;i++)
-            Y.push_back(Z[i](R{}));
-        return Y;
-    }
-
-}
-
-//
-// Created by ramizouari on 28/11/23.
-//
-
-
-
-
-#include <memory>
-#include <set>
-
-namespace cp::signals
-{
-
-    template<integer n>
-    struct abstract_ntt : public abstract_fft<cyclic<n>>, protected default_factoriser_t
-    {
-        using R=cyclic<n>;
-        using abstract_fft<R>::transform;
-        abstract_ntt(std::shared_ptr<abstract_factoriser> _F=default_factoriser):F(_F){}
-        mutable integer version=0;
-        mutable std::array<std::unordered_map<integer,R>,2> cache;
-        mutable std::optional<integer> phi;
-        mutable R w1,w2;
-        mutable std::shared_ptr<abstract_factoriser> F;
-
-        void build() const
-        {
-            version=cyclic<n>::modulus();
-            if(!F)
-                F=default_factoriser;
-            phi= carmichael_totient(cyclic<n>::modulus(),*F);
-            w1= primitive_root_of_unity(cyclic<n>::modulus(),*F);
-            w2=w1.pinv();
-        }
-        virtual R root_of_unity(integer size,integer m,bool inverse) const
-        {
-            if(version!=cyclic<n>::modulus())
-                build();
-            R w;
-            if(cache[inverse].count(size))
-                w=cache[inverse][size];
-            else
-            {
-                w=inverse?w2:w1;
-                auto [q,r]=std::div(*phi,size);
-                if(r!=0)
-                    throw std::invalid_argument("size must divide phi(m)");
-                w=pow(w,q);
-                cache[inverse][size]=w;
-            }
-            return w;
-        }
-        virtual ~abstract_ntt()= default;
-    };
-
-
-    template<integer m>
-    void cyclic_normalize(linalg::tensor_view<cyclic<m>,1> &v,FFTNormalization normalized)
-    {
-        cyclic<m> r;
-        switch (normalized)
-        {
-            case FFTNormalization::None:
-                r=1;
-                break;
-            case FFTNormalization::Sqrt:
-                //r=cp::sqrt(cyclic<m>(v.size()));
-                throw std::invalid_argument("not implemented");
-                break;
-            case FFTNormalization::Normalized:
-                r=v.size();
-                break;
-        }
-        r=r.pinv();
-        for(auto &x:v)
-            x*=r;
-
-    }
-
-    template<integer m>
-    void cyclic_normalize(linalg::tensor_view<cyclic<m>,1> &&v,FFTNormalization normalized)
-    {
-        cyclic_normalize(v,normalized);
-    }
-
-
-
-    template<integer m>
-    void inplace_ntt2(cp::linalg::tensor_view<cyclic<m>,1> & a, cyclic<m> theta, FFTNormalization normalized = FFTNormalization::Sqrt)
-    {
-        int n = a.size();
-        for (int i = 1, j = 0; i < n; i++)
-        {
-            int bit = n >> 1;
-            for (; j & bit; bit >>= 1)
-                j ^= bit;
-            j ^= bit;
-            if (i < j)
-                std::swap(a(i), a(j));
-        }
-        std::vector<cyclic<m>> W;
-        W.push_back(theta);
-        for (int len = 2; len <= n; len <<= 1)
-            W.push_back(W.back()*W.back());
-        W.pop_back();
-        for (int len = 2,r=W.size()-1; len <= n; len <<= 1,r--)
-        {
-            auto wlen = W[r];
-            for (int i = 0; i < n; i += len)
-            {
-                cyclic<m> w(1);
-                for (int j = 0; j < len / 2; j++)
-                {
-                    cyclic<m> u = a(i+j), v = a(i+j+len/2) * w;
-                    a(i+j) = u + v;
-                    a(i+j+len/2) = u - v;
-                    w *= wlen;
-                }
-            }
-        }
-        cyclic_normalize(a,normalized);
-    }
-
-    template<typename Cyclic>
-    void inplace_ntt2(cp::linalg::tensor_view<Cyclic,1> && a, Cyclic theta, FFTNormalization normalized = FFTNormalization::Sqrt)
-    {
-        inplace_ntt2(a,theta,normalized);
-    }
-
-    template<integer n>
-    struct radix2_fft<cyclic<n>> : public abstract_ntt<n>
-    {
-        using R=cyclic<n>;
-        using abstract_fft<cyclic<n>>::transform;
-        using abstract_ntt<n>::root_of_unity;
-        using abstract_ntt<n>::build;
-        using default_factoriser_t::default_factoriser;
-        radix2_fft(std::shared_ptr<abstract_factoriser> _F=default_factoriser):abstract_ntt<n>(_F)
-        {
-        }
-        void transform(linalg::tensor_view<R,1> &v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const override
-        {
-            auto w= root_of_unity(v.size(),cyclic<n>::modulus(),inverse);
-            if(normalization==FFTNormalization::Auto)
-                normalization=inverse?FFTNormalization::Normalized:FFTNormalization::None;
-            inplace_ntt2(v, w, normalization);
-        }
-    };
-
-}
-
-
-//
-// Created by ramizouari on 16/10/22.
-//
-
-
-
-
-#include <random>
-
-namespace cp
-{
-    inline bool rabin_miller_primality_test(integer n, integer _a)
-    {
-        if (n <= 2)
-            return n == 2;
-        else if (n % 2 == 0)
-            return false;
-        integer r = n - 1, h = 0;
-        while (r % 2 == 0)
-        {
-            r /= 2;
-            h++;
-        }
-        integer d = 1;
-        cyclic<dynamic_modulus> a(_a,n);
-        auto u = pow(a, r);
-        if (u - 1 == 0)
-            return true;
-        for (int i = 0; i <= h; i++, u *= u) if (u + 1 == 0)
-                return true;
-        return false;
-    }
-
-    inline bool rabin_miller(integer n, integer iter = 7)
-    {
-        static std::random_device dev;
-        static std::mt19937_64 g(dev());
-        if (n == 1)
-            return false;
-        std::uniform_int_distribution<integer> d(2, n - 1);
-        for (int i = 0; i < iter; i++) if (!rabin_miller_primality_test(n, d(g)))
-            return false;
-        return true;
-    }
-
-    inline bool rabin_miller(integer n, const std::vector<integer>& provers)
-    {
-        if (n == 1)
-            return false;
-        for (const auto& d : provers) if (!rabin_miller_primality_test(n, d))
-            return false;
-        return true;
-    }
-
-    inline bool fermat_test(integer n, const std::vector<integer>& provers)
-    {
-        if (n == 1)
-            return false;
-        for (const auto &p : provers) if (pow<cyclic<dynamic_modulus>>(p, n - 1,n) != 1)
+            if(a.size() != b.size())
                 return false;
-        return true;
-    }
-
-    inline integer rho_divisor_method(integer n,const polynomial<integer> &_P,integer x0)
-    {
-        polynomial<cyclic<dynamic_modulus>> P;
-        for(int i=0;i<=_P.degree();i++)
-            P.p.emplace_back(_P[i],n);
-        P.reduce();
-        cyclic<dynamic_modulus> x(x0,n),y=x;
-        integer d=1;
-        do
-        {
-            x=P(x);
-            y=P(P(y));
-            d=gcd(static_cast<integer>(y-x),n);
-        }while(d==1);
-        return d;
-    };
-
-
-    class fast_factoriser : public abstract_factoriser
-    {
-        int iters;
-        polynomial<integer> P;
-        integer x0;
-    public:
-        fast_factoriser(int iters,const polynomial<integer> &P,integer x0):iters(iters),P(P),x0(x0){}
-        [[nodiscard]] integer smallest_divisor(integer n) const
-        {
-            if(rabin_miller(n,iters))
-                return n;
-            return smallest_divisor(rho_divisor_method(n,P,x0));
+            a.centroid();
+            b.centroid();
+            auto M1= string_encode(a);
+            auto M2= string_encode(b);
+            if(M1==M2)
+                return true;
+            auto c= second_centroid(a);
+            if(c.has_value())
+            {
+                a.reRoot(*c);
+                a.buildStatistics(graph::TreeStats::SIZE);
+                auto M3= string_encode(a);
+                return M3==M2;
+            }
+            return false;
         }
 
-        [[nodiscard]] std::vector<std::pair<integer,integer>> prime_decomposition(integer n) const
+        bool operator()(const TreeHolder &a, const TreeHolder &b) const
         {
-            std::map<integer,integer> M;
-            while(n>1)
-            {
-                auto d=smallest_divisor(n);
-                int s=0;
-                while(n%d==0)
-                {
-                    n/=d;
-                    s++;
-                }
-                M.emplace(d,s);
-            }
-            return {M.begin(),M.end()};
+            return (*this)(*a,*b);
         }
     };
 
-    class randomized_fast_factoriser : public abstract_factoriser
+    template<typename Container>
+    struct FastIsoTreeEq
     {
-        int iters;
-        std::random_device dev;
-        mutable std::mt19937_64 g{dev()};
-        int max_degree;
-    public:
-        randomized_fast_factoriser(int iters,int max_degree):iters(iters),max_degree(max_degree){}
-        [[nodiscard]] integer smallest_divisor(integer n) const
+        mutable Container encoding;
+        bool operator()(Tree &a, Tree &b) const
         {
-            std::uniform_int_distribution<integer> d(0,n-1);
-            std::vector<integer> P(max_degree+1);
-            std::generate(P.begin(),P.end(),std::bind(d,g));
-            integer x0=d(g);
-            if(rabin_miller(n,iters))
-                return n;
-            return smallest_divisor(rho_divisor_method(n,P,x0));
-        }
-
-        [[nodiscard]] std::vector<std::pair<integer,integer>> prime_decomposition(integer n)
-        {
-            std::map<integer,integer> M;
-            while(n>1)
+            if(a.size() != b.size())
+                return false;
+            a.centroid();
+            b.centroid();
+            auto e1= int_encode(a,encoding);
+            auto e2= int_encode(b,encoding);
+            if(e1==e2)
+                return true;
+            auto c= second_centroid(a);
+            if(c.has_value())
             {
-                auto d=smallest_divisor(n);
-                int s=0;
-                while(n%d==0)
-                {
-                    n/=d;
-                    s++;
-                }
-                M.emplace(d,s);
+                a.reRoot(*c);
+                a.buildStatistics(graph::TreeStats::SIZE);
+                auto e3= int_encode(a,encoding);
+                return e3==e2;
             }
-            return {M.begin(),M.end()};
+            return false;
         }
 
+        bool operator()(const TreeHolder &a, const TreeHolder &b) const
+        {
+            return (*this)(*a,*b);
+        }
+    };
+
+    struct IsoTreeCmp
+    {
+        bool operator()(Tree &a, Tree &b) const
+        {
+            if(a.size()!=b.size())
+                return a.size() < b.size();
+            auto X=full_string_encoding(a);
+            auto Y=full_string_encoding(b);
+            return X < Y;
+        }
+
+        bool operator()(const TreeHolder& a, const TreeHolder& b) const
+        {
+            return (*this)(*a,*b);
+        }
+    };
+
+    template<typename Container>
+    struct FastIsoTreeCmp
+    {
+        mutable Container encoding;
+        bool operator()(Tree &a, Tree &b) const
+        {
+            if(a.size()!=b.size())
+                return a.size() < b.size();
+            auto X=full_int_encoding(a,encoding);
+            auto Y=full_int_encoding(b,encoding);
+            return X < Y;
+        }
+
+        bool operator()(const TreeHolder& a, const TreeHolder& b) const
+        {
+            return (*this)(*a,*b);
+        }
+    };
+
+    struct IsoTreeHash
+    {
+        std::hash<std::string> H;
+    public:
+        size_t operator()(Tree &a) const
+        {
+            auto A= full_string_encoding(a);
+            return std::accumulate(A.begin(),A.end(),0ULL,[&H=this->H](auto x,auto y){
+                return x^H(y);
+            });
+        }
+
+        size_t operator()(const TreeHolder& a) const
+        {
+            return (*this)(*a);
+        }
+    };
+
+    //Warning: this hash function does only work for trees with at most 232 vertices
+    template<typename Container>
+    struct FastIsoTreeHash
+    {
+        mutable Container encoding;
+        size_t operator()(Tree &a) const
+        {
+            auto [x,y]= full_int_encoding(a,encoding);
+            return static_cast<size_t>(x)^(static_cast<size_t>(y)<<32);
+        }
+
+        size_t operator()(const TreeHolder& a) const
+        {
+            return (*this)(*a);
+        }
     };
 }
 
+#endif //CPLIBRARY_ISOMORPHISM_H
 
-
-#include <random>
-constexpr int m=1;
-constexpr cp::integer M=998244353;
-using IK=cp::cyclic<M>;
-
-int main(int argc, char**argv)
+int main()
 {
-    std::ios::sync_with_stdio(false);
-    int n,q;
-    std::cin >> n >> q;
-    cp::linalg::d_matrix<IK> A(0,cp::linalg::m_shape{n,n});
-    std::uniform_int_distribution<cp::integer> d(0,M-1);
-    std::mt19937_64 rng(std::random_device{}());
-
-    if(argc==1) for(int i=0;i<n;i++) for(int j=0;j<n;j++)
-        std::cin >> static_cast<cp::integer&>(A[i][j]);
-    else for(int i=0;i<n;i++) for(int j=0;j<n;j++)
-        A[i][j]=d(rng);
-    auto F=std::make_shared<cp::randomized_fast_factoriser>(5,3);
-    cp::default_factoriser_t::default_factoriser=F;
-    std::vector<cp::linalg::d_vector<IK>> V(m);
-    for(int i=0;i<m;i++)
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    int T;
+    std::cin >> T;
+    for(int t=1;t<=T;t++)
     {
-        V[i]=cp::linalg::d_vector<IK>(cp::linalg::v_shape{n});
-        for(int j=0;j<n;j++)
-            V[i][j]=d(rng);
-    }
-    cp::polynomial<IK> P;
-    if(n>50)
-        P=cp::linalg::minimal_polynomial(A,V);
-    else
-        P=cp::linalg::faddev_lerrier_characteristic_polynomial(A);
-    std::vector<cp::integer> Q(q);
-    for(auto &query:Q)
-        std::cin >> query;
-    std::vector<std::vector<IK>> batch((q+m-1)/m);
-    for(int i=0;i<q;i++)
-        batch[i/m].push_back(Q[i]);
-    std::vector<IK> R;
-    for(auto &b:batch)
-    {
-        auto batch_results=cp::fast_multi_evaluation(P,b);
-        R.insert(R.end(),batch_results.begin(),batch_results.end());
-    }
-    for(auto &r:R)
-    {
-        if(n&1)
-            r=-r;
-        std::cout << static_cast<cp::integer>(r) << '\n';
+        using Container=std::map<std::vector<int>,int>;
+        std::unordered_set<cp::graph::TreeHolder,cp::graph::FastIsoTreeHash<Container>,cp::graph::FastIsoTreeEq<Container>> container;
+        int n;
+        std::cin >> n;
+        cp::graph::TreeHolder T1(n),T2(n);
+        for(auto T:{T1,T2}) for(int i=0;i<n-1;i++)
+            {
+                int u,v;
+                std::cin >> u >> v;
+                u--;
+                v--;
+                T->connect(u,v);
+            }
+        T1->reRoot(0);
+        T2->reRoot(0);
+        T1->buildStatistics(cp::graph::TreeStats::SIZE);
+        T2->buildStatistics(cp::graph::TreeStats::SIZE);
+        container.emplace(std::move(T1));
+        container.emplace(std::move(T2));
+        std::cout << (container.size()==1?"YES":"NO") << '\n';
     }
 }

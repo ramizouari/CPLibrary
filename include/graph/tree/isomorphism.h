@@ -43,6 +43,39 @@ namespace cp::graph
         return std::string(E->begin(),E->end());
     }
 
+    template<typename Container>
+    int int_encode(const graph::Tree &T,int u, Container &M)
+    {
+        const auto &C=T.children(u);
+        typename Container::key_type X;
+        build_children(T,u,X,M);
+        auto [it,inserted]=M.emplace(X,M.size());
+        return it->second;
+    }
+
+    template<typename Container>
+    int int_encode(const graph::Tree &T, Container &M)
+    {
+        return int_encode(T,T.root,M);
+    }
+
+    template<typename Container>
+    void build_children(const graph::Tree &T,int u, std::vector<int> &X, Container &M)
+    {
+        const auto &C=T.children(u);
+        X.reserve(C.size());
+        for(auto v:C) X.push_back(int_encode(T,v,M));
+        std::sort(X.begin(),X.end());
+    }
+
+
+    template<typename Container>
+    void build_children(const graph::Tree &T,int u, std::set<int> &X, Container &M)
+    {
+        const auto &C=T.children(u);
+        for(auto v:C) X.emplace(int_encode(T,v,M));
+    }
+
     std::optional<int> second_centroid(graph::Tree & T)
     {
         auto u=T.root;
@@ -77,6 +110,24 @@ namespace cp::graph
         }
         return A;
     }
+
+    std::pair<int,int> full_int_encoding(graph::Tree &T,std::map<std::vector<int>,int> &M)
+    {
+        T.centroid();
+        T.buildStatistics(graph::TreeStats::SIZE);
+        auto x=int_encode(T,T.root,M);
+        auto p= second_centroid(T);
+        int y=x;
+        if(p.has_value())
+        {
+            T.reRoot(*p);
+            T.buildStatistics(graph::TreeStats::SIZE);
+            y=int_encode(T,T.root,M);
+            if(x>y) std::swap(x,y);
+        }
+        return {x,y};
+    }
+
 
     struct TreeHolder
     {
@@ -124,6 +175,37 @@ namespace cp::graph
         }
     };
 
+    template<typename Container>
+    struct FastIsoTreeEq
+    {
+        mutable Container encoding;
+        bool operator()(Tree &a, Tree &b) const
+        {
+            if(a.size() != b.size())
+                return false;
+            a.centroid();
+            b.centroid();
+            auto e1= int_encode(a,encoding);
+            auto e2= int_encode(b,encoding);
+            if(e1==e2)
+                return true;
+            auto c= second_centroid(a);
+            if(c.has_value())
+            {
+                a.reRoot(*c);
+                a.buildStatistics(graph::TreeStats::SIZE);
+                auto e3= int_encode(a,encoding);
+                return e3==e2;
+            }
+            return false;
+        }
+
+        bool operator()(const TreeHolder &a, const TreeHolder &b) const
+        {
+            return (*this)(*a,*b);
+        }
+    };
+
     struct IsoTreeCmp
     {
         bool operator()(Tree &a, Tree &b) const
@@ -132,6 +214,25 @@ namespace cp::graph
                 return a.size() < b.size();
             auto X=full_string_encoding(a);
             auto Y=full_string_encoding(b);
+            return X < Y;
+        }
+
+        bool operator()(const TreeHolder& a, const TreeHolder& b) const
+        {
+            return (*this)(*a,*b);
+        }
+    };
+
+    template<typename Container>
+    struct FastIsoTreeCmp
+    {
+        mutable Container encoding;
+        bool operator()(Tree &a, Tree &b) const
+        {
+            if(a.size()!=b.size())
+                return a.size() < b.size();
+            auto X=full_int_encoding(a,encoding);
+            auto Y=full_int_encoding(b,encoding);
             return X < Y;
         }
 
@@ -151,6 +252,23 @@ namespace cp::graph
             return std::accumulate(A.begin(),A.end(),0ULL,[&H=this->H](auto x,auto y){
                 return x^H(y);
             });
+        }
+
+        size_t operator()(const TreeHolder& a) const
+        {
+            return (*this)(*a);
+        }
+    };
+
+    //Warning: this hash function does only work for trees with at most 232 vertices
+    template<typename Container>
+    struct FastIsoTreeHash
+    {
+        mutable Container encoding;
+        size_t operator()(Tree &a) const
+        {
+            auto [x,y]= full_int_encoding(a,encoding);
+            return static_cast<size_t>(x)^(static_cast<size_t>(y)<<32);
         }
 
         size_t operator()(const TreeHolder& a) const
