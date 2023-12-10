@@ -253,7 +253,8 @@ namespace cp
             return {};
         using namespace cp;
         std::array<std::vector<Real>,decompositions> A,B;
-        integer block=std::ceil(std::pow<Real>(a.front().modulus(),1./decompositions));
+        auto m_=a.front().modulus();
+        integer block=std::ceil(std::pow(m_,1./decompositions));
         for(int i=0;i<a.size();i++)
         {
             auto z=static_cast<integer>(a[i]);
@@ -276,7 +277,7 @@ namespace cp
         }
         std::array<std::array<std::vector<Real>,decompositions>,decompositions> C;
         for(int i=0;i<decompositions;i++) for(int j=0;j<decompositions;j++)
-            C[i][j]= fast_multiplication(A[i],B[j]);
+                C[i][j]= fast_multiplication(A[i],B[j]);
         std::vector<cyclic<m>> R(a.size()+b.size()-1);
         for(int i=0;i<R.size();i++)
         {
@@ -287,8 +288,10 @@ namespace cp
                 integer t2=t1;
                 for(int k=0;k<decompositions;k++)
                 {
-                    x+=std::llround(C[j][k][i])%m*t2%m;
+                    x+=std::llround(C[j][k][i])%m_*t2%m_;
+                    x%=m_;
                     t2*=block;
+                    t2%=m_;
                 }
                 t1*=block;
             }
@@ -296,6 +299,7 @@ namespace cp
         }
         return R;
     }
+
 
 
     template<typename R>
