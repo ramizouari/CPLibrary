@@ -1,1063 +1,862 @@
-#include <utility>
-#include <variant>
-#include <list>
-#include <valarray>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <span>
-#include <string>
-#include <numeric>
-#include <regex>
 #include <iostream>
-#include <set>
+#include <chrono>
+#include <cstdint>
+#include <vector>
+#include <map>
+#include <random>
+#include <variant>
+#include <unordered_map>
+//
+// Created by ASUS on 30/11/2021.
+//
+#ifndef __MODULAR__ARITHMETIC__
+#define __MODULAR__ARITHMETIC__
+#include <cstdint>
+#include <utility>
+//
+// Created by ramizouari on 28/11/23.
+//
 
-template<typename T>
-using VE=std::vector<T>;
-template<typename T>
-using US=std::unordered_set<T>;
-template<typename T,typename V>
-using UM=std::unordered_map<T,V>;
+#ifndef CPLIBRARY_FIXED_H
+#define CPLIBRARY_FIXED_H
+//
+// Created by ramizouari on 01/12/2021.
+//
 
+#ifndef ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#define ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+#include <complex>
+#include <functional>
+#include <cstdint>
+#include <concepts>
 
-
-struct Hashable
+namespace cp
 {
-    std::uint64_t hash=0;
-    bool operator==(const Hashable & other) const=default;
-    auto operator<=>(const Hashable & other) const= default;
-protected:
-};
+    using natural = std::uint64_t;
+    using integer = std::int64_t;
+    using real = long double;
+    using IR=real;
+    using IC= std::complex<IR>;
+    constexpr real epsilon=1e-6;
 
-struct SB : public Hashable
-{
-    std::uint64_t id;
-    explicit SB(std::uint64_t id=0);
-    bool operator==(const SB & other) const = default;
-    auto operator<=>(const SB & other) const = default;
-    std::uint64_t initHash();
-private:
-    inline static constexpr std::hash<std::uint64_t> hasher{};
-};
-
-
-template<typename T>
-concept isHashable =  std::is_base_of_v<Hashable, std::remove_cvref_t<T>>;
-
-template<isHashable H >
-struct std::hash<H>
-{
-    std::size_t operator()(const H & h) const
+    template<typename R>
+    R commutator(R a,R b)
     {
-        return h.hash;
+        return a*b-b*a;
     }
-};
 
-template<typename T>
-struct std::hash<VE<T>>
-{
-    inline static constexpr std::hash<T> hasher{};
-    std::size_t operator()(const VE<T> & v) const
+    template<typename M,typename G=typename M::base_field>
+    M conj(M a)
     {
-        std::size_t hash=0;
-        for(auto & e : v)
-            hash^=hasher(e);
-        return hash;
-    }
-};
-
-template<typename A,typename B>
-struct std::hash<std::pair<A,B>>
-{
-    inline static constexpr std::hash<A> hasherA{};
-    inline static constexpr std::hash<B> hasherB{};
-    std::size_t operator()(const std::pair<A,B> & v) const
-    {
-        return hasherA(v.first)^hasherB(v.second);
-    }
-};
-
-template<typename T>
-struct std::hash<US<T>>
-{
-    inline static constexpr std::hash<T> hasher{};
-    std::size_t operator()(const US<T> & v) const
-    {
-        std::size_t hash=0;
-        for(auto & e : v)
-            hash^=hasher(e);
-        return hash;
-    }
-};
-
-struct Rule : public Hashable
-{
-    SB left;
-    VE<SB> right;
-    Rule(SB left, const VE<SB>& right);
-    Rule(SB left, VE<SB>&& right);
-    bool operator==(const Rule & other) const = default;
-    auto operator<=>(const Rule & other) const = default;
-    std::uint64_t initHash();
-private:
-    inline static constexpr std::hash<VE<SB>> hasher{};
-
-};
-
-class Grammar
-{
-protected:
-    VE<Rule>  rules;
-    SB axiom;
-    VE<SB> SBs;
-    VE<VE<std::uint64_t>> ruleIdsBySBId;
-public:
-    void addRule(const Rule &rule);
-    void addRule(Rule &&rule);
-    void setAxiom(const SB &_axiom);
-    virtual ~Grammar() = default;
-
-    template<typename Left, typename... Right>
-    void emplaceRule(Left &&left,Right &&... right)
-    {
-        rules.template emplace_back(std::forward(left),{std::forward(right)...});
-    }
-    template<typename Left,typename Right>
-    void addRule(Left &&left,Right &&right)
-    {
-        rules.template emplace_back(std::forward(left),std::forward(right));
-    }
-    [[nodiscard]] const VE<Rule> & getRules() const;
-};
-
-enum SpecialCharacter : std::uint64_t
-{
-    Epsilon=std::numeric_limits<std::uint64_t>::max()-2,
-    EndOfString,
-    Empty=Epsilon,
-    EndOfFile=EndOfString
-};
-
-class GrammarWithFirstFollow : virtual public Grammar
-{
-protected:
-    VE<US<std::uint64_t>> firstIds,followIds;
-    virtual void buildFirst();
-    virtual void buildFollow();
-};
-
-template<typename CharType,typename Traits=std::char_traits<CharType>>
-class SP : virtual protected Grammar
-{
-
-
-protected:
-    using stringType=std::basic_string<CharType,Traits>;
-    static VE<stringType> split(const stringType &S,const stringType &regex)
-    {
-        std::basic_regex<CharType,std::regex_traits<CharType>> rgx(regex);
-        std::regex_token_iterator<typename stringType::const_iterator> iter(S.begin(),
-                                        S.end(),
-                                        rgx,
-                                        -1),
-                                        end;
-        VE<stringType> result(iter, end);
-        if(result.front().empty())
-            return {};
-        return result;
-    }
-    UM<SB,std::uint64_t> SBId;
-    UM<stringType,std::uint64_t> SBMap;
-    SB& addSB(const stringType & s)
-    {
-        auto it=SBMap.find(s);
-        if(it==SBMap.end())
+        if constexpr (std::is_same_v<G, IC>)
         {
-            SB S{SBId.size()};
-            SBs.push_back(S);
-            SBMap[s]=SBId.size();
-            SBId[S]=S.id;
-            return SBs.back();
+            if constexpr (std::is_same_v<G, M>)
+                return std::conj(a);
+            else for (auto& s : a)
+                    s = conj<typename std::remove_reference<decltype(s)>::type, G>(s);
         }
-        else return SBs[it->second];
-    }
-
-public:
-
-    void RL(const stringType &left,const VE<stringType> &right)
-    {
-        SB  L=addSB(left);
-        VE<SB> R;
-        for(const auto & s : right)
-            R.push_back(addSB(s));
-        Rule rule{L,R};
-        Grammar::addRule(std::move(rule));
-    }
-
-    template<typename Left,typename... Right>
-    void RL(Left && left, Right && ... right)
-    {
-        auto S=addSB(std::forward<Left>(left));
-        VE<SB> rightVec{addSB(std::forward<Right>(right))...};
-        Rule rule(S,rightVec);
-        Grammar::addRule(std::move(rule));
-    }
-
-    virtual void addRule(const std::basic_string<CharType,Traits> &line)
-    {
-        std::basic_regex<CharType,std::regex_traits<CharType>> ruleRegex(R"(\s*([^\s]+)\s*(?:->|:|:==)\s*((?:[^\s]\s+)*(?:[^\s]+)|)\s*)");
-        std::match_results<typename stringType::const_iterator> ruleMatch;
-
-        if(std::regex_match(line,ruleMatch,ruleRegex))
-        {
-            VE<SB>  rightSBs;
-            SB leftSB=addSB(ruleMatch[1]);
-            std::cout << ruleMatch[2] << std::endl;
-            for(const auto &s : split(ruleMatch[2],R"(\s+)"))
-                 rightSBs.push_back(addSB(s));
-            Rule rule(leftSB,rightSBs);
-            Grammar::addRule(std::move(rule));
-        }
-        else
-            throw std::runtime_error("Invalid rule");
-    }
-    virtual bool parse(const std::basic_string<CharType,Traits> &line)=0;
-};
-
-namespace parser
-{
-
-    struct Variable
-    {
-        virtual ~Variable() = default;
-    };
-
-    struct VariableReducer
-    {
-        virtual ~VariableReducer() = default;
-        virtual std::shared_ptr<Variable> combine(const VE<std::shared_ptr<Variable>>& SBs) const = 0;
-    };
-
-    namespace reducers
-    {
-        struct NullReducer final: public VariableReducer
-        {
-            [[nodiscard]] std::shared_ptr<Variable> combine(const VE<std::shared_ptr<Variable>>& SBs) const
-            {
-                return nullptr;
-            }
-            inline static std::shared_ptr<VariableReducer> instance = std::make_shared<NullReducer>();
-        };
-
-        struct Projection : public VariableReducer
-        {
-            std::int64_t index;
-
-            [[nodiscard]] std::shared_ptr<Variable> combine(const VE<std::shared_ptr<Variable>>& SBs) const
-            {
-                return SBs.at(index);
-            }
-            explicit Projection(std::int64_t index) : index(index){}
-        };
-
-        struct Identity : public Projection
-        {
-            Identity(): Projection(0){}
-            inline static std::shared_ptr<VariableReducer> instance = std::make_shared<Identity>();
-        };
-
-        struct IdentityOrNull : public VariableReducer
-        {
-            [[nodiscard]] std::shared_ptr<Variable> combine(const VE<std::shared_ptr<Variable>>& SBs) const
-            {
-                return SBs.empty() ? nullptr : SBs.front();
-            }
-            inline static std::shared_ptr<VariableReducer> instance = std::make_shared<IdentityOrNull>();
-        };
-    }
-
-    template<typename CharType,typename Traits=std::char_traits<CharType>>
-    class SSP : virtual protected SP<CharType,Traits>
-    {
-    protected:
-        VE<std::shared_ptr<VariableReducer>> reducers;
-    public:
-        using stringType=SP<CharType,Traits>::stringType;
-        void RL(std::shared_ptr<VariableReducer> reducer,const stringType &left,const VE<stringType> &right)
-        {
-            SP<CharType,Traits>::addRule(left,right);
-            reducers.push_back(reducer);
-        }
-
-        void RL(const stringType &left,const VE<stringType> &right)
-        {
-            RL(reducers::Identity::instance,left,right);
-        }
-
-        virtual void addRule(std::shared_ptr<VariableReducer> reducer, const std::basic_string<CharType,Traits> &line)
-        {
-            SP<CharType,Traits>::addRule(line);
-            reducers.push_back(reducer);
-        }
-
-        template<typename Left,typename... Right>
-        void RL(std::shared_ptr<VariableReducer> reducer,Left && left, Right && ... right)
-        {
-            SP<CharType,Traits>::RL(std::forward<Left>(left),std::forward<Right>(right)...);
-            reducers.push_back(reducer);
-        }
-
-
-        void addRule(const std::basic_string<CharType,Traits> &line) override
-        {
-            addRule(reducers::IdentityOrNull::instance,line);
-        }
-
-        virtual std::shared_ptr<Variable> evaluate(const std::basic_string<CharType,Traits> &line)=0;
-    };
-}
-
-namespace parser {
-
-    struct LR0Item : public Hashable
-    {
-        std::uint64_t ruleId;
-        std::uint64_t dot;
-        explicit LR0Item(std::uint64_t ruleId,std::uint64_t dot);
-        bool operator==(const LR0Item & other) const = default;
-        auto operator<=>(const LR0Item & other) const = default;
-        std::uint64_t initHash();
-    private:
-        inline static constexpr std::hash<std::uint64_t> hasher{};
-    };
-
-    struct LR1Item : public Hashable
-    {
-        std::uint64_t ruleId;
-        std::uint64_t dot;
-        std::uint64_t lookahead;
-        explicit LR1Item(std::uint64_t ruleId,std::uint64_t dot,std::uint64_t lookahead);
-        bool operator==(const LR1Item & other) const = default;
-        auto operator<=>(const LR1Item & other) const = default;
-        std::uint64_t initHash();
-    private:
-        inline static constexpr std::hash<std::uint64_t> hasher{};
-    };
-
-    namespace LRFamily
-    {
-        struct Action
-        {
-            enum Type
-            {
-                Shift,
-                Reduce,
-                Accept,
-                Error
-            };
-            Type type;
-            std::uint64_t value;
-            Action(Type type,std::uint64_t value);
-        };
-
-    }
-
-    class ShiftReduceParser :virtual public SP<char>
-    {
-    public:
-        using Action=LRFamily::Action;
-        void printTable(std::ostream &H) const;
-        bool parse(const std::string &s) override;
-        //bool parse(std::uint64_t SBId);
-    protected:
-        UM<std::pair<std::uint64_t,std::uint64_t>,Action> gotoIds;
-    };
-
-    class LRFamilyBuilder
-    {
-        virtual LRFamilyBuilder& build() & = 0;
-    };
-
-
-    class LRParserBuilder: virtual protected  GrammarWithFirstFollow, virtual public ShiftReduceParser, public LRFamilyBuilder
-    {
-
-        using Action=LRFamily::Action;
-        UM<US<LR1Item>,int> lr1ItemsIds;
-        VE<US<LR1Item>> lr1Items;
-        VE<bool> isTinal;
-        US<LR1Item> closure(const US<LR1Item> &item);
-    public:
-        //bool parse(const std::string &s) override;
-        LRParserBuilder& build() &;
-    };
-
-    class SSRP : virtual public SSP<char>
-    {
-    public:
-        using Action=LRFamily::Action;
-        std::shared_ptr<Variable> evaluate(const std::string &s) override;
-        using IdsMapType = UM<std::pair<std::uint64_t,std::uint64_t>,Action>;
-        explicit SSRP(IdsMapType &gotoIds);
-    protected:
-        IdsMapType& gotoIds;
-    };
-
-    struct SLRPB: virtual public LRParserBuilder , virtual public SSRP
-    {
-        SLRPB();
-    };
-
-} // parser
-
-template<typename T>
-struct Type : public parser::Variable
-{
-    T value;
-    explicit Type(T value):value(std::move(value)){}
-    Type() = default;
-};
-using StringValue = Type<std::string>;
-using IntValue = Type<std::int64_t>;
-
-
-struct LastProjection : public parser::VariableReducer
-{
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> & variables) const override
-    {
-        return variables.back();
-    }
-};
-
-template<typename T>
-struct DefaultGenerator : public parser::VariableReducer
-{
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> &v) const override
-    {
-        return std::make_shared<T>();
-    }
-};
-
-
-template<typename T>
-struct ToList : public parser::VariableReducer
-{
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> &v) const override
-    {
-        using Vector = Type<VE<T>>;
-        auto x= std::make_shared<Vector>();
-        x->value.push_back(std::dynamic_pointer_cast<Type<T>>(v.front())->value);
-        return x;
-    }
-};
-
-struct ENode
-{
-    enum Operation
-    {
-        Add,
-        Sub,
-        Mul,
-        Div,
-        Mod,
-        Pow,
-        Concat,
-        Number,
-    };
-    Operation op;
-    std::shared_ptr<ENode> lhs,rhs;
-    std::int64_t value;
-    std::int64_t evaluate();
-};
-
-struct ETree : public parser::Variable
-{
-    std::shared_ptr<ENode> root;
-    std::int64_t evaluate()
-    {
-        return root->evaluate();
-    }
-};
-
-std::int64_t power(std::int64_t a, std::int64_t n)
-{
-    if(n==0)
-        return 1;
-    else if(n==1)
         return a;
-    auto s=power(a,n/2);
-    return n%2?s*s*a:s*s;
-}
-
-std::int64_t ENode::evaluate()
-{
-    switch(op)
-    {
-        case Add:
-            return lhs->evaluate()+rhs->evaluate();
-        case Sub:
-            return lhs->evaluate()-rhs->evaluate();
-        case Mul:
-            return lhs->evaluate()*rhs->evaluate();
-        case Div:
-            return lhs->evaluate()/rhs->evaluate();
-        case Mod:
-            return lhs->evaluate()%rhs->evaluate();
-        case Concat:
-            return lhs->evaluate()*std::pow(10,rhs->evaluate());
-        case Pow:
-            return power(lhs->evaluate(),rhs->evaluate());
-        case Number:
-            return value;
-
     }
-}
 
-struct CallParams : public parser::Variable
-{
-    VE<std::shared_ptr<ETree>> parameters;
-};
-
-struct ConcatenateCallParams : public parser::VariableReducer
-{
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> &v) const override
+    template<typename R,typename ...StructureMetaData>
+    R pow(R a, long long n,StructureMetaData ... meta_info)
     {
-        auto x= std::dynamic_pointer_cast<CallParams>(v.at(0));
-        x->parameters.push_back(std::dynamic_pointer_cast<ETree>(v.at(2)));
-        return x;
+        if(n==0)
+            return R(1,meta_info...);
+        else if(n==1)
+            return a;
+        auto s=pow(a,n/2,meta_info...);
+        return n%2?s*s*a:s*s;
     }
-};
 
-using Number = Type<std::int64_t>;
 
-struct NumberGenerator : public parser::VariableReducer
-{
-    std::int64_t v;
-public:
-    NumberGenerator(std::int64_t v):v(v){}
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> & variables) const override
+    template<typename R,typename F,typename Id>
+    R functional_pow(R a,long long n,const F& f,const Id& identity)
     {
-        return std::make_shared<StringValue>(std::to_string(v));
+        if(n==0)
+            return identity;
+        else if(n==1)
+            return a;
+        auto s=functional_pow(a,n/2,f,identity);
+        return n%2?f(f(s,s),a):f(s,s);
     }
-};
 
-struct NumberConcatenation : public parser::VariableReducer
-{
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> & variables) const override
+    template<typename R>
+    bool is_zero(const R&a)
     {
-        auto Z=std::dynamic_pointer_cast<StringValue>(variables.at(0));
-        auto &x=Z->value;
-        x+=std::dynamic_pointer_cast<StringValue>(variables.at(1))->value;
-        return Z;
+        return a==R{};
     }
-};
 
-struct LeadingNumberConcatenation : public parser::VariableReducer
-{
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> & variables) const override
+
+    inline bool is_zero(const std::complex<long double>&a)
     {
-        auto &x=std::dynamic_pointer_cast<StringValue>(variables.at(0))->value;
-        if(variables.size()==1)
-            return std::make_shared<Number>(std::stoll(x));
-        auto &y=std::dynamic_pointer_cast<StringValue>(variables.at(1))->value;
-        auto z=std::stoll(x+y);
-        return std::make_shared<Number>(z);
+        return std::abs(a) < epsilon;
     }
-};
 
-struct ETreeBuilder : public parser::VariableReducer
-{
-    ENode::Operation op;
-    explicit ETreeBuilder(ENode::Operation op):op(op){}
-
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> & variables) const override
+    inline bool is_zero(const std::complex<double>&a)
     {
-        auto x= std::make_shared<ETree>();
-        x->root = std::make_shared<ENode>();
-        x->root->op = op;
-        x->root->lhs = std::dynamic_pointer_cast<ETree>(variables.at(0))->root;
-        x->root->rhs = std::dynamic_pointer_cast<ETree>(variables.at(2))->root;
-        return x;
+        return std::abs(a) < epsilon;
     }
-};
 
-struct NumberToLeaf : public parser::VariableReducer
-{
-    [[nodiscard]] std::shared_ptr<parser::Variable> combine(const VE<std::shared_ptr<parser::Variable>> &v) const override
+    inline bool is_zero(const real &a)
     {
-        auto x= std::make_shared<ETree>();
-        x->root = std::make_shared<ENode>();
-        x->root->op = ENode::Number;
-        x->root->value = std::dynamic_pointer_cast<Number>(v.at(0))->value;
-        return x;
+        return std::abs(a) < epsilon;
     }
-};
 
-std::string tokenize(const std::string &in)
-{
-    std::string out;
-    int balance=0;
-    std::set<char> operators={'+','*'};
-    for(auto c:in)
+    template<typename R>
+    R gcd(R a,R b)
     {
-        out.push_back(c);
-        if(c=='(')
-            balance++;
-        else if(c==')')
-            balance--;
-        if(balance==0 && ! operators.count(c))
-            out.push_back('#');
-    }
-}
-
-int main(int argc, char** argv)
-{
-    using namespace parser;
-    using namespace reducers;
-    auto G = std::make_shared<SLRPB>();
-    std::string scope;
-    int K,N;
-    std::cin >> K >> N;
-    G->RL(std::make_shared<LastProjection>(),"Start","E");
-    G->RL(std::make_shared<ETreeBuilder>(ENode::Add), "E","E","+","T");
-    G->RL(parser::reducers::Identity::instance, "E","T");
-    G->RL(std::make_shared<ETreeBuilder>(ENode::Mul), "T","T","*","Factor");
-    G->RL(parser::reducers::Identity::instance, "T","Factor");
-    G->RL(std::make_shared<NumberToLeaf>(), "Factor","Number");
-    G->RL(std::make_shared<parser::reducers::Projection>(1), "Factor","(","E",")");
-    G->RL(std::make_shared<LeadingNumberConcatenation>(), "Number","NonZero","NumberWithZero"); // Number -> Number Digit
-    G->RL(std::make_shared<LeadingNumberConcatenation>(), "Number","NonZero"); // Number -> Number Digit
-    G->RL(std::make_shared<LeadingNumberConcatenation>(), "Number","Zero"); // Number -> Number Digit
-    G->RL(parser::reducers::Identity::instance, "NumberWithZero","Digit");
-    G->RL(std::make_shared<NumberConcatenation>(), "NumberWithZero","NumberWithZero","Digit");
-
-    for(int i=0;i<10;i++)
-        G->RL(std::make_shared<NumberGenerator>(i), "Digit",std::to_string(i)); // Digit -> i
-    for(int i=1;i<10;i++)
-        G->RL(std::make_shared<NumberGenerator>(i), "NonZero",std::to_string(i)); // Digit -> i
-    G->RL(std::make_shared<NumberGenerator>(0), "Zero","0"); // Digit -> i
-    G->build();
-    //G->printTable(std::cout);
-    std::string E;
-    std::cin >> E;
-    int counter=0;
-    for(int i=0;i<N;i++) for(int j=i+1;j<=N;j++)
-    {
-        auto sub=E.substr(i,j-i);
-        auto result = G->evaluate(sub);
-        if(result)
+        if(a<b)
+            std::swap(a,b);
+        R q,tmp;
+        while(!is_zero(b))
         {
-            auto main = std::dynamic_pointer_cast<ETree>(result);
-            auto value = main->evaluate();
-            counter += value%K==0;
+            q=a/b;
+            tmp=b;
+            b=a-b*q;
+            a=tmp;
         }
+        return a;
     }
-    std::cout << counter << '\n';
 
-}
-
-namespace parser {
-
-    LR0Item::LR0Item(std::uint64_t ruleId, std::uint64_t dot) : ruleId(ruleId), dot(dot)
+    template<typename R>
+    R lcm(const R &a,const R &b)
     {
-        initHash();
+        return a*b/gcd(a,b);
     }
 
-    std::uint64_t LR0Item::initHash() {
-        std::uint64_t hash=ruleId;
-        hash^=hasher(dot);
-        return hash;
-    }
-
-    LRFamily::Action::Action(LRFamily::Action::Type type, std::uint64_t value) : type(type), value(value)
+    template<typename R=integer>
+    struct egcd_t
     {
+        R a,b,d;
+    };
+
+    template<typename R>
+    egcd_t<R> egcd(R a,R b)
+    {
+        if(a<b)
+        {
+            auto e = egcd(b, a);
+            std::swap(e.a,e.b);
+            return e;
+        }
+        R q,s1=1,s2=0,t1=0,t2=1,tmp;
+        while(!is_zero(b))
+        {
+            q=a/b;
+            tmp=s2;
+            s2=s1-q*s2;
+            s1=tmp;
+            tmp=t2;
+            t2=t1-q*t2;
+            t1=tmp;
+            tmp=b;
+            b=a-b*q;
+            a=tmp;
+        }
+        return {s1,t1,a};
     }
 
-
-    LRParserBuilder &LRParserBuilder::build() &
+    template<typename R>
+    std::pair<R,R> bezout(R a, R b)
     {
-        SB augmentedSB=addSB("");
-        Grammar::addRule(Rule(augmentedSB,{axiom}));
-        setAxiom(augmentedSB);
-        auto augmentedRuleId=rules.size()-1;
-        ruleIdsBySBId.resize(SBs.size());
-        buildFirst();
-        buildFollow();
-        isTinal.resize(SBs.size(),true);
+        auto [u,v,_]=egcd(a,b);
+        return {u,v};
+    }
 
-        for(const auto & rule : rules)
-            isTinal[rule.left.id]=false;
-        LR1Item I0{rules.size()-1,0,{SpecialCharacter::EndOfString}};
-        lr1Items.push_back(std::move(closure({I0})));
-        lr1ItemsIds.emplace(lr1Items.back(), lr1Items.size() - 1);
-        int k=0,n=1;
+    template<typename B>
+    B next_gray(B n)
+    {
+        return n^(n>>1);
+    }
+
+    template<typename F,typename R>
+    std::pair<integer,integer> floyd_functional_cycle(F && f,R x0)
+    {
+        /*
+         * Find a period
+         * */
+        R x=x0,y=x;
+        integer m=0;
         do
         {
-            UM<std::uint64_t,US<LR1Item>> nextItemsSets;
-            for(const auto & item : lr1Items[k])
-            {
-                if(item.dot<rules[item.ruleId].right.size())
-                    nextItemsSets[rules[item.ruleId].right[item.dot].id].emplace(item.ruleId,item.dot+1,item.lookahead);
-            }
-            for(auto &[SBId,itemsSet]: nextItemsSets)
-            {
-                itemsSet = std::move(closure(itemsSet));
-                auto it=lr1ItemsIds.find(itemsSet);
-                if(it == lr1ItemsIds.end())
-                {
-                    lr1Items.push_back(std::move(itemsSet));
-                    std::tie(it,std::ignore)=lr1ItemsIds.emplace(lr1Items.back(), lr1Items.size() - 1);
-                    n++;
-                }
-                gotoIds.emplace(std::make_pair(k,SBId),Action(Action::Shift,it->second));
-            }
-        } while(++k<n);
-        for(int i=0;i<n;i++) for(const auto &item: lr1Items[i]) if(rules[item.ruleId].right.size() == item.dot)
+            x=f(x);
+            y=f(f(y));
+            m++;
+        }while(y!=x);
+        /*
+         * Find offset
+         * */
+        x=x0,y=x;
+        for(int i=0;i<m;i++)
+            y=f(y);
+        int offset=0;
+        while(x!=y)
         {
-            [[unlikely]]
-            if (item.ruleId == augmentedRuleId)
-                gotoIds.emplace(std::make_pair(i, SpecialCharacter::EndOfString), Action(Action::Accept, 0));
-            else gotoIds.emplace(std::make_pair(i, item.lookahead), Action(Action::Reduce, item.ruleId));
+            x=f(x);
+            y=f(y);
+            offset++;
         }
-        return *this;
+
+        /*
+         * Find fundamental period
+         * */
+        y=f(x);
+        integer period=1;
+        while(x!=y) {
+            y = f(y);
+            period++;
+        }
+        return std::make_pair(period,offset);
     }
 
-    US<LR1Item> LRParserBuilder::closure(const US<LR1Item> &items) {
-        US<LR1Item> newItems;
-        struct context
-        {
-            std::uint64_t SBId;
-            US<std::uint64_t> firstIds;
-        };
-        std::stack<context> stack;
-        for(const auto& item:items)
-        {
-            newItems.insert(item);
-            if(item.dot < rules[item.ruleId].right.size())
-            {
-                if(isTinal[rules[item.ruleId].right[item.dot].id])
-                    continue;
-                context ctx;
-                ctx.SBId=rules[item.ruleId].right[item.dot].id;
-                if(item.dot+1==rules[item.ruleId].right.size())
-                    ctx.firstIds.insert(item.lookahead);
-                else for(auto k=item.dot+1;k<rules[item.ruleId].right.size();k++)
-                {
-                    ctx.firstIds.insert(firstIds[rules[item.ruleId].right[k].id].begin(),firstIds[rules[item.ruleId].right[k].id].end());
-                    if(!firstIds[rules[item.ruleId].right[k].id].contains(SpecialCharacter::Epsilon))
-                        break;
-                }
-                ctx.firstIds.erase(SpecialCharacter::Epsilon);
-                stack.push(ctx);
-            }
-            while(!stack.empty())
-            {
-                auto [id,lookaheads]=stack.top();
-                stack.pop();
-                bool anyInsertion=false;
-                for(const auto & ruleId : ruleIdsBySBId[id])
-                {
-                    context ctx;
-                    if(!rules[ruleId].right.empty())
-                        ctx.SBId = rules[ruleId].right.front().id;
-                    for (auto lookahead: lookaheads)
-                    {
-                        auto [newItemIterator, inserted] = newItems.insert(LR1Item{ruleId, 0, lookahead});
-                        anyInsertion = anyInsertion || inserted;
-                        if (inserted && !rules[ruleId].right.empty() && !isTinal[rules[ruleId].right.front().id])
-                        {
-                           int k;
-                            for (k = 1; k < rules[ruleId].right.size(); k++)
-                            {
-                                ctx.firstIds.insert(firstIds[rules[ruleId].right[k].id].begin(),
-                                                    firstIds[rules[ruleId].right[k].id].end());
-                                if (!firstIds[rules[ruleId].right[k].id].contains(SpecialCharacter::Epsilon))
-                                    break;
-                            }
-                            if(k==rules[ruleId].right.size())
-                                ctx.firstIds.insert(lookahead);
-                            ctx.firstIds.erase(SpecialCharacter::Epsilon);
-                        }
-                    }
-                    if(anyInsertion)
-                        stack.push(ctx);
-                }
-            }
-        }
-        return newItems;
-    }
 
-    bool ShiftReduceParser::parse(const std::string &S) {
-        std::stack<std::pair<std::uint64_t,std::uint64_t>> stack;
-        stack.emplace(0,-1);
-        char character[2]{0,0};
-        for(int i=0;i<S.size();)
-        {
-            auto &s=S[i];
-            auto [state,ruleId]=stack.top();
-            character[0]=s;
-            auto SBId=SBMap.at(character);
-            auto it=gotoIds.find(std::make_pair(state,SBId));
-            if(it==gotoIds.end())
-                return false;
-            auto [type,value]=it->second;
-            switch(type)
-            {
-                case Action::Shift:
-                    i++;
-                    stack.emplace(value,SBId);
-                    break;
-                case Action::Reduce:
-                {
-                    if (stack.size() < rules[value].right.size())
-                        return false;
-                    for (int j = 0; j < rules[value].right.size(); j++)
-                        stack.pop();
-                    auto newState = gotoIds.find(std::make_pair(stack.top().first, rules[value].left.id));
-                    if (newState == gotoIds.end())
-                        return false;
-                    stack.emplace(newState->second.value,rules[value].left.id);
-                    break;
-                }
-                case Action::Accept:
-                    return true;
-
-            }
-        }
-        while(!stack.empty())
-        {
-            auto [state,ruleId]=stack.top();
-            auto it=gotoIds.find(std::make_pair(state,SpecialCharacter::EndOfString));
-            if(it==gotoIds.end())
-                return false;
-            auto [type,value]=it->second;
-            switch(type)
-            {
-                case Action::Reduce:
-                {
-                    if (stack.size() < rules[value].right.size())
-                        return false;
-                    for (int j = 0; j < rules[value].right.size(); j++)
-                        stack.pop();
-                    auto newState = gotoIds.find(std::make_pair(stack.top().first, rules[value].left.id));
-                    if (newState == gotoIds.end())
-                        return false;
-                    stack.emplace(newState->second.value,rules[value].left.id);
-                    break;
-                }
-                case Action::Accept:
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    LR1Item::LR1Item(std::uint64_t ruleId, std::uint64_t dot, std::uint64_t lookahead) : ruleId(ruleId), dot(dot), lookahead(lookahead)
+    template<typename F,typename R>
+    integer functional_period(F &&f, R x)
     {
+        /*
+        * Find a period
+        * */
+        R y=x;
+        integer m=0;
+        do
+        {
+            x=f(x);
+            y=f(f(y));
+            m++;
+        }while(y!=x);
+        return m;
     }
+}
 
-    std::shared_ptr<Variable> SSRP::evaluate(const std::string &S)
+
+#endif //ACPC_PREPARATION_ABSTRACT_ALGEBRA_H
+
+
+namespace cp
+{
+    template<integer mod>
+    struct cyclic
     {
-        std::stack<std::tuple<std::uint64_t,std::uint64_t,std::shared_ptr<Variable>>> stack;
-        stack.emplace(0,-1, nullptr);
-        char character[2]{0,0};
-        for(int i=0;i<S.size();)
+        integer n;
+        inline static bool assume_prime=true;
+        inline static constexpr integer m = mod;
+        constexpr cyclic(integer o=0):n((o+m)%m){}
+        bool operator==(int O) const
         {
-            auto &s=S[i];
-            auto [state,ruleId,variable]=stack.top();
-            character[0]=s;
-            auto SBId=SBMap.at(character);
-            auto it=gotoIds.find(std::make_pair(state,SBId));
-            if(it==gotoIds.end())
-                return nullptr;
-            auto [type,value]=it->second;
-            switch(type)
-            {
-                case Action::Shift:
-                    i++;
-                    stack.emplace(value,SBId,variable);
-                    break;
-                case Action::Reduce:
-                {
-                    VE<std::shared_ptr<Variable>> reduced_variables(rules[value].right.size());
-                    if (stack.size() < rules[value].right.size())
-                        return nullptr;
-                    for (int j = 0; j < rules[value].right.size(); j++)
-                    {
-                        auto [_1,_2,var] = stack.top();
-                        stack.pop();
-                        reduced_variables[rules[value].right.size()-j-1]=var;
-                    }
-                    auto newState = gotoIds.find(std::make_pair(std::get<0>(stack.top()), rules[value].left.id));
-                    if (newState == gotoIds.end())
-                        return nullptr;
-                    stack.emplace(newState->second.value,rules[value].left.id,reducers[value]->combine(reduced_variables));
-                    break;
-                }
-                case Action::Accept:
-                    return variable;
-            }
+            return n==(m+O)%m;
         }
-        while(!stack.empty())
+
+        bool operator!=(int O) const
         {
-            auto [state,ruleId,variable]=stack.top();
-            auto it=gotoIds.find(std::make_pair(state,SpecialCharacter::EndOfString));
-            if(it==gotoIds.end())
-                return nullptr;
-            auto [type,value]=it->second;
-            switch(type)
-            {
-                case Action::Reduce:
-                {
-                    if (stack.size() < rules[value].right.size())
-                        return nullptr;
-                    VE<std::shared_ptr<Variable>> reduced_variables(rules[value].right.size());
-                    for (int j = 0; j < rules[value].right.size(); j++)
-                    {
-                        auto [_1,_2,var] = stack.top();
-                        stack.pop();
-                        reduced_variables[rules[value].right.size()-j-1]=var;
-                    }
-                    auto newState = gotoIds.find(std::make_pair(std::get<0>(stack.top()), rules[value].left.id));
-                    if (newState == gotoIds.end())
-                        return nullptr;
-                    stack.emplace(newState->second.value,rules[value].left.id,reducers[value]->combine(reduced_variables));
-                    break;
-                }
-                case Action::Accept:
-                    return variable;
-            }
+            return n!=(m+O)%m;
         }
-        return nullptr;
-    }
 
-    SSRP::SSRP(SSRP::IdsMapType &gotoIds) : gotoIds(gotoIds) {
+        bool operator==(cyclic O) const
+        {
+            return n==O.n;
+        }
 
-    }
+        bool operator!=(cyclic O) const
+        {
+            return n!=O.n;
+        }
 
-    SLRPB::SLRPB() : SSRP(ShiftReduceParser::gotoIds){
+        cyclic operator-() const
+        {
+            return cyclic(-n);
+        }
 
-    }
+        auto& operator+=(const cyclic &O)
+        {
+            n=(n+O.n)%m;
+            return *this;
+        }
+        auto& operator-=(const cyclic &O)
+        {
+            n=(n+m-O.n)%m;
+            return *this;
+        }
 
-} 
-std::uint64_t SB::initHash() {
-    return hasher(id);
-}
+        auto& operator*=(const cyclic &O)
+        {
+            n=(n*O.n)%m;
+            return *this;
+        }
 
-SB::SB(std::uint64_t id): id(id)
-{
-    initHash();
-}
+        auto& operator/=(const cyclic &O)
+        {
+            return (*this)*=O.inv();
+        }
 
-Rule::Rule(SB left, const VE<SB> &right):left(left),right(right)
-{
-    initHash();
-}
+        auto operator*(const cyclic &O) const
+        {
+            auto w=*this;
+            return w*=O;
+        }
 
-std::uint64_t Rule::initHash()  {
-    std::uint64_t hash=left.hash;
-    hash^=hasher(right);
-    return hash;
-}
+        auto operator+(const cyclic &O) const
+        {
+            auto w=*this;
+            return w+=O;
+        }
 
-Rule::Rule(SB left, VE<SB> &&right) : left(left), right(std::move(right))
-{
-    initHash();
-}
+        auto operator-(const cyclic &O) const
+        {
+            auto w=*this;
+            return w-=O;
+        }
 
-void Grammar::addRule(const Rule &rule) {
-    if(rule.left.id>=ruleIdsBySBId.size())
-        ruleIdsBySBId.resize(2*rule.left.id+1);
-    ruleIdsBySBId[rule.left.id].push_back(rules.size());
-    rules.push_back(rule);
-}
+        auto operator/(const cyclic &O) const
+        {
+            return (*this)*O.inv();
+        }
 
-const VE<Rule> &Grammar::getRules() const {
-    return rules;
-}
+        cyclic pinv() const
+        {
+            return egcd(n,m).a;
+        }
 
-void Grammar::addRule(Rule &&rule) {
-    if(rule.left.id>=ruleIdsBySBId.size())
-        ruleIdsBySBId.resize(2*rule.left.id+1);
-    ruleIdsBySBId[rule.left.id].push_back(rules.size());
-    rules.push_back(std::move(rule));
-}
+        auto inv() const
+        {
+            if(assume_prime)
+                return pow(*this,m-2);
+            else return pinv();
+        }
 
-void Grammar::setAxiom(const SB & _axiom) {
-    this->axiom=_axiom;
-}
+        auto& operator++()
+        {
+            return *this+=1;
+        }
 
+        auto& operator--()
+        {
+            return *this-=1;
+        }
 
-void GrammarWithFirstFollow::buildFirst() {
-    firstIds.resize(SBs.size());
-    bool insertion;
-    for(int i=0;i<firstIds.size();i++)
-        firstIds[i]={ static_cast<std::uint64_t>(i)};
-    for(auto &rule:getRules())
-        firstIds[rule.left.id]={};
-    do
+        auto operator++(int)
+        {
+            cyclic r(n);
+            *this += 1;
+            return r;
+        }
+
+        auto operator--(int)
+        {
+            cyclic r(n);
+            *this -= 1;
+            return r;
+        }
+
+        explicit operator integer&()
+        {
+            return n;
+        }
+
+        explicit operator const integer&() const
+        {
+            return n;
+        }
+
+        static constexpr integer modulus()
+        {
+            return m;
+        }
+    };
+
+    template<integer m>
+    auto operator*(integer k,cyclic<m> s)
     {
-        insertion=false;
-        for(auto & rule : getRules())
-        {
-            auto &leftSB=SBs[rule.left.id];
-            auto &leftFirstIds=firstIds[leftSB.id];
-            int i;
-            for(i=0;i<rule.right.size();i++)
-            {
-                auto &rightSB = rule.right[i];
-                auto &rightFirstIds = this->firstIds[rightSB.id];
-                for(auto &firstId : rightFirstIds)
-                    if(firstId != SpecialCharacter::Epsilon && leftFirstIds.insert(firstId).second)
-                        insertion=true;
-                if(!rightFirstIds.contains(SpecialCharacter::Epsilon))
-                    break;
-            }
-            if(i==rule.right.size() && leftFirstIds.insert(SpecialCharacter::Epsilon).second)
-                insertion=true;
-        }
-    } while(insertion);
+        return s*k;
+    }
+
+    template<integer m>
+    auto operator+(integer k,cyclic<m> s)
+    {
+        return s+k;
+    }
+
+    template<integer m>
+    auto operator-(integer k,cyclic<m> s)
+    {
+        return (-s)+k;
+    }
 }
 
-void GrammarWithFirstFollow::buildFollow()
+#endif //CPLIBRARY_FIXED_H
+//
+// Created by ramizouari on 28/11/23.
+//
+
+#ifndef CPLIBRARY_DYNAMIC_H
+#define CPLIBRARY_DYNAMIC_H
+namespace cp
 {
-    followIds.resize(SBs.size());
-    bool insertion;
-    followIds[axiom.id].insert(SpecialCharacter::EndOfFile);
-    do
+    inline static constexpr integer dynamic_modulus=-2;
+    template<>
+    struct cyclic<dynamic_modulus>
     {
-        insertion=false;
-        for(auto & rule : getRules())
+        integer m,n;
+        bool assume_prime=true;
+    public:
+        cyclic(integer o=0,integer q=0):m(q),n(m?(o+m)%m:o){}
+        bool operator==(integer O) const
         {
-            auto &leftSB=SBs[rule.left.id];
-            auto &leftFirstIds=firstIds[leftSB.id];
-            for(int i=0;i<rule.right.size();i++)
-            {
-                bool allRightsHaveEpsilon = true;
-                auto &S1 = rule.right[i];
-                for (int j = i + 1; j < rule.right.size(); j++)
-                {
-                    auto &S2 = rule.right[j];
-                    for(auto &id:firstIds[S2.id]) if(id != SpecialCharacter::Epsilon)
-                    {
-                        auto [_,inserted]=followIds[S1.id].insert(id);
-                        insertion=insertion||inserted;
-                    }
-                    if (!firstIds[S2.id].contains(SpecialCharacter::Epsilon))
-                    {
-                        allRightsHaveEpsilon = false;
-                        break;
-                    }
-                }
-                if(allRightsHaveEpsilon)
-                {
-                    for(auto &id:followIds[leftSB.id])
-                    {
-                        auto [_,inserted]=followIds[S1.id].insert(id);
-                        insertion=insertion||inserted;
-                    }
-                }
-            }
+            if(!m) return n==O;
+            else return n==(m+O)%m;
         }
-    } while(insertion);
+
+        bool operator==(cyclic O) const
+        {
+            return n==O.n;
+        }
+
+        cyclic& operator+=(const cyclic &O)
+        {
+            if(!m) m=O.m;
+            n+=O.n;
+            if(m)
+                n%=m;
+            return *this;
+        }
+
+        cyclic& operator+=(integer O)
+        {
+            n=n+O;
+            if(m) n%=m;
+            return *this;
+        }
+
+        cyclic& operator-=(const cyclic &O)
+        {
+            if(!m)
+                m=O.m;
+            n+=m-O.n;
+            if(m)
+                n%=m;
+            return *this;
+        }
+
+        cyclic& operator-=(integer O)
+        {
+            n+=m-O;
+            if(m) n%=m;
+            return *this;
+        }
+
+        cyclic& operator*=(const cyclic &O)
+        {
+            if(!m) m=O.m;
+            n*=O.n;
+            if(m) n%=m;
+            return *this;
+        }
+
+        cyclic& operator*=(integer O)
+        {
+            n*=O;
+            if(m) n%=m;
+            return *this;
+        }
+
+        cyclic& operator=(integer O)
+        {
+            n=O;
+            if(m) n%=m;
+            return *this;
+        }
+
+        cyclic inv() const
+        {
+            if(m==1)
+                return *this;
+            else if(assume_prime)
+                return pow(*this,m-2,m);
+            else return pinv();
+        }
+
+        cyclic& operator/=(const cyclic &O)
+        {
+            return (*this)*=O.inv();
+        }
+
+        cyclic& operator/=(integer O)
+        {
+            return (*this)*=cyclic(O,m).inv();
+        }
+
+        cyclic operator*(const cyclic &O) const
+        {
+            auto w=*this;
+            return w*=O;
+        }
+
+        cyclic operator+(const cyclic &O) const
+        {
+            auto w=*this;
+            return w+=O;
+        }
+
+        cyclic operator+(integer O) const
+        {
+            auto w=*this;
+            return w+=O;
+        }
+
+        cyclic operator-() const
+        {
+            return {m-n,m};
+        }
+
+        cyclic operator-(const cyclic &O) const
+        {
+            auto w=*this;
+            return w-=O;
+        }
+
+        cyclic operator-(integer O) const
+        {
+            auto w=*this;
+            return w-=O;
+        }
+
+        cyclic operator/(const cyclic &O) const
+        {
+            return (*this)*O.inv();
+        }
+
+        cyclic operator/(integer O) const
+        {
+            return (*this)*cyclic(O,m).inv();
+        }
+
+        cyclic pinv() const
+        {
+            return {egcd(n,m).a,m};
+        }
+
+        cyclic& operator++()
+        {
+            return *this+=1;
+        }
+
+        cyclic& operator--()
+        {
+            return *this-=1;
+        }
+
+        cyclic operator++(int)
+        {
+            cyclic r(n,m);
+            *this += 1;
+            return r;
+        }
+
+        cyclic operator--(int)
+        {
+            cyclic r(n,m);
+            *this -= 1;
+            return r;
+        }
+
+        explicit operator integer&()
+        {
+            return n;
+        }
+
+        explicit operator const integer&() const
+        {
+            return n;
+        }
+
+        integer modulus() const
+        {
+            return m;
+        }
+    };
+
+}
+
+#endif //CPLIBRARY_DYNAMIC_H
+//
+// Created by ramizouari on 28/11/23.
+//
+
+#ifndef CPLIBRARY_STATIC_H
+#define CPLIBRARY_STATIC_H
+namespace cp
+{
+    inline static constexpr integer static_modulus=-1;
+    template<>
+    struct cyclic<static_modulus>
+    {
+        integer n;
+    public:
+        inline static integer m=1;
+        inline static bool assume_prime=true;
+        cyclic(integer o=0):n((o+m)%m){}
+        bool operator==(integer O) const
+        {
+            return n==(m+O)%m;
+        }
+
+        bool operator!=(integer O) const
+        {
+            return n!=(m+O)%m;
+        }
+
+        bool operator==(cyclic O) const
+        {
+            return n==O.n;
+        }
+
+        bool operator!=(cyclic O) const
+        {
+            return n!=O.n;
+        }
+
+        cyclic& operator+=(const cyclic &O)
+        {
+            n=(n+O.n)%m;
+            return *this;
+        }
+        cyclic& operator-=(const cyclic &O)
+        {
+            n=(n+m-O.n)%m;
+            return *this;
+        }
+
+        cyclic& operator*=(const cyclic &O)
+        {
+            n=(n*O.n)%m;
+            return *this;
+        }
+
+        cyclic inv() const
+        {
+            if(assume_prime)
+                return pow(*this,m-2);
+            else return pinv();
+        }
+
+        cyclic& operator/=(const cyclic &O)
+        {
+            return (*this)*=O.inv();
+        }
+
+        cyclic operator*(const cyclic &O) const
+        {
+            auto w=*this;
+            return w*=O;
+        }
+
+        cyclic operator+(const cyclic &O) const
+        {
+            auto w=*this;
+            return w+=O;
+        }
+
+        cyclic operator-() const
+        {
+            return cyclic(m-n);
+        }
+
+        cyclic operator-(const cyclic &O) const
+        {
+            auto w=*this;
+            return w-=O;
+        }
+
+        cyclic operator/(const cyclic &O) const
+        {
+            return (*this)*O.inv();
+        }
+
+        cyclic pinv() const
+        {
+            return egcd(n,m).a;
+        }
+
+        cyclic& operator++()
+        {
+            return *this+=1;
+        }
+
+        cyclic& operator--()
+        {
+            return *this-=1;
+        }
+
+        cyclic operator++(int)
+        {
+            cyclic r(n);
+            *this += 1;
+            return r;
+        }
+
+        cyclic operator--(int)
+        {
+            cyclic r(n);
+            *this -= 1;
+            return r;
+        }
+
+        explicit operator integer&()
+        {
+            return n;
+        }
+
+        explicit operator const integer&() const
+        {
+            return n;
+        }
+
+        static integer modulus()
+        {
+            return m;
+        }
+        static void set_modulus(integer _m)
+        {
+            m=_m;
+        }
+    };
+
+    using d_cyclic=cyclic<static_modulus>;
+
+}
+
+#endif //CPLIBRARY_STATIC_H
+#endif
+
+constexpr int L=1e6+1;
+using integer=std::int64_t;
+using extended_integer=std::variant<int,std::monostate>;
+constexpr integer M=1e9+7;
+using IK=cp::cyclic<M>;
+using natural=unsigned long long;
+struct RNG
+{
+    static inline constexpr natural salt=0x9e3779b97f4a7c13;
+    std::mt19937_64 rng;
+    RNG():rng(std::random_device{}()^salt){}
+    RNG(natural seed):rng(seed^salt){}
+    natural operator()()
+    {
+        return rng();
+    }
+    using result_type=natural;
+    static constexpr result_type min()
+    {
+        return std::mt19937_64::min();
+    }
+    static constexpr result_type max()
+    {
+        return std::mt19937_64::max();
+    }
+};
+
+struct int_hash
+{
+    RNG rng;
+    std::uniform_int_distribution<integer> dist;
+    integer a,b;
+    inline static constexpr integer M=998244353;
+    int_hash():dist(1,M-1),a(dist(rng)),b(dist(rng)){}
+
+    std::size_t operator()(integer x) const
+    {
+        return (a*x+b)%M;
+    }
+};
+
+struct pair_int_hash
+{
+    RNG rng;
+    std::uniform_int_distribution<integer> dist;
+    integer a,b,c;
+    inline static constexpr integer M=998244353;
+    pair_int_hash():dist(1,M-1),a(dist(rng)),b(dist(rng)){}
+
+    std::size_t operator()(const std::pair<integer,integer> & x) const
+    {
+        return (a*x.first+b*x.second+c)%M;
+    }
+};
+
+
+extended_integer operator+(const extended_integer &a,const extended_integer &b)
+{
+    if(a.index()==0 && b.index()==0)
+        return std::get<0>(a)+std::get<0>(b);
+    else return std::monostate{};
+}
+
+integer minimum_moves(integer x, std::unordered_map<integer,integer,int_hash> &cache)
+{
+    if(x==0)
+        return 0;
+    if(cache.count(x))
+        return cache[x];
+    auto s=std::to_string(x);
+    integer r=x;
+    for(int i=s.size()-1;i>=0;i--) if(s[i]!='0')
+        r=std::min(r,minimum_moves(x-(s[i]-'0'),cache)+1);
+    return cache[x]=r;
+}
+
+integer minimum_moves(integer x)
+{
+    std::unordered_map<integer,integer,int_hash> cache;
+    return minimum_moves(x,cache);
+}
+
+integer naive_count(integer n)
+{
+    int counter=0;
+    for(int i=0;i<=n;i++)
+    {
+        auto s=std::to_string(i);
+        bool admissible=true;
+        for(int j=1;j<s.size() && admissible;j++)
+            if(s[j]==s[j-1])
+                admissible=false;
+        counter+=admissible;
+    }
+    return counter;
+}
+
+constexpr integer base=10,limit=18;
+
+
+integer number_of_admissible_numbers(std::string S,int left=0)
+{
+    integer R=0;
+    if(S.empty())
+        return 1;
+    integer r=S[0]-'0';
+    if(r>left)
+        r--;
+    if(r) for(int j=1;j<S.size();j++) r*=9;
+    R+=r;
+    if(S[0]-'0'!=left)
+        R+=number_of_admissible_numbers(S.substr(1),S[0]-'0');
+    return R;
+}
+
+integer number_of_admissible_numbers(integer n)
+{
+    if(n<0)
+        return 0;
+    auto S=std::to_string(n);
+    auto R=number_of_admissible_numbers(S);
+    for(int i=0;i<S.size();i++)
+        R+=number_of_admissible_numbers(std::string(i,'9'),0);
+    return R;
+}
+
+int main()
+{
+    integer a,b;
+    std::cin >> a >> b;
+    std::cout << number_of_admissible_numbers(b)-number_of_admissible_numbers(a-1) << '\n';
 }

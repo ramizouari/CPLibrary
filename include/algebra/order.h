@@ -1,5 +1,5 @@
-﻿#ifndef __ORDER_H__
-#define __ORDER_H__
+﻿#ifndef ___CP_LIBRARY_ORDER_H__
+#define ___CP_LIBRARY_ORDER_H__
 #include "abstract_algebra.h"
 #include <compare>
 #include <variant>

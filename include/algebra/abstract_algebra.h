@@ -7,6 +7,7 @@
 #include <complex>
 #include <functional>
 #include <cstdint>
+#include <concepts>
 
 namespace cp
 {
@@ -45,6 +46,18 @@ namespace cp
             return a;
         auto s=pow(a,n/2,meta_info...);
         return n%2?s*s*a:s*s;
+    }
+
+
+    template<typename R,typename F,typename Id>
+    R functional_pow(R a,long long n,const F& f,const Id& identity)
+    {
+        if(n==0)
+            return identity;
+        else if(n==1)
+            return a;
+        auto s=functional_pow(a,n/2,f,identity);
+        return n%2?f(f(s,s),a):f(s,s);
     }
 
     template<typename R>

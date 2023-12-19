@@ -267,9 +267,10 @@ namespace cp
 
     };
 
-    inline integer chinese_remainder(const std::vector<std::pair<integer,integer>> &S)
+    template<std::integral I>
+    inline I chinese_remainder(const std::vector<std::pair<I,I>> &S)
     {
-        std::stack<std::pair<integer,integer>> Q;
+        std::stack<std::pair<I,I>> Q;
         for(auto s:S)
             Q.push(s);
         while(Q.size() > 1)
@@ -279,15 +280,18 @@ namespace cp
             auto [a2,p2]=Q.top();
             Q.pop();
             auto [k1,k2]=bezout(p1,p2);
-            k2*=(a1-a2);
-            Q.push({(k2*p2+a2)%(p1*p2),p1*p2});
+            auto x=(k1*a2*p1+k2*a1*p2)%(p1*p2);
+            if(x<0)
+                x+=p1*p2;
+            Q.emplace(x,p1*p2);
         }
         return Q.top().first;
     }
 
-    inline integer chinese_remainder(const std::vector<integer>& A,const std::vector<integer>& P)
+    template<std::integral I>
+    I chinese_remainder(const std::vector<I>& A,const std::vector<I>& P)
     {
-        std::vector<std::pair<integer,integer>> S;
+        std::vector<std::pair<I,I>> S;
         int n=A.size(),m=P.size();
         S.reserve(n);
         for(int i=0;i<n;i++)

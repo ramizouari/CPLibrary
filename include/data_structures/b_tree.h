@@ -42,7 +42,7 @@ namespace cp::data_structures
     template<typename T,typename V,int m>
     struct b_node
     {
-        statistics_trees::order_node<order_closure<T>, b_data<T,V,m>>* children;
+        stats_trees::order_node<order_closure<T>, b_data<T,V,m>>* children;
     };
 
 /*
@@ -68,7 +68,7 @@ namespace cp::data_structures
 * 2. The new key is not greater than the key-value of the current B-supertree and not lower than the key-value of the previous of such B-supertree
 */
     template<typename T, typename V, int m>
-    statistics_trees::order_node<order_closure<T>, b_data<T, V, m>>* find(b_node<T, V, m>* node, const typename std::common_type<T>::type& v)
+    stats_trees::order_node<order_closure<T>, b_data<T, V, m>>* find(b_node<T, V, m>* node, const typename std::common_type<T>::type& v)
     {
         if (!node)
             return nullptr;
@@ -106,8 +106,8 @@ namespace cp::data_structures
 * - The left B-subtree must have strictly less than m elements
 */
     template<typename T, typename V, int m>
-    b_node<T, V, m>* rotate_left(b_node<T, V, m>* node, statistics_trees::order_node<order_closure<T>,b_data<T,V,m>> *L,
-                                 statistics_trees::order_node<order_closure<T>,b_data<T,V,m>>*R)
+    b_node<T, V, m>* rotate_left(b_node<T, V, m>* node, stats_trees::order_node<order_closure<T>,b_data<T,V,m>> *L,
+                                 stats_trees::order_node<order_closure<T>,b_data<T,V,m>>*R)
     {
         auto p = R->data.ptr->children;
         while (p->left)
@@ -136,8 +136,8 @@ namespace cp::data_structures
 * - The right B-subtree must have strictly less than m elements
 */
     template<typename T, typename V, int m>
-    b_node<T, V, m>* rotate_right(b_node<T, V, m>* node, statistics_trees::order_node<order_closure<T>, b_data<T, V, m>>* L,
-                                  statistics_trees::order_node<order_closure<T>, b_data<T, V, m>>* R)
+    b_node<T, V, m>* rotate_right(b_node<T, V, m>* node, stats_trees::order_node<order_closure<T>, b_data<T, V, m>>* L,
+                                  stats_trees::order_node<order_closure<T>, b_data<T, V, m>>* R)
     {
         auto p = L->data.ptr->children;
         while (p->right)
@@ -166,8 +166,8 @@ namespace cp::data_structures
 * - Each B-subtree must have exactly m/2 children
 */
     template<typename T, typename V, int m>
-    b_node<T, V, m>* merge(b_node<T, V, m>* node, statistics_trees::order_node<order_closure<T>, b_data<T, V, m>>* L,
-                           statistics_trees::order_node<order_closure<T>, b_data<T, V, m>>* R)
+    b_node<T, V, m>* merge(b_node<T, V, m>* node, stats_trees::order_node<order_closure<T>, b_data<T, V, m>>* L,
+                           stats_trees::order_node<order_closure<T>, b_data<T, V, m>>* R)
     {
         auto p = L->data.ptr->children;
         while (p->right)
@@ -187,7 +187,7 @@ namespace cp::data_structures
 * - child has m elements
 */
     template<typename T, typename V, int m>
-    b_node<T, V, m>* split(b_node<T, V, m>* node, statistics_trees::order_node<order_closure<T>,b_data<T,V,m>> *child)
+    b_node<T, V, m>* split(b_node<T, V, m>* node, stats_trees::order_node<order_closure<T>,b_data<T,V,m>> *child)
     {
         auto med = select(child->data.ptr->children,m/2);
         auto [Q,tmp] = extract(med, med->v);
@@ -270,7 +270,7 @@ namespace cp::data_structures
 
 
     template<typename T,typename V,int m>
-    void rebalance(b_node<T,V,m> *node, statistics_trees::order_node<order_closure<T>,b_data<T,V,m>>*L)
+    void rebalance(b_node<T,V,m> *node, stats_trees::order_node<order_closure<T>,b_data<T,V,m>>*L)
     {
         auto R = next(L), LL = prev(L);
         if (R && size(R->data.ptr->children) > m / 2)
@@ -287,7 +287,7 @@ namespace cp::data_structures
 * Inserts (v,data) into the B-tree.
 */
     template<typename T, typename V, int m>
-    void replace_with_next(statistics_trees::order_node<order_closure<T>, b_data<T, V, m>>* node,b_node<T,V,m>* succ)
+    void replace_with_next(stats_trees::order_node<order_closure<T>, b_data<T, V, m>>* node,b_node<T,V,m>* succ)
     {
         auto p = succ->children;
         while (p->left)
@@ -313,7 +313,7 @@ namespace cp::data_structures
 * Inserts (v,data) into the B-tree.
 */
     template<typename T, typename V, int m>
-    void replace_with_prev(statistics_trees::order_node<order_closure<T>, b_data<T, V, m>>* node, b_node<T, V, m>* ances)
+    void replace_with_prev(stats_trees::order_node<order_closure<T>, b_data<T, V, m>>* node, b_node<T, V, m>* ances)
     {
         auto p = ances->children;
         while (p->right)
@@ -388,7 +388,7 @@ namespace cp::data_structures
     }
 
     template<typename T, typename V, int m>
-    void destroy(statistics_trees::order_node<order_closure<T>, b_data<T,V,m>>* node)
+    void destroy(stats_trees::order_node<order_closure<T>, b_data<T,V,m>>* node)
     {
         if (!node)
             return;

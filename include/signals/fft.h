@@ -8,6 +8,7 @@
 #include <complex>
 #include "algebra/bits.h"
 #include <cstdint>
+#include "nt/number_theory.h"
 namespace cp::signals
 {
 

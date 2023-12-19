@@ -3,4 +3,3 @@
 //
 #include "parser/StatefulParser.h"
 
-using namespace parser;

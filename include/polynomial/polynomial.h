@@ -54,7 +54,8 @@ namespace cp
             reduce();
         }
 
-        polynomial(int k) :p(1, k)
+        template<std::integral T>
+        polynomial(T k):p(1,k)
         {
             reduce();
         }

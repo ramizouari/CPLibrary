@@ -27,8 +27,11 @@ namespace cp::quadratic
         }
         template<typename R1,typename R2>
         quadratic_extension_t(R1 x,R2 y):A{x,y}{}
-        quadratic_extension_t(integer x=0):A{x,R{}}{}
-        quadratic_extension_t(R x, R y):A{x,y}{}
+        template<std::integral I>
+        quadratic_extension_t(I x):A{x,R{}}{}
+        template<std::integral I, std::integral J>
+        quadratic_extension_t(I x, J y):A{x,y}{}
+        quadratic_extension_t(R x=R{}, R y=R{}):A{x,y}{}
         quadratic_extension_t operator+(const quadratic_extension_t &x) const
         {
             return {A[0]+x.A[0],A[1]+x.A[1]};
@@ -44,10 +47,10 @@ namespace cp::quadratic
 
         quadratic_extension_t conj() const
         {
-            return {A[0]-a*A[0],-A[1]};
+            return {a*A[1]+A[0],-A[1]};
         }
 
-        quadratic_extension_t norm() const
+        R norm() const
         {
             return A[0]*A[0]+a*A[0]*A[1]-b*A[1]*A[1];
         }
@@ -93,6 +96,31 @@ namespace cp::quadratic
         {
             return (*this)*x.inv();
         }
+
+        quadratic_extension_t operator/(const R &x) const
+        {
+            return {A[0]/x,A[1]/x};
+        }
+
+        quadratic_extension_t& operator/=(const R &x)
+        {
+            A[0]/=x;
+            A[1]/=x;
+            return *this;
+        }
+
+        template<std::integral I>
+        quadratic_extension_t& operator/=(I x)
+        {
+            return *this/=R(x);
+        }
+
+        template<std::integral I>
+        quadratic_extension_t operator/(I x) const
+        {
+            return *this/R(x);
+        }
+
 
         quadratic_extension_t operator~() const
         {

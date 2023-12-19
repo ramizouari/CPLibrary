@@ -240,6 +240,12 @@ namespace cp
     }
 
     template<typename R>
+    std::vector<R> fast_multiplication(const std::vector<R> &A,const std::vector<R> &B,std::shared_ptr<binary_operation<std::vector<R>>> multiplies)
+    {
+        return multiplies->reduce(A,B);
+    }
+
+    template<typename R>
     polynomial<R> fast_multiplication(const polynomial<R> &A,const polynomial<R> &B)
     {
         static fast_multiplies_t<polynomial<R>> multiplies;
