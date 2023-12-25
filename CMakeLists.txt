@@ -11,7 +11,7 @@ find_package(Boost COMPONENTS unit_test_framework)
 set(CMAKE_CXX_STANDARD 23)
 
 set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h include/nt/number_theory.h
-        include/arithmetic/fast_arithmetic.h
+        include/arithmetic/fast_arithmetic.h include/algebra/permutation.h
         include/signals/quadratic/ntt.h include/rings/tower.h include/polynomial/special_polynomials.h include/polynomial/fast_general_polynomial_multiplication.h
         include/rings/quadratic/fixed.h include/rings/quadratic/static.h include/rings/quadratic/dynamic.h
         include/linear_algebra/view.h include/linear_algebra/tensor.h include/signals/fft.h include/signals/multi_fft.h
