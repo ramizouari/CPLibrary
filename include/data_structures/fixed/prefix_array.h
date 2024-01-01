@@ -14,7 +14,7 @@ namespace cp::data_structures::fixed
         using type=typename O::type;
         std::vector<R> A;
         std::vector<R> P;
-        inline static constexpr O F=O();
+        inline static O F=O();
         prefix_array(const std::vector<R> &_A):A(_A),P(_A.size()+1)
         {
             P[0]=O::neutral;

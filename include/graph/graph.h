@@ -414,7 +414,7 @@ namespace cp::graph
             if(!visited[r])
             {
                 visited[r]=true;
-                for(auto s:adjacencyList[r])
+                for(auto [s,_]:adjacencyList[r])
                     topologicalSort(s,L,visited);
                 L.push_back(r);
             }

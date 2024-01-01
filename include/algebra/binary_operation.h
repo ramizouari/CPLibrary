@@ -33,6 +33,16 @@ namespace cp
     };
 
     template<typename T>
+    struct involution_inverse_t : public invertible_operation<T>
+    {
+        virtual T inv(const T& a) const
+        {
+            return a;
+        }
+    };
+
+
+    template<typename T>
     struct multiplicative_inverse_t : public invertible_operation<T>
     {
         T inv(const T& a) const override
@@ -65,6 +75,15 @@ namespace cp
         T inv(const T& a) const override
         {
             return -a;
+        }
+    };
+
+    template<typename T>
+    struct bitwise_inverse_t : public invertible_operation<T>
+    {
+        T inv(const T& a) const override
+        {
+            return ~a;
         }
     };
 

@@ -4,7 +4,7 @@
 #include "linear_algebra/matrix.h"
 #include <functional>
 
-namespace cp
+namespace cp::topology
 {
     template<typename R>
     concept complex_type= requires(const R&r) {
@@ -266,7 +266,7 @@ namespace cp
     template<typename Norm,real_type IK>
     class newton_raphson<IK,IK,IK,Norm>
     {
-        inline static constexpr Norm N=Norm();
+        inline static Norm N=Norm();
         derivator<IK, IK,IK> &D;
         real x0;
         real eps=1e-5;
@@ -284,7 +284,7 @@ namespace cp
     template<typename Norm,complex_type IK>
     class newton_raphson<IK,IK,IK,Norm>
     {
-        inline static constexpr Norm N=Norm();
+        inline static Norm N=Norm();
         derivator<IK, IK,IK> &D;
         IC x0;
         real eps=1e-5;
@@ -302,7 +302,7 @@ namespace cp
     template<real_type IK,typename E,typename M,typename Norm>
     class newton_raphson<IK,E,M,Norm>
     {
-        inline static constexpr Norm N=Norm();
+        inline static Norm N=Norm();
         derivator<E, E,M> &D;
         E x0;
         IK eps=1e-5;
@@ -324,7 +324,7 @@ namespace cp
     template<complex_type IK,typename E,typename M,typename Norm>
     class newton_raphson<IK,E,M,Norm>
     {
-        inline static constexpr Norm N=Norm();
+        inline static Norm N=Norm();
         derivator<E, E,M> &D;
         E x0;
         real eps=1e-5;

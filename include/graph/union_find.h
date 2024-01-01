@@ -25,7 +25,7 @@ namespace cp
             auto u= representative(a),v= representative(b);
             if(u==v)
                 return;
-            if(rank[u]<rank[u])
+            if(rank[u]<rank[v])
                 parent[u]=parent[v];
             else if(rank[v]<rank[u])
                 parent[v]=parent[u];

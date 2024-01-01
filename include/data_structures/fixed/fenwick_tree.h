@@ -7,9 +7,10 @@
 #include <vector>
 namespace cp::data_structures::fixed
 {
-    template<typename T,typename O>
+    template<typename O>
     struct fenwick_tree {
         int n;
+        using T=typename O::type;
         std::vector<T> bit;
         inline static O F = O();
 

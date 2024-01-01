@@ -73,6 +73,17 @@ namespace cp::graph
         {
             HLD.is_heavy.resize(n,false);
         }
+
+        Tree(const Graph &G): Graph(G),root(G.n),subtree_size(G.n),parent(G.n)
+        {
+            HLD.is_heavy.resize(G.n,false);
+        }
+
+        Tree(Graph &&G): Graph(std::move(G)),root(n),subtree_size(n),parent(n)
+        {
+            HLD.is_heavy.resize(n,false);
+        }
+
         explicit Tree(int n):Tree(n,0){}
 
         void setParent(int u,int v)

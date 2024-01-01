@@ -4,6 +4,7 @@
 #ifndef __STRING_UTILS_H__
 #define __STRING_UTILS_H__
 #include <vector>
+#include <random>
 #include "nt/modular_arithmetic.h"
 
 namespace cp
@@ -33,7 +34,7 @@ namespace cp
         std::uniform_int_distribution<long long> d;
         R x;
         almost_uniform_hash():g(dev()),d(1,n-1),x(d(g)){}
-        R operator()(const std::string &A) const noexcept
+        R operator()(std::string_view A) const noexcept
         {
             R r=0,w=1;
             for(auto a:A)
@@ -43,7 +44,7 @@ namespace cp
             }
             return r;
         }
-        std::vector<R> prefix_table(const std::string &A)const noexcept
+        std::vector<R> prefix_table(std::string_view A)const noexcept
         {
             std::vector<R> P;
             P.reserve(A.size()+1);
@@ -67,7 +68,7 @@ namespace cp
         rabin_karp<n...> RK;
         using IF=cyclic<n0>;
     public:
-        std::vector<int> potential_matches(const std::string &P,const std::string &T)
+        std::vector<int> potential_matches(std::string_view P,std::string_view T)
         {
             auto recursive_matches=RK.potential_matches(P,T);
             if(recursive_matches.empty())
@@ -87,7 +88,7 @@ namespace cp
             return matches;
         }
 
-        int match(const std::string &P,const std::string &T)
+        int match(std::string_view P, std::string_view T)
         {
             auto matches=potential_matches(P,T);
             return matches.empty()?-1:matches.front();
@@ -101,12 +102,12 @@ namespace cp
         almost_uniform_hash<n> H;
         using IF=cyclic<n>;
     public:
-        int match(const std::string &P,const std::string &T)
+        int match(std::string_view P,std::string_view T)
         {
             auto matches=potential_matches(P,T);
             return matches.empty()?-1:matches.front();
         }
-        std::vector<int> potential_matches(const std::string &P,const std::string &T)
+        std::vector<int> potential_matches(std::string_view P,const std::string_view T)
         {
             std::vector<int> matches;
             int m=T.size(),r=P.size();

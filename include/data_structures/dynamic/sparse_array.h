@@ -22,7 +22,7 @@ namespace cp::data_structures::dynamic
         {
             int r=1;
             for(int i=h;i>=0;i--,r*=2)
-                S[i].resize(n-r+1,F->neutral_element());
+                S[i].resize(n-r+1,F.neutral_element());
             for(int i=0;i<A.size();i++)
                 S[h][i]=A[i];
             r=1;
@@ -33,7 +33,7 @@ namespace cp::data_structures::dynamic
         T query(int l,int r) const
         {
             if(l>=r)
-                return F->neutral_element();
+                return F.neutral_element();
             auto d=r-l;
             auto s=bit_floor(d);
             auto b=bit_log(s);

@@ -24,12 +24,13 @@ namespace cp
         virtual std::vector<integer> prime_factors(integer m) const
         {
             std::vector<integer> P;
-            auto p=smallest_divisor(m);
             while(m>1)
             {
-                if(P.empty()||P.back()!=p)
-                    P.push_back(p);
+                auto p=smallest_divisor(m);
+                P.push_back(p);
                 m/=p;
+                while(m%p==0)
+                    m/=p;
             }
             return P;
         }
@@ -41,9 +42,9 @@ namespace cp
         virtual std::vector<couple> prime_decomposition(integer m) const
         {
             std::vector<couple> P;
-            auto p=smallest_divisor(m);
             while(m>1)
             {
+                auto p=smallest_divisor(m);
                 int s=0;
                 while(m%p==0)
                 {
@@ -65,7 +66,7 @@ namespace cp
         {
             auto r=P.size();
             for(int i=o;i<r;i++) if(n%P[i]==0)
-                    divisors_list_rec(n/P[i],D,P,i);
+                divisors_list_rec(n/P[i],D,P,i);
             D.push_back(n);
 
         }

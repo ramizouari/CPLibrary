@@ -5,6 +5,7 @@
 #ifndef CPLIBRARY_BFS_H
 #define CPLIBRARY_BFS_H
 #include "graph/general.h"
+#include "graph/graph.h"
 #include <queue>
 
 namespace cp::graph::algorithms
@@ -70,7 +71,7 @@ namespace cp::graph::algorithms
             auto a=Q.front();
             Q.pop();
             // d[b] <= 0 means that b has not been visited yet. This is because d[b] is initialized to 0 or -inf, depending on the mapper.
-            for(auto b:G.adjacentNodes(a)) if(d[b]<= 0)
+            for(auto b:G.adjacentNodes(a)) if(d[b]<= 0 && b!=u)
                 {
                     d[b]=d[a]+1;
                     Q.push(b);

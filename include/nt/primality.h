@@ -92,6 +92,8 @@ namespace cp
         fast_factoriser(int iters,const polynomial<integer> &P,integer x0):iters(iters),P(P),x0(x0){}
         [[nodiscard]] integer smallest_divisor(integer n) const
         {
+            if(n==1)
+                return 1;
             if(rabin_miller(n,iters))
                 return n;
             return smallest_divisor(rho_divisor_method(n,P,x0));
@@ -125,6 +127,8 @@ namespace cp
         randomized_fast_factoriser(int iters,int max_degree):iters(iters),max_degree(max_degree){}
         [[nodiscard]] integer smallest_divisor(integer n) const
         {
+            if(n==1)
+                return 1;
             std::uniform_int_distribution<integer> d(0,n-1);
             std::vector<integer> P(max_degree+1);
             std::generate(P.begin(),P.end(),std::bind(d,g));

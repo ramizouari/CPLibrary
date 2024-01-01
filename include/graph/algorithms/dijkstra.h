@@ -17,7 +17,7 @@ namespace cp::graph::algorithms
         T node;
         order_closure<W> distance;
         dijkstra_element(T _node,order_closure<W> _distance):node(_node),distance(_distance){}
-        std::strong_ordering operator<=>(const dijkstra_element& other) const
+        std::weak_ordering operator<=>(const dijkstra_element& other) const
         {
             return distance<=>other.distance;
         }
@@ -29,17 +29,19 @@ namespace cp::graph::algorithms
         using H=order_closure<W>;
         std::vector<H> d(G.n,inf_plus);
         d[u]=W{};
-        std::priority_queue<dijkstra_element<int,W>> Q;
+        std::priority_queue<dijkstra_element<int,W>,std::vector<dijkstra_element<int,W>>,std::greater<>> Q;
         Q.emplace(u,W{});
         while(!Q.empty())
         {
-            auto [a,_]=Q.top();
+            auto [a,z]=Q.top();
             Q.pop();
+            if(d[a]<z)
+                continue;
             for(auto [b,w]:G.adjacencyList[a]) if(d[b]>d[a]+w)
-                {
-                    d[b]=d[a]+w;
-                    Q.push({-d[b],b});
-                }
+            {
+                d[b]=d[a]+w;
+                Q.emplace(b,d[b]);
+            }
         }
         return d;
     }

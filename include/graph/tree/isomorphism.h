@@ -260,7 +260,7 @@ namespace cp::graph
         }
     };
 
-    //Warning: this hash function does only work for trees with at most 232 vertices
+    //Warning: this hash function does only work for trees with at most 2^32 vertices
     template<typename Container>
     struct FastIsoTreeHash
     {
