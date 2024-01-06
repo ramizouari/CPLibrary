@@ -6,9 +6,11 @@
 #define CPLIBRARY_SPARSE_POLYNOMIAL_H
 #include <map>
 #include <vector>
+#include <cstdint>
+
 namespace cp
 {
-
+    using integer=std::int64_t;
 /**
  * @brief Sparse Polynomial
 * @details This is the class of sparse polynomials over commutative ring R
@@ -24,10 +26,10 @@ namespace cp
     template<typename R>
     class sparse_polynomial
     {
-        std::map<int,R> p;
+        std::map<cp::integer,R> p;
         void reduce()
         {
-            std::vector<int> to_del;
+            std::vector<cp::integer> to_del;
             for(auto [k,x]:p)
                 if(is_zero(x))
                     to_del.push_back(k);
@@ -35,11 +37,20 @@ namespace cp
                 p.erase(k);
         }
     public:
-        sparse_polynomial(R k=0)
+        sparse_polynomial(R k=R{})
         {
             p[0]=k;
             reduce();
         }
+
+        template<std::integral I>
+        sparse_polynomial(I k)
+        {
+            p[0]=k;
+            reduce();
+        }
+
+
         sparse_polynomial(const std::vector<R> &_p)
         {
             for(int i=0;i<_p.size();i++)
@@ -52,29 +63,29 @@ namespace cp
             return p.empty()?-1:p.rbegin()->first;
         }
 
-        auto& operator+=(sparse_polynomial O)
+        sparse_polynomial& operator+=(const sparse_polynomial& O)
         {
             for(const auto& [k,s]:O.p)
             {
-                p[k] += O.p[k];
+                p[k] += s;
                 if(is_zero(p[k]))
                     p.erase(k);
             }
             return *this;
         }
 
-        auto& operator-=(sparse_polynomial O)
+        sparse_polynomial& operator-=(const sparse_polynomial& O)
         {
             for(const auto& [k,s]:O.p)
             {
-                p[k] -= O.p[k];
+                p[k] -= s;
                 if(is_zero(p[k]))
                     p.erase(k);
             }
             return *this;
         }
 
-        auto operator*(const sparse_polynomial &O) const
+        sparse_polynomial operator*(const sparse_polynomial &O) const
         {
 
             sparse_polynomial q;
@@ -87,84 +98,62 @@ namespace cp
             return q;
         }
 
-        auto& operator*=(const sparse_polynomial &O)
+        sparse_polynomial& operator*=(const sparse_polynomial &O)
         {
             auto r=(*this)*O;
             p.swap(r.p);
             return *this;
         }
 
-        auto operator+(const sparse_polynomial &O) const
+        sparse_polynomial operator+(const sparse_polynomial &O) const
         {
             auto r=*this;
             return r+=O;
         }
 
-        auto operator-(const sparse_polynomial &O) const
+        sparse_polynomial operator-(const sparse_polynomial &O) const
         {
             auto r=*this;
             return r-=O;
         }
 
-        auto operator-() const
+        sparse_polynomial operator-() const
         {
             auto r=*this;
-            for(auto &s:r.p)
+            for(auto &[_,s]:r.p)
                 s=-s;
             return r;
         }
 
-        auto operator*=(R a)
+        sparse_polynomial operator*=(R a)
         {
             if(is_zero(a))
                 p.clear();
-            else for(auto& s:p)
+            else for(auto& [_,s]:p)
                     s*=a;
             reduce();
             return *this;
         }
 
-        auto& operator+=(R a)
-        {
-            return *this+=sparse_polynomial({a});
-        }
-
-        auto& operator-=(R a)
-        {
-            return *this+=sparse_polynomial({a});
-        }
-
-        auto operator+(R a) const
-        {
-            auto q=*this;
-            return q+=a;
-        }
-
-        auto operator-(R a) const
-        {
-            auto q=*this;
-            return q-=a;
-        }
-
-        auto& operator/=(R k)
+        sparse_polynomial& operator/=(R k)
         {
             for(auto &s:p)
                 s/=k;
             return *this;
         }
 
-        auto operator/(R k) const
+        sparse_polynomial operator/(R k) const
         {
             auto q=*this;
             return q/=k;
         }
 
-        auto &operator[](int k)
+        R &operator[](cp::integer k)
         {
             return p[k];
         }
 
-        const auto& operator[](int k) const
+        const R& operator[](cp::integer k) const
         {
             return p.at(k);
         }
@@ -176,23 +165,25 @@ namespace cp
         * H is an associative algebra over R
         */
         template<typename H>
-        H operator()(H a)
+        std::common_type<H,R>::type operator()(H a) const
         {
-            H r=0,u=1,i=0;
+            typename std::common_type<H,R>::type r=0,u=1;
+            cp::integer i=0;
             for(auto [k,x]:p)
             {
                 u*=pow(a,k-i);
                 r+=u*x;
                 i=k;
             }
+            return r;
         }
 
-        operator std::map<int, R>& ()
+        operator std::map<cp::integer, R>& ()
         {
             return p;
         }
 
-        operator const std::map<int, R>& () const
+        operator const std::map<cp::integer, R>& () const
         {
             return p;
         }
@@ -201,16 +192,48 @@ namespace cp
         {
             return p.size();
         }
+
+        std::map<cp::integer,R>& data()
+        {
+            return p;
+        }
+
+        const std::map<cp::integer,R>& data() const
+        {
+            return p;
+        }
+
+        sparse_polynomial derivative() const
+        {
+            sparse_polynomial q;
+            for(auto [k,x]:p)
+                q.p.emplace_hint(q.p.end(),k-1,k*x);
+            return q;
+        }
     };
 
     template<typename R>
-    sparse_polynomial<R> Z=sparse_polynomial<R>({0,1});
+    sparse_polynomial<R> Z=sparse_polynomial<R>(std::vector<R>{0,1});
 
     template<typename R>
     sparse_polynomial<R> operator*(R a,const sparse_polynomial<R> &p)
     {
         auto q=p;
         return q*=a;
+    }
+
+    template<typename R>
+    sparse_polynomial<R> operator-(R a,const sparse_polynomial<R> &p)
+    {
+        auto q=-p;
+        return q+=a;
+    }
+
+    template<typename R>
+    sparse_polynomial<R> operator+(R a,const sparse_polynomial<R> &p)
+    {
+        auto q=p;
+        return q+=a;
     }
 
 }

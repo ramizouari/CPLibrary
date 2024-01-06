@@ -63,7 +63,24 @@ namespace cp
         return r;
     }
 
+    inline integer totient_rec(integer n,const std::vector<integer> &P, abstract_factoriser &F, integer o=0)
+    {
+        if(n==0)
+            return 0;
+        integer S=n;
+        for(int i=o;i<P.size();i++)
+            S-= totient_rec(n/P[i],P,F,i+1);
+        return S;
+    }
 
+    inline integer totient(integer n,integer m, abstract_factoriser &F)
+    {
+        if(n==0)
+            return 0;
+        auto r=m%n;
+        auto P= F.prime_factors(n);
+        return (m/n)*totient(n,F)+totient_rec(r,P,F);
+    }
 }
 
 #endif //CPLIBRARY_FUNCTIONS_H
