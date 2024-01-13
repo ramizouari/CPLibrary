@@ -5,7 +5,6 @@
 #ifndef ACPC_PREPARATION_FAST_POLY_H
 #define ACPC_PREPARATION_FAST_POLY_H
 #include "fft.h"
-#include "ring_extension.h"
 #include "sparse_polynomial.h"
 #include "algebra/binary_operation.h"
 #include "data_structures/range_queries.h"
@@ -393,19 +392,6 @@ namespace cp
         C.data().resize(m);
         return C;
     }
-
-    template<typename R,int nilpotence>
-    nilpotent_extension<R,nilpotence> fast_inv(const nilpotent_extension<R,nilpotence> &A)
-    {
-        return nilpotent_extension<R,nilpotence>(formal_inv(A.p,nilpotence));
-    }
-
-    template<typename R>
-    d_nilpotent_extension<R> fast_inv(const d_nilpotent_extension<R> &A)
-    {
-        return d_nilpotent_extension<R>(formal_inv(A.p),nilpotence_t{A.nilpotence});
-    }
-
 
     template<typename R>
     std::vector<R> fast_division(std::vector<R> A,std::vector<R> Q)

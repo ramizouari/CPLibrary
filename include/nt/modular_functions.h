@@ -71,9 +71,9 @@ namespace cp
     }
 
     template <integer p>
-    integer primitive_root_of_unity(factoriser& F)
+    integer primitive_root_of_unity(abstract_factoriser& F)
     {
-        static auto phi = F.totient(p);
+        static auto phi = totient(p,F);
         static auto D = F.divisors_list(phi);
         for (integer k = 2; k < p - 1; k++)
         {

@@ -334,6 +334,13 @@ namespace cp
         return q*=a;
     }
 
+    template<typename R>
+    polynomial<R> operator-(R a,const polynomial<R> &p)
+    {
+        auto q=-p;
+        return q+=a;
+    }
+
 /**
 * @brief The functional identity polynomial
 * @details This constant is the generator of all polynomials over R.
