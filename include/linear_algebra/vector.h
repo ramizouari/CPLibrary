@@ -168,7 +168,8 @@ namespace cp::linalg
                 u[i]=0;
         }
 
-        s_vector(std::array<R,n>_u):u(std::move(_u)){}
+        s_vector(const std::array<R,n> &_u):u(_u){}
+        s_vector(std::array<R,n> &&_u):u(std::move(_u)){}
 
         bool operator==(const s_vector&) const = default;
 

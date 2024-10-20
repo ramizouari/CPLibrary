@@ -7,7 +7,7 @@
 #include "number_theory.h"
 namespace cp
 {
-    inline integer totient(integer n,abstract_factoriser &F)
+    inline integer totient(integer n,const abstract_factoriser &F)
     {
         integer r=1;
         for(auto [p,k]:F.prime_decomposition(n))
@@ -15,7 +15,7 @@ namespace cp
         return r;
     }
 
-    inline integer carmichael_totient(integer n,abstract_factoriser &F)
+    inline integer carmichael_totient(integer n,const abstract_factoriser &F)
     {
         integer r=1;
         for(auto [p,k]:F.prime_decomposition(n))
@@ -28,7 +28,7 @@ namespace cp
         return r;
     }
 
-    inline integer divisors_count(integer n,abstract_factoriser &F)
+    inline integer divisors_count(integer n,const abstract_factoriser &F)
     {
         integer r=1;
         for(auto [p,k]:F.prime_decomposition(n))
@@ -36,7 +36,21 @@ namespace cp
         return r;
     }
 
-    inline integer divisors_sum(integer n,abstract_factoriser &F)
+    inline integer mobius_function(integer n, const abstract_factoriser &F)
+    {
+        integer mu=1;
+        while(n>1)
+        {
+            auto p = F.smallest_divisor(n);
+            if(F.smallest_divisor(n/p) == p)
+                return 0;
+            mu=-mu;
+            n/=p;
+        }
+        return mu;
+    }
+
+    inline integer divisors_sum(integer n,const abstract_factoriser &F)
     {
         integer r=1;
         for(auto [p,k]:F.prime_decomposition(n))
@@ -73,7 +87,7 @@ namespace cp
         return S;
     }
 
-    inline integer totient(integer n,integer m, abstract_factoriser &F)
+    inline integer bounded_totient(integer n,integer m, abstract_factoriser &F)
     {
         if(n==0)
             return 0;

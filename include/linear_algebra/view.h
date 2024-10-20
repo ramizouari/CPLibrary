@@ -352,12 +352,12 @@ namespace cp::linalg
     {
         tensor_view<R,dynamic_extent> &src;
         std::vector<std::size_t> m_start,m_end,m_step;
-        tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end):src(src),m_start(start),m_end(end),m_step(src.rank())
+        tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end):src(src),m_start(std::move(start)),m_end(std::move(end)),m_step(src.rank())
         {
             std::fill(m_step.begin(),m_step.end(),1);
         }
         tensor_subview(tensor_view<R,dynamic_extent> &src,std::vector<std::size_t> start,std::vector<std::size_t> end,
-                       std::vector<std::size_t> step):src(src),m_start(start),m_end(end),m_step(step){}
+                       std::vector<std::size_t> step):src(src),m_start(std::move(start)),m_end(std::move(end)),m_step(std::move(step)){}
 
         R& at(std::vector<std::size_t> indexes) override
         {
@@ -373,7 +373,7 @@ namespace cp::linalg
                 new_indexes[i]=indexes[i] + m_start[i];
             return src.at(new_indexes);
         }
-        std::vector<std::size_t> shape() const override
+        [[nodiscard]] std::vector<std::size_t> shape() const override
         {
             std::vector<std::size_t> new_shape(src.rank());
             for(int i=0;i<src.rank();i++)
@@ -425,7 +425,7 @@ namespace cp::linalg
                 new_indexes[i]=indexes[i];
             return src.at(new_indexes);
         }
-        std::vector<std::size_t> shape() const override
+        [[nodiscard]] std::vector<std::size_t> shape() const override
         {
             return std::vector<std::size_t>(src.shape().begin(),src.shape().end());
         }

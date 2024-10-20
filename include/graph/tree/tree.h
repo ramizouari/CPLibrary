@@ -288,7 +288,11 @@ namespace cp::graph
             return root;
         }
 
-    protected:
+        int centroid(int u)
+        {
+            return centroid(u,std::nullopt);
+        }
+
         int centroid(int u,std::optional<int> p)
         {
             for(auto v:children(u)) if(v!= p && subtree_size[v]>=(subtree_size[u]+1)/2)
@@ -298,6 +302,7 @@ namespace cp::graph
                 }
             return u;
         }
+    protected:
         using HeightData=std::pair<int,int>;
         using EnpointsData = std::pair<int,int>;
         std::unique_ptr<ds::fixed::sparse_array<min_t<HeightData>>> lca_data;

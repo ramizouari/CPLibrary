@@ -116,6 +116,7 @@ namespace cp
         d_ring_extension<cyclic_field> phi(std::vector<cyclic_field>{ a,1 }, q);
         return pow(phi, (cyclic_field::m+1)/2,q)[0];
     }
+
 }
 
 #endif //CPLIBRARY_MODULAR_FUNCTIONS_H
