@@ -83,13 +83,13 @@ namespace cp
     };
 
 
-    class fast_factoriser : public abstract_factoriser
+    class rho_factoriser : public abstract_factoriser
     {
         int iters;
         polynomial<integer> P;
         integer x0;
     public:
-        fast_factoriser(int iters,const polynomial<integer> &P,integer x0):iters(iters),P(P),x0(x0){}
+        rho_factoriser(int iters, const polynomial<integer> &P, integer x0): iters(iters), P(P), x0(x0){}
         [[nodiscard]] integer smallest_divisor(integer n) const
         {
             if(n==1)
@@ -117,14 +117,14 @@ namespace cp
         }
     };
 
-    class randomized_fast_factoriser : public abstract_factoriser
+    class randomized_rho_factoriser : public abstract_factoriser
     {
         int iters;
         std::random_device dev;
         mutable std::mt19937_64 g{dev()};
         int max_degree;
     public:
-        randomized_fast_factoriser(int iters,int max_degree):iters(iters),max_degree(max_degree){}
+        randomized_rho_factoriser(int iters, int max_degree): iters(iters), max_degree(max_degree){}
         [[nodiscard]] integer smallest_divisor(integer n) const
         {
             if(n==1)
