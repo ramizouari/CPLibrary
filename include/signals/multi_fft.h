@@ -158,9 +158,14 @@ namespace cp::signals
                 S[k]=1;
                 do {
                     tensor_projection_view<R,Rank> B(A,k,I);
-                    F->transform(B,inverse,normalized);
+                    linalg::flat_tensor<R,1> P({shape[k]}); // It is faster to use a new tensor due to cache
+                    for(int i=0;i < shape[k];i++)
+                        P(i)=B(i);
+                    F->transform(P,inverse,normalized);
+                    for(int i=0;i < shape[k];i++)
+                        B(i)=P(i);
                     increment(I,S);
-                }while(std::any_of(I.begin(),I.end(),[&](int i){return i!=0;}));
+                } while(std::any_of(I.begin(),I.end(),[&](int i){return i!=0;}));
             }
         }
 
@@ -179,7 +184,12 @@ namespace cp::signals
                 S[k]=1;
                 do {
                     tensor_projection_view<R,dynamic_extent> B(A,k,I);
-                    F->transform(B,inverse,normalized);
+                    linalg::flat_tensor<R,1> P({shape[k]}); // It is faster to use a new tensor due to cache
+                    for(int i=0;i < shape[k];i++)
+                        P(i)=B(i);
+                    F->transform(P,inverse,normalized);
+                    for(int i=0;i < shape[k];i++)
+                        B(i)=P(i);
                     increment(I,S);
                 }while(std::any_of(I.begin(),I.end(),[&](int i){return i!=0;}));
             }
