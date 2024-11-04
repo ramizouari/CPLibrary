@@ -77,13 +77,13 @@ namespace cp::topology
     template<typename K,typename E>
     struct L2_inner_product;
 
-    template<typename E>
-    struct L2_inner_product<real,E>:public inner_product_t<real,E>
+    template<std::floating_point F,typename E>
+    struct L2_inner_product<F,E>:public inner_product_t<F,E>
     {
-        real inner_product(const E&u,const E&v) const
+        F inner_product(const E&u,const E&v) const
         {
             auto m=std::min(u.dim(),v.dim());
-            real R=0;
+            F R=0;
             for(int i=0;i<m;i++)
                 R+=u[i]*v[i];
             return R;
@@ -127,9 +127,10 @@ namespace cp::topology
         }
     };
 
-    struct real_inner_product :public inner_product_t<real,real>
+    template<std::floating_point F>
+    struct real_inner_product :public inner_product_t<F,F>
     {
-        real inner_product(const real &u,const real &v) const override
+        F inner_product(const F &u,const F &v) const override
         {
             return u*v;
         }
@@ -143,12 +144,12 @@ namespace cp::topology
         }
     };
 
-    template<>
-    struct L2_inner_product<real,real>:public real_inner_product{};
-    template<>
-    struct L_inf_norm<real>:public real_inner_product{};
-    template<>
-    struct L1_norm<real>:public real_inner_product{};
+    template<std::floating_point F>
+    struct L2_inner_product<F,F>:public real_inner_product<F>{};
+    template<std::floating_point F>
+    struct L_inf_norm<F>:public real_inner_product<F>{};
+    template<std::floating_point F>
+    struct L1_norm<F>:public real_inner_product<F>{};
 
     template<>
     struct L2_inner_product<IC,IC>:public complex_inner_product{};
@@ -201,18 +202,18 @@ namespace cp::topology
         }
     };
 
-    template<real_type IK>
-    class derivator<IK,IK,IK>
+    template<std::floating_point Real>
+    class derivator<Real,Real,Real>
     {
-        IK eps;
+        Real eps;
     public:
-        derivator(IK _eps=1e-7):eps(_eps){}
-        real derivative(const std::function<IK(IK)>&f,IK a) const
+        explicit derivator(Real _eps=1e-7):eps(_eps){}
+        virtual Real derivative(const std::function<Real(Real)>&f,Real a)
         {
             return (f(a+eps)-f(a-eps))/(2*eps);
         }
 
-        real gradient(const std::function<IK(IK)>&f,IK a) const
+        virtual Real gradient(const std::function<Real(Real)>&f,Real a)
         {
             return derivative(f,a);
         }
@@ -260,24 +261,34 @@ namespace cp::topology
         }
     };
 
+
     template<typename K,typename R,typename M,typename Norm=L2_inner_product<K,R>>
     class newton_raphson;
 
-    template<typename Norm,real_type IK>
-    class newton_raphson<IK,IK,IK,Norm>
+    template<typename Norm,std::floating_point Real>
+    class newton_raphson<Real,Real,Real,Norm>
     {
         inline static Norm N=Norm();
-        derivator<IK, IK,IK> &D;
+        derivator<Real, Real,Real> &D;
         real x0;
-        real eps=1e-5;
+        real eps;
+        int counter=0;
     public:
-        newton_raphson(real _x0, derivator<IK, IK, IK>& d) :D(d),x0(_x0) {}
-        real root(const std::function<IK(IK)>& f) const
+        newton_raphson(real _x0, derivator<Real, Real, Real>& d,double eps) :D(d),x0(_x0),eps(eps) {}
+        real root(const std::function<Real(Real)>& f)
         {
             real x = x0;
             while (N.norm(f(x)) > eps)
+            {
                 x = x - f(x) / D.derivative(f, x);
+                counter++;
+            }
             return x;
+        }
+
+        int iterations() const
+        {
+            return counter;
         }
     };
 

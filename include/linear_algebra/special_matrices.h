@@ -180,18 +180,28 @@ namespace cp::linalg
 
         [[nodiscard]] std::vector<R> solve(std::vector<R> u) const
         {
-            if constexpr (isUpper) for(int i=n-1;i>=0;i--)
+            if constexpr (isUpper)
+            {
+                for (int i = n - 1; i >= 0; i--)
                 {
-                    u[i]/=M[i][i];
-                    for(int j=i-1;j>=0;j--)
-                        u[j]-=M[j][i]*u[i];
+                    if (!cp::is_zero(M[i][i]))
+                    {
+                        u[i] /= M[i][i];
+                        for (int j = i - 1; j >= 0; j--)
+                            u[j] -= M[j][i] * u[i];
+                    }
+                    else u[i]=0;
                 }
-            else for(int i=0;i<n;i++)
+            }
+            else
+            {
+                for (int i = 0; i < n; i++) if (!cp::is_zero(M[i][i]))
                 {
-                    u[i]/=M[i][i];
-                    for(int j=i+1;j<n;j++)
-                        u[j]-=M[j][i]*u[i];
+                    u[i] /= M[i][i];
+                    for (int j = i + 1; j < n; j++)
+                        u[j] -= M[j][i] * u[i];
                 }
+            }
             return u;
         }
 

@@ -130,6 +130,16 @@ namespace cp::linalg
         {
             return u.cend();
         }
+
+        auto& data()
+        {
+            return u;
+        }
+
+        const auto& data() const
+        {
+            return u;
+        }
     };
 
     template<typename R>

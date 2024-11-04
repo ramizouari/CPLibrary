@@ -16,7 +16,7 @@ namespace cp
     using real = long double;
     using IR=real;
     using IC= std::complex<IR>;
-    constexpr real epsilon=1e-6;
+    real epsilon=1e-6;
 
     template<typename R>
     R commutator(R a,R b)
@@ -60,6 +60,12 @@ namespace cp
         return n%2?f(f(s,s),a):f(s,s);
     }
 
+    template<std::floating_point F>
+    inline bool is_zero(const F &a)
+    {
+        return std::abs(a) < epsilon;
+    }
+
     template<typename R>
     bool is_zero(const R&a)
     {
@@ -77,10 +83,6 @@ namespace cp
         return std::abs(a) < epsilon;
     }
 
-    inline bool is_zero(const real &a)
-    {
-        return std::abs(a) < epsilon;
-    }
 
     template<typename R>
     R gcd(R a,R b)
