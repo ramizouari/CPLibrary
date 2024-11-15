@@ -32,6 +32,7 @@ set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h
         include/nt/sieve.h
         include/nt/dirichelet.h
         include/data_structures/li_chao.h
+        include/topology/simplex.h
 )
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp
