@@ -285,6 +285,7 @@ namespace cp::topology
                     a.push_back(-1);
                 std::fill(table.Z.begin(),table.Z.end(),0);
                 int k=0;
+                // Find an initial pivot of the auxiliary LP
                 for(int i=0;i<m;i++) if(table.b[i] < t)
                 {
                     k=i;
@@ -292,6 +293,7 @@ namespace cp::topology
                 }
                 table.Z.push_back(1);
                 table.pivot(k,n+m);
+                // Apply simplex to the auxiliary LP
                 int q;
                 while(min(table.Z,&q) <0)
                 {
@@ -306,14 +308,27 @@ namespace cp::topology
                 }
                 std::vector<Float> sol(n+m+1);
                 auto basics=table.extractSolution(sol,eps);
+                // If the auxiliary objective is positive, then the original LP is infeasible
                 if(W > eps)
                     return std::nullopt;
+                // If the artificial variable is basic, apply a degenerate pivot
+                if(basics[n+m])
+                {
+                    int p;
+                    for(p=0;p<m; p++) if(std::abs(table.A[p][n+m]) > eps)
+                            break;
+                    for(q=0;q < n+m;q++) if(std::abs(table.A[p][q]) > eps && !basics[q])
+                            break;
+                    table.pivot(p,q);
+                    basics=table.extractSolution(sol,eps);
+                }
+                // Transform the original LP to the basis found by the auxiliary LP
                 for(int j=0;j<table.n+table.m;j++) if(basics[j]) for(int i=0;i<table.m;i++) if(std::abs(table.A[i][j]) > eps)
                 {
                     for(int k=0;k<n+m;k++) if(k!=j)
                         Z[k]-=table.A[i][k]*Z[j] / table.A[i][j];
                     optimal+=table.b[i]*Z[j] / table.A[i][j];
-                    Z[j]=0;
+                    if(j<n+m) Z[j]=0;
                     break;
                 }
                 for(auto & a:table.A) a.pop_back();
