@@ -207,7 +207,7 @@ namespace cp::topology
                 std::vector<Float> c(m);
                 for(int i=0;i<m;i++)
                     c[i] = b[i] / A[i][q];
-                for(int i=0;i<m;i++) if(A[i][q] > 0 && c[i] > 0 && (p==-1 || c[i] < c[p]))
+                for(int i=0;i<m;i++) if(A[i][q] > 0 && c[i] >= 0 && (p==-1 || c[i] < c[p]))
                     p=i;
                 if(p==-1) return state=Unbounded;
                 table.pivot(p,q);
@@ -301,7 +301,7 @@ namespace cp::topology
                     std::vector<Float> c(m);
                     for(int i=0;i<m;i++)
                         c[i] = table.b[i] / table.A[i][q];
-                    for(int i=0;i<m;i++) if(table.A[i][q] > 0 && c[i] > 0 && (p==-1 || c[i] < c[p]))
+                    for(int i=0;i<m;i++) if(table.A[i][q] > 0 && c[i] >= 0 && (p==-1 || c[i] < c[p]))
                         p=i;
                     if(p==-1) throw std::runtime_error("Auxiliary LP cannot be unbounded");
                     table.pivot(p,q);
