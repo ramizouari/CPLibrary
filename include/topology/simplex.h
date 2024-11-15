@@ -178,7 +178,7 @@ namespace cp::topology
                 auto negCoeffs = C.coefficients;
                 for(auto &c:negCoeffs)
                     c=-c;
-                constraints.push_back(LinearConstraint<Float>(C.variables,negCoeffs,-C.target,GE));
+                constraints.push_back(LinearConstraint<Float>(C.variables,negCoeffs,-C.target,LE));
 
             }
         }
