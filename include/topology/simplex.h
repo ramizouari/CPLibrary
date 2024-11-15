@@ -97,6 +97,13 @@ namespace cp::topology
     };
 
     template<std::floating_point Float>
+    void truncate(Float& u, Float eps)
+    {
+        if(std::abs(u) <= eps)
+            u=0;
+    }
+
+    template<std::floating_point Float>
     struct SimplexTable
     {
         int n,m;
@@ -109,23 +116,29 @@ namespace cp::topology
             n=Z.size()-m;
         }
 
-        void pivot(int p,int q)
+        void pivot(int p,int q,Float eps)
         {
             for(int j=0;j<n+m;j++) if(j!=q)
                     A[p][j] /= A[p][q];
             b[p]/=A[p][q];
             A[p][q]=1;
             for(int i=0;i<m;i++) if(i!=p)
-                {
-                    auto r=A[i][q];
-                    for(int j=0;j<n+m;j++)
-                        A[i][j] -= A[p][j] * r;
-                    A[i][q]=0;
-                    b[i] -= r * b[p];
-                }
+            {
+                auto r=A[i][q];
+                for(int j=0;j<n+m;j++)
+                    A[i][j] -= A[p][j] * r;
+                A[i][q]=0;
+                b[i] -= r * b[p];
+            }
             auto r = Z[q];
             for(int j=0;j<n+m;j++)
                 Z[j] -= r * A[p][j];
+            for(int i=0;i<m;i++) for(int j=0;j<n+m;j++)
+                truncate(A[i][j],eps);
+            for(int i=0;i<m;i++)
+                truncate(b[i],eps);
+            for(int i=0;i<n+m;i++)
+                truncate(Z[i],eps);
             W+=r*b[p];
             Z[q] = 0;
         }
@@ -210,7 +223,7 @@ namespace cp::topology
                 for(int i=0;i<m;i++) if(A[i][q] > 0 && c[i] >= 0 && (p==-1 || c[i] < c[p]))
                     p=i;
                 if(p==-1) return state=Unbounded;
-                table.pivot(p,q);
+                table.pivot(p,q,eps);
             }
             table.extractSolution(solution,eps);
             return state=Optimal;
@@ -292,7 +305,7 @@ namespace cp::topology
                     t=table.b[i];
                 }
                 table.Z.push_back(1);
-                table.pivot(k,n+m);
+                table.pivot(k,n+m,eps);
                 // Apply simplex to the auxiliary LP
                 int q;
                 while(min(table.Z,&q) <0)
@@ -304,7 +317,7 @@ namespace cp::topology
                     for(int i=0;i<m;i++) if(table.A[i][q] > 0 && c[i] >= 0 && (p==-1 || c[i] < c[p]))
                         p=i;
                     if(p==-1) throw std::runtime_error("Auxiliary LP cannot be unbounded");
-                    table.pivot(p,q);
+                    table.pivot(p,q,eps);
                 }
                 std::vector<Float> sol(n+m+1);
                 auto basics=table.extractSolution(sol,eps);
@@ -319,7 +332,7 @@ namespace cp::topology
                             break;
                     for(q=0;q < n+m;q++) if(std::abs(table.A[p][q]) > eps && !basics[q])
                             break;
-                    table.pivot(p,q);
+                    table.pivot(p,q,eps);
                     basics=table.extractSolution(sol,eps);
                 }
                 // Transform the original LP to the basis found by the auxiliary LP
