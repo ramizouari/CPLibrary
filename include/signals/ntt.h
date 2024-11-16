@@ -7,6 +7,8 @@
 
 #include <memory>
 #include <set>
+#include <optional>
+#include <utility>
 #include "fft.h"
 #include "nt/modular_arithmetic.h"
 #include "nt/modular_functions.h"
@@ -19,7 +21,7 @@ namespace cp::signals
     {
         using R=cyclic<n>;
         using abstract_fft<R>::transform;
-        abstract_ntt(std::shared_ptr<abstract_factoriser> _F=default_factoriser):F(_F){}
+        explicit abstract_ntt(std::shared_ptr<abstract_factoriser> _F=default_factoriser):F(std::move(_F)){}
         mutable integer version=0;
         mutable std::array<std::unordered_map<integer,R>,2> cache;
         mutable std::optional<integer> phi;
@@ -61,7 +63,7 @@ namespace cp::signals
     {
         using R=cyclic<dynamic_modulus>;
         using abstract_fft<R>::transform;
-        abstract_ntt(std::shared_ptr<abstract_factoriser> _F=default_factoriser):F(_F){}
+        explicit abstract_ntt(std::shared_ptr<abstract_factoriser> _F=default_factoriser):F(std::move(_F)){}
         mutable std::array<std::map<std::pair<integer,integer>,R>,2> cache;
         mutable std::map<integer,integer> phi;
         mutable std::map<integer,R> w1,w2;

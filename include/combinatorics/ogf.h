@@ -24,9 +24,18 @@ namespace cp
         {
             std::vector<cp::cyclic<m>> res;
             for(int i=0;i<P.size();i++)
-                res.push_back(P[i]+G.P[i]);
+                res.push_back(P[i]+G.weight(i));
             return ogf(res);
         }
+
+        ogf operator-(const ogf &G) const
+        {
+            std::vector<cp::cyclic<m>> res;
+            for(int i=0;i<P.size();i++)
+                res.push_back(P[i]-G.weight(i));
+            return ogf(res);
+        }
+
         ogf& operator+=(const ogf &G)
         {
             for(int i=0;i<P.size();i++)
@@ -46,7 +55,7 @@ namespace cp
 
         virtual cp::cyclic<m> weight(cp::integer n) const
         {
-            return n<P.size()?P[n]:0;
+            return n<P.size() && n >= 0?P[n]:0;
         }
 
 
@@ -67,14 +76,40 @@ namespace cp
     template<integer m>
     ogf<m> multiplication(const ogf<m> &A, const ogf<m> &B)
     {
-        return ogf<m>(fast_multiplication(A.data(), B.data()));
+        auto R=fast_multiplication(A.data(), B.data());
+        R.resize(std::max(A.data().size(),B.data().size()));
+        return ogf<m>(R);
+    }
+
+    template<integer m>
+    ogf<m> multiplication(const ogf<m> &A, const ogf<m> &B,int r)
+    {
+        auto R=fast_multiplication(A.data(), B.data());
+        if(R.size()>r) R.resize(r);
+        return ogf<m>(R);
+    }
+
+
+    template<cp::integer m>
+    ogf<m> power(const ogf<m> &A, integer n,int r)
+    {
+        if(n==0)
+            return ogf<m>({1});
+        else
+        {
+            auto Q=power(A,n/2,r);
+            Q=multiplication(Q,Q,r);
+            if(n%2)
+                Q=multiplication(Q,A,r);
+            return Q;
+        }
     }
 
     template<cp::integer m>
     ogf<m> power(const ogf<m> &A, integer n)
     {
         if(n==0)
-            return 1;
+            return ogf<m>({1});
         else
         {
             auto Q=power(A,n/2);
@@ -104,6 +139,33 @@ namespace cp
         polynomial<cyclic<m>> P(A);
         P.data().resize(n);
         return formal_inv(cyclic<m>{1}-P,n).data();
+    }
+
+    template<integer m>
+    ogf<m> sequence(const ogf<m> &A,int L)
+    {
+        int n=A.data().size();
+        polynomial<cyclic<m>> P(A);
+        P.data().resize(n);
+        ogf<m> U = power(ogf<m>(P.data()),L+1);
+        for(auto & u:U.data())
+            u=-u;
+        U.data().front()+=1;
+        ogf<m> V=formal_inv(cyclic<m>{1}-P,n).data();
+        return multiplication(U,V);
+    }
+
+    template<integer m>
+    ogf<m> sequence(const ogf<m> &A,int a,int b)
+    {
+        int n=A.data().size();
+        polynomial<cyclic<m>> P(A);
+        P.data().resize(n);
+        ogf<m> U2 = power(A,b+1);
+        ogf<m> U1 = power(A,a);
+        auto U = U1 - U2;
+        ogf<m> V=formal_inv(cyclic<m>{1}-P,n).data();
+        return multiplication(U,V);
     }
 
     template<integer m>
