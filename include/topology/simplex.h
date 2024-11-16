@@ -1,9 +1,9 @@
-//
-// Created by ramizouari on 04/11/24.
-//
+/*
+ * A general implementation of the 2-Phase Simplex algorithm
+ * */
 
-#ifndef CPLIBRARY_SIMPLEX_H
-#define CPLIBRARY_SIMPLEX_H
+#ifndef CPLIBRARY_SIMPLEX2_H
+#define CPLIBRARY_SIMPLEX2_H
 #include <vector>
 #include <algorithm>
 #include <concepts>
@@ -164,6 +164,32 @@ namespace cp::topology
             }
             return basics;
         }
+
+        void extractPrimalSolution(std::span<Float> solution,Float eps) const
+        {
+            for(int j=0;j<n;j++)
+            {
+                int nonZeros=0;
+                int k=0;
+                for(int i=0;i<m && nonZeros < 2;i++) if(std::abs(A[i][j]) > eps)
+                {
+                    nonZeros++;
+                    k = i;
+                }
+
+                //Basic variable
+                if(nonZeros == 1)
+                    solution[j] = b[k] / A[k][j];
+                else
+                    solution[j]=0;
+            }
+        }
+
+        void extractDualSolution(std::span<Float> solution) const
+        {
+            for(int j=0;j<m;j++)
+                solution[j]= -Z[n+j];
+        }
     };
 
 
@@ -174,7 +200,7 @@ namespace cp::topology
         LinearObjective<Float> objective;
         ObjectiveDirection direction=Max;
         int nbrVariables,dualOffset;
-        std::vector<Float> solution;
+        std::vector<Float> primal,dual;
         Float optimal{};
         State state;
         Float eps;
@@ -225,18 +251,19 @@ namespace cp::topology
                 if(p==-1) return state=Unbounded;
                 table.pivot(p,q,eps);
             }
-            table.extractSolution(solution,eps);
+            table.extractPrimalSolution(primal,eps);
+            table.extractDualSolution(dual);
             return state=Optimal;
         }
 
         std::span<const Float> primalSolution() const
         {
-            return std::span<const Float>(solution).subspan(0,nbrVariables);
+            return primal;
         }
 
         std::span<const Float> dualSolution() const
         {
-            return std::span<const Float>(solution).subspan(dualOffset);
+            return dual;
         }
 
     private:
@@ -285,8 +312,8 @@ namespace cp::topology
             auto r=vars.size();
             for(int i=0;i<r;i++)
                 Z[vars[i]] = coeffs[i];
-            solution.resize(n+m);
-            dualOffset=n;
+            primal.resize(n);
+            dual.resize(m);
             if(originFeasible)
                 return SimplexTable<Float>{A,b,Z,optimal};
             else
@@ -363,4 +390,4 @@ namespace cp::topology
 }
 
 
-#endif //CPLIBRARY_SIMPLEX_H
+#endif //CPLIBRARY_SIMPLEX2_H
