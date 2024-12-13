@@ -36,8 +36,6 @@ namespace cp
 
     };
 
-
-
     namespace graph
     {
         template<typename T>

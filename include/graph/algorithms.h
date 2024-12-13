@@ -8,4 +8,4 @@
 #include "algorithms/dijkstra.h"
 #include "algorithms/bfs.h"
 
-#endif //CPLIBRARY_ALGORITHMS_H
+#endif //CPLIBRARY_GRAPH_ALGORITHMS_H

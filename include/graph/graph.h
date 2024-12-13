@@ -23,7 +23,7 @@
 
 namespace cp::graph
 {
-    struct Graph : public AbstractGraph<int>
+    struct Graph : AbstractGraph<int>
     {
         int n;
         std::vector<std::vector<int>> adjacencyList,reverseList;
@@ -40,17 +40,6 @@ namespace cp::graph
             }
         }
 
-        void assignComponents(int a,int u,UnionFind& C,std::vector<bool> &visited)
-        {
-            if(!visited[a])
-            {
-                visited[a]=true;
-                C.connect(a,u);
-                for(auto s:reverseList[a])
-                    assignComponents(s,u,C,visited);
-            }
-        }
-
     public:
         Graph(int _n):n(_n),adjacencyList(n),reverseList(n){}
         void connect(int a,int b)
@@ -59,75 +48,55 @@ namespace cp::graph
             reverseList[b].emplace_back(a);
         }
 
-        std::vector<int> topologicalSort()
-        {
-            std::vector<bool> visited(n);
-            std::vector<int> L;
-            for(int i=0;i<n;i++)
-                topologicalSort(i,L,visited);
-            std::reverse(L.begin(),L.end());
-            return L;
-        }
-
-        struct ConnectedComponentMetaData
-        {
-            std::vector<std::vector<int>> components;
-            std::vector<int> componentId;
-            UnionFind classes;
-            std::vector<int> topologicalOrder;
-            ConnectedComponentMetaData(std::vector<std::vector<int>> && A,std::vector<int> &&B, UnionFind&&C, std::vector<int> &&D):components(std::move(A)),
-                                                                                                                                    componentId(std::move(B)), classes(std::move(C)),topologicalOrder(std::move(D)){}
-        };
-
-
-        ConnectedComponentMetaData getConnectedComponentsWithMetaData()
-        {
-
-            std::vector<bool> componentAssigned(n);
-            UnionFind C(n);
-            std::vector<int> topologicalOrder;
-            for(auto l: topologicalSort())
+            std::vector<int> topologicalSort()
             {
-                assignComponents(l, l, C, componentAssigned);
-                if(l==C.representative(l))
-                    topologicalOrder.push_back(l);
+                std::vector<bool> visited(n);
+                std::vector<int> L;
+                for(int i=0;i<n;i++)
+                    topologicalSort(i,L,visited);
+                std::reverse(L.begin(),L.end());
+                return L;
             }
-            std::vector<bool> idAssigned(n);
-            std::vector<int> componentId(n);
-            std::vector<std::vector<int>> components;
-            for(int i=0;i<n;i++)
+
+            // Decomposition of strongly connected components
+            struct SCDec {
+                int components; // Number of components
+                std::vector<int> componentId,// A map that gives the id of the strongly connected component of a node
+                                 topologicalOrder; // A topological order of the components
+            };
+
+            void assign(int u, std::vector<bool> &assigned,std::vector<int> & cmpId,int id)
             {
-                auto r=C.representative(i);
-                if(!idAssigned[r])
+                if (assigned[u]) return;
+                cmpId[u]=id;
+                assigned[u] = true;
+                for (int v : reverseList[u]) assign(v,assigned,cmpId,id);
+            }
+
+            SCDec getSCComponents()
+            {
+                std::vector<bool> hasId(n);
+                std::vector<int> topoOrder = topologicalSort(),cmpId(n);
+                int components=0;
+                for (auto i :topoOrder) if (!hasId[i])
+                    assign(i,hasId,cmpId,components++);
+                return {components,cmpId, topoOrder};
+            }
+
+            std::pair<Graph,std::vector<int>> condensationGraph()
+            {
+                auto [components,componentId,topologicalOrder]=getSCComponents();
+                Graph DAG(components);
+                std::vector<std::set<int>> S(components);
+                for(int i=0;i<n;i++) for(auto j:adjacencyList[i]) if(componentId[i]!=componentId[j] && !S[componentId[i]].contains(componentId[j]))
                 {
-                    idAssigned[r]=true;
-                    componentId[r]=components.size();
-                    components.emplace_back();
+                    auto u=componentId[i],v=componentId[j];
+                    S[u].insert(v);
+                    DAG.connect(u,v);
                 }
-                componentId[i]=componentId[r];
-                components[componentId[r]].push_back(i);
+                return std::make_pair(DAG,componentId);
             }
-            return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
-        }
 
-        std::pair<Graph,std::vector<int>> condensationGraph()
-        {
-            auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
-            Graph DAG(components.size());
-            std::vector<std::set<int>> S(components.size());
-            for(int i=0;i<n;i++) for(auto j:adjacencyList[i]) if(!classes.equivalent(i,j) && !S[componentId[i]].contains(componentId[j]))
-            {
-                auto u=componentId[i],v=componentId[j];
-                S[u].insert(v);
-                DAG.connect(u,v);
-            }
-            return std::make_pair(DAG,componentId);
-        }
-
-        std::vector<std::vector<int>> getConnectedComponents()
-        {
-            return getConnectedComponentsWithMetaData().components;
-        }
 
         int size() const override
         {
@@ -191,17 +160,6 @@ namespace cp::graph
             }
         }
 
-        void assignComponents(const OrderedSet& a,const OrderedSet& u,OrderedUnionFind<OrderedSet>& C,std::set<OrderedSet> &visited)
-        {
-            if(!visited.contains(a))
-            {
-                visited.insert(a);
-                C.connect(a,u);
-                for(auto s:reverseList[a])
-                    assignComponents(s,u,C,visited);
-            }
-        }
-
     public:
         void connect(const OrderedSet&A,const OrderedSet&B)
         {
@@ -228,56 +186,44 @@ namespace cp::graph
             return L;
         }
 
-        struct ConnectedComponentMetaData
-        {
-            std::vector<std::vector<OrderedSet>> components;
-            std::vector<OrderedSet> componentId;
-            OrderedUnionFind<OrderedSet> classes;
-            std::vector<OrderedSet> topologicalOrder;
-            ConnectedComponentMetaData(std::vector<std::vector<OrderedSet>> && A,std::vector<OrderedSet> &&B, OrderedUnionFind<OrderedSet>&&C,
-                                       std::vector<OrderedSet>&&topologicalOrder):
-                    components(std::move(A)),componentId(std::move(B)), classes(std::move(C)),topologicalOrder(std::move(topologicalOrder)){}
+        // Decomposition of strongly connected components
+        struct SCDec {
+            int components; // Number of components
+            std::map<OrderedSet,int> componentId;// A map that gives the id of the strongly connected component of a node
+            std::vector<OrderedSet> topologicalOrder; // A topological order of the components
         };
 
-        ConnectedComponentMetaData getConnectedComponentsWithMetaData()
+        void assign(const OrderedSet &u, std::set<OrderedSet> &assigned,std::map<OrderedSet,int> & cmpId,int id)
         {
-            std::set<OrderedSet> componentAssigned;
-            OrderedUnionFind<OrderedSet> C;
-            std::vector<OrderedSet> topologicalOrder;
-            for(auto l: topologicalSort()) {
-                assignComponents(l, l, C, componentAssigned);
-                if(l==C.representative(l))
-                    topologicalOrder.push_back(l);
-            }
-            std::set<OrderedSet> idAssigned;
-            std::map<OrderedSet,int> componentId;
-            std::vector<std::vector<OrderedSet>> components;
-            for(auto &u:states)
+            if (assigned.contains(u)) return;
+            cmpId[u]=id;
+            assigned.insert(u);
+            for (const auto& v : reverseList[u]) assign(v,assigned,cmpId,id);
+        }
+
+        SCDec getSCComponents()
+        {
+            std::set<OrderedSet> hasId;
+            std::vector<OrderedSet> topoOrder = topologicalSort();
+            std::map<OrderedSet,int> cmpId;
+            int components=0;
+            for (const auto& u :topoOrder) if (!hasId.contains(u))
+                assign(u,hasId,cmpId,components++);
+            return {components,cmpId, topoOrder};
+        }
+
+        std::pair<Graph,std::map<OrderedSet,int>> condensationGraph()
+        {
+            auto [components,componentId,topologicalOrder]=getSCComponents();
+            Graph DAG(components);
+            std::vector<std::set<int>> S(components);
+            for(int i=0;i<states.size();i++) for(auto j:adjacencyList[i]) if(componentId[i]!=componentId[j] && !S[componentId[i]].contains(componentId[j]))
             {
-                auto r=C.representative(u);
-                if(!idAssigned.contains(r))
-                {
-                    idAssigned.insert(r);
-                    componentId[r]=components.size();
-                    components.emplace_back();
-                }
-                components[componentId[r]].push_back(u);
+                auto u=componentId[i],v=componentId[j];
+                S[u].insert(v);
+                DAG.connect(u,v);
             }
-            return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
-        }
-
-        std::pair<OrderedGraph,OrderedUnionFind<OrderedSet>> condensationGraph()
-        {
-            auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
-            OrderedGraph DAG(components.size());
-            for(auto [u,v]:adjacencyList) if(!classes.equivalent(u,v))
-                    DAG.connect(classes.representative(u),classes.representative(v));
-            return std::make_pair(DAG,classes);
-        }
-
-        std::vector<std::vector<OrderedSet>> getConnectedComponents()
-        {
-            return getConnectedComponentsWithMetaData().components;
+            return std::make_pair(DAG,componentId);
         }
     };
 
@@ -301,17 +247,6 @@ namespace cp::graph
                 for(const auto& s:adjacencyList[r])
                     topologicalSort(s,L,visited);
                 L.push_back(r);
-            }
-        }
-
-        void assignComponents(const UnorderedSet& a,const UnorderedSet& u,UnorderedUnionFind<UnorderedSet>& C,std::unordered_set<UnorderedSet> &visited)
-        {
-            if(!visited.contains(a))
-            {
-                visited.insert(a);
-                C.connect(a,u);
-                for(auto s:reverseList[a])
-                    assignComponents(s,u,C,visited);
             }
         }
 
@@ -341,58 +276,46 @@ namespace cp::graph
             return L;
         }
 
-        struct ConnectedComponentMetaData
-        {
-            std::vector<std::vector<UnorderedSet>> components;
-            std::vector<UnorderedSet> componentId;
-            UnorderedUnionFind<UnorderedSet> classes;
-            std::vector<UnorderedSet> topologicalOrder;
-            ConnectedComponentMetaData(std::vector<std::vector<UnorderedSet>> && A,std::vector<UnorderedSet> &&B, OrderedUnionFind<UnorderedSet>&&C,
-                                       std::vector<UnorderedSet> &&D):
-                    components(std::move(A)),componentId(std::move(B)), classes(std::move(C)),
-                    topologicalOrder(std::move(D)){}
+        // Decomposition of strongly connected components
+        struct SCDec {
+            int components; // Number of components
+            std::unordered_map<UnorderedSet,int> componentId;// A map that gives the id of the strongly connected component of a node
+            std::vector<UnorderedSet> topologicalOrder; // A topological order of the components
         };
 
-        ConnectedComponentMetaData getConnectedComponentsWithMetaData()
+        void assign(const UnorderedSet &u, std::unordered_set<UnorderedSet> &assigned,std::unordered_map<UnorderedSet,int> & cmpId,int id)
         {
-            std::set<UnorderedSet> componentAssigned;
-            UnorderedUnionFind<UnorderedSet> C;
-            std::vector<UnorderedSet> topologicalOrder;
-            for(auto l: topologicalSort()) {
-                assignComponents(l, l, C, componentAssigned);
-                if(l==C.representative(l))
-                    topologicalOrder.push_back(l);
-            }
-            std::unordered_set<UnorderedSet> idAssigned;
-            std::unordered_map<UnorderedSet,int> componentId;
-            std::vector<std::vector<UnorderedSet>> components;
-            for(auto &u:states)
+            if (assigned.contains(u)) return;
+            cmpId[u]=id;
+            assigned.insert(u);
+            for (const auto& v : reverseList[u]) assign(v,assigned,cmpId,id);
+        }
+
+        SCDec getSCComponents()
+        {
+            std::set<UnorderedSet> hasId;
+            std::vector<UnorderedSet> topoOrder = topologicalSort();
+            std::map<UnorderedSet,int> cmpId;
+            int components=0;
+            for (const auto& u :topoOrder) if (!hasId.contains(u))
+                assign(u,hasId,cmpId,components++);
+            return {components,cmpId, topoOrder};
+        }
+
+        std::pair<Graph,std::unordered_map<UnorderedSet,int>> condensationGraph()
+        {
+            auto [components,componentId,topologicalOrder]=getSCComponents();
+            Graph DAG(components.size());
+            std::vector<std::unordered_set<int>> S(components);
+            for(int i=0;i<states.size();i++) for(auto j:adjacencyList[i]) if(componentId[i]!=componentId[j] && !S[componentId[i]].contains(componentId[j]))
             {
-                auto r=C.representative(u);
-                if(!idAssigned.contains(r))
-                {
-                    idAssigned.insert(r);
-                    componentId[r]=components.size();
-                    components.emplace_back();
-                }
-                components[componentId[r]].push_back(u);
+                auto u=componentId[i],v=componentId[j];
+                S[u].insert(v);
+                DAG.connect(u,v);
             }
-            return ConnectedComponentMetaData(std::move(components),std::move(componentId),std::move(C),std::move(topologicalOrder));
+            return std::make_pair(DAG,S);
         }
 
-        std::pair<UnorderedGraph,UnorderedUnionFind<UnorderedSet>> condensationGraph()
-        {
-            auto [components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
-            UnorderedGraph DAG(components.size());
-            for(auto [u,v]:adjacencyList) if(!classes.equivalent(u,v))
-                    DAG.connect(classes.representative(u),classes.representative(v));
-            return std::make_pair(DAG,classes);
-        }
-
-        std::vector<std::vector<UnorderedSet>> getConnectedComponents()
-        {
-            return getConnectedComponentsWithMetaData().components;
-        }
     };
 
 

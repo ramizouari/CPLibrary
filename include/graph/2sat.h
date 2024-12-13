@@ -42,124 +42,72 @@ namespace cp::sat
     }
 
 
-    class SatisfiabilityGraph:public graph::Graph
+    struct Sat2 : cp::graph::Graph
     {
-        std::vector<int> assumptions;
-        using Graph::n;
-        using Graph::adjacencyList;
-        using Graph::reverseList;
         int d;
-    public:
-        explicit SatisfiabilityGraph(int d):Graph(2*d),d(d){}
-        void connect(int a,int b,bool r1,bool r2)
+        using Graph=cp::graph::Graph;
+        explicit Sat2(int d) : Graph(2*d),d(d) {}
+
+        // Get a solution, or an empty vector if not satisfiable
+        std::optional<std::vector<bool>> satisfy()
         {
-            adjacencyList[Var(a,r1)].push_back(Var(b,r2));
-            reverseList[Var(b,r2)].push_back(Var(a,r1));
+            std::vector<bool> vis(2 * d), sol(d), assigned(d);
+            auto &&[components,cmpId, _] = getSCComponents();
+            for (int i = 0; i < n; i += 2) {
+                if (cmpId[i] == cmpId[i^1])
+                    return std::nullopt;
+                sol[i / 2] = cmpId[i] > cmpId[i^1];
+            }
+            return sol;
         }
 
-        void addClause(int a,int b,bool r1, bool r2)
+        // Connect two nodes in a graph
+        void connect(int a, int b, bool r1, bool r2)
         {
-            connect(a,b,r1,r2);
-            connect(b,a,!r2,!r1);
+            Graph::connect(2*a^r1,2*b^r2);
         }
 
-        void addOr(int a,int b)
-        {
-            addClause(a,b,false,true);
+        // Add a 2-SAT clause.
+        void addClause(int a, int b, bool r1, bool r2) {
+            connect(a, b, !r1, r2);
+            connect(b, a, !r2, r1);
         }
 
-        void addNand(int a,int b)
-        {
-            addClause(a,b,true,false);
+        // a ∨ b
+        void addOr(int a, int b) {
+            addClause(a, b, false, false);
         }
 
-        void addImplication(int a,int b)
-        {
-            addClause(a,b,true,true);
+        // ⅂a ∨ ⅂b
+        void addNand(int a, int b) {
+            addClause(a, b, true, true);
         }
 
-        void addEquivalence(int a,int b)
-        {
-            addImplication(a,b);
-            addImplication(b,a);
+        // a => b. Equivalent to: ⅂a ∨ b
+        void addImplication(int a, int b) {
+            addClause(a, b, true, false);
         }
 
-        void addExclusion(int a,int b)
-        {
-            addOr(a,b);
-            addNand(a,b);
+        // a <=> b. Equivalent to a => b and b => a
+        void addEquivalence(int a, int b) {
+            addImplication(a, b);
+            addImplication(b, a);
         }
 
+        // a ∨ b, but not a ∧ b
+        void addExclusion(int a, int b) {
+            addOr(a, b);
+            addNand(a, b);
+        }
 
-        void addAssumption(int a,bool r)
-        {
-            addClause(a,a,!r,r);
-            assumptions.push_back(Var(a,r));
+        // Assume that a has value r.
+        void addAssumption(int a, bool r) {
+            addClause(a, a, !r, r);
         }
 
         bool satisfiable()
         {
-            return satisfy().has_value();
-        }
-
-        std::optional<std::vector<bool>> satisfy()
-        {
-            std::stack<int> Q;
-            std::vector<bool> visited(2*d);
-            std::vector<bool> solution(d),assigned(d);
-            auto &&[components,componentId,classes,topologicalOrder]=getConnectedComponentsWithMetaData();
-            std::vector<bool> componentAssigned(components.size());
-
-            std::vector<bool> visitedComponents(2*d);
-            for(auto &component:components)
-            {
-                for(auto &u:component)
-                    visitedComponents[u]=true;
-                for(auto &u:component)
-                {
-                    int i= BaseVariable(u);
-                    if(visitedComponents[Id(i)] && visitedComponents[Not(i)])
-                        return std::nullopt;
-                }
-                for(auto &u:component)
-                    visitedComponents[u]=false;
-            }
-            for(int i=topologicalOrder.size()-1;i>=0;i--) if(!componentAssigned[componentId[topologicalOrder[i]]])
-                {
-                    componentAssigned[i]=true;
-                    auto &component=components[componentId[topologicalOrder[i]]];
-                    bool unassigned = std::none_of(component.begin(),component.end(),[&assigned](const auto &s){return assigned[BaseVariable(s)];});
-                    if(unassigned) for(auto c:component)
-                        {
-                            assigned[BaseVariable(c)]=true;
-                            solution[BaseVariable(c)]=isAffirmative(c);
-                        }
-                }
-            return solution;
-        }
-
-        void print(std::ostream &H,int i) const
-        {
-            if(i&1)
-                H << "¬";
-            H << "X[" << BaseVariable(i)  << "]";
-        }
-
-        void print(std::ostream &H) const
-        {
-            for(auto u:assumptions) {
-                print(H, u);
-                H << '\n';
-            }
-            for(int i=0;i<2*d;i++)
-            {
-                for(auto u:adjacencyList[i]) {
-                    print(H,i);
-                    H << " -> ";
-                    print(H,u);
-                    H << '\n';
-                }
-            }
+            return !satisfy();
         }
     };
 }
