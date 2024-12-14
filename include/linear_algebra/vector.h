@@ -8,14 +8,13 @@
 #include <vector>
 #include <cstddef>
 #include <array>
+#include "utils.h"
+#include "view.h"
+#include "algebra/structures.h"
 
 namespace cp::linalg
 {
-    struct v_shape
-    {
-        int n;
-    };
-
+    using v_shape = std::array<std::size_t, 1>;
 /**
  * @brief Dynamic Vector
  * @detail Dynamic Vector is a vector in the mathematical sense,
@@ -27,90 +26,87 @@ namespace cp::linalg
  * @Requirements
  * R is a commutative ring
  * */
-    template<typename R>
-    class d_vector
+    template<ring R>
+    struct vector : tensor_view<R,1>
     {
         std::vector<R> u;
-    public:
         using base_field=R;
         using base_ring=R;
-        inline static int n=0;
-        d_vector():u(n){}
-        d_vector(std::vector<R> _u):u(std::move(_u)){}
-        d_vector(v_shape shape):u(shape.n){}
+        vector() = default;
+        vector(std::vector<R>&& _u):u(std::move(_u)){}
+        vector(const std::vector<R>& _u):u(_u){}
+        vector(std::size_t n,size_tag_t):u(n){}
 
-        bool operator==(const d_vector<R>& other) const
-        {
-            return u==other.u;
-        }
-        auto dim() const
+        bool operator==(const vector& other) const = default;
+
+        std::size_t dim() const
         {
             return u.size();
         }
 
-        auto& operator[](int k)
+        std::array<std::size_t,1> shape() const override {
+            return {u.size()};
+        }
+
+        std::size_t size() const override
+        {
+            return u.size();
+        }
+
+        R& at(std::array<std::size_t,1> i) override
+        {
+            return u[i.front()];
+        }
+
+        const R& at(std::array<std::size_t,1> i) const override
+        {
+            return u[i.front()];
+        }
+
+        R& operator[](std::size_t k)
         {
             return u[k];
         }
 
-        const auto& operator[](int k) const
+        const R& operator[](std::size_t k) const
         {
             return u[k];
         }
 
-        auto& operator+=(const d_vector &o)
+        vector& operator+=(const vector &O)
         {
-            for(int i=0;i<dim();i++)
-                u[i]+=o.u[i];
+            for(int i=0;i<std::min(dim(),O.dim());i++)
+                u[i]+=O.u[i];
             return *this;
         }
 
-        auto& operator-=(const d_vector &o)
+        vector& operator-=(const vector &O)
         {
-            for(int i=0;i<dim();i++)
-                u[i]-=o.u[i];
+            for(int i=0;i<std::min(dim(),O.dim());i++)
+                u[i]-=O.u[i];
             return *this;
         }
 
-        auto& operator*=(R k)
+        vector& operator*=(const R& k)
         {
-            for(auto &s:u)
-                s*=k;
+            for(auto &s:u) s*=k;
             return *this;
         }
 
-        auto operator+(const d_vector &o) const
-        {
-            auto v=*this;
-            return v+=o;
-        }
 
-        auto operator-(const d_vector &o) const
+        vector operator-() const
         {
             auto v=*this;
-            return v-=o;
-        }
-
-        auto operator-() const
-        {
-            auto v=*this;
-            for(auto &s:v.u)
-                s=-s;
+            for(auto &s:v.u) s=-s;
             return v;
         }
 
-        auto& operator/=(R k)
+        vector& operator/=(const R& k)
         {
-            for(auto &s:u)
-                s/=k;
+            for(auto &s:u) s/=k;
             return *this;
         }
 
-        auto operator/(R k) const
-        {
-            auto v=*this;
-            return v/=k;
-        }
 
         auto begin() {
             return u.begin();
@@ -142,11 +138,60 @@ namespace cp::linalg
         }
     };
 
-    template<typename R>
-    auto operator*(const R&k,const d_vector<R>& u)
+    template<typename Vec,typename R>
+    concept ToVector=std::convertible_to<Vec,vector<R>>;
+
+    template<typename Vec,typename R>
+    concept ToVectorProper=std::convertible_to<Vec,vector<R>> && !std::same_as<Vec,vector<R>>;
+
+
+    template<ring R ,ToVector<R> O>
+    vector<R> operator+(const vector<R> &A,const O &B)
     {
-        auto v=u;
-        return v*=k;
+        auto C=A;
+        return C+=B;
+    }
+
+    template<ring R ,ToVectorProper<R> O>
+    vector<R> operator+(const O & A,const vector<R> & B)
+    {
+        vector<R> C=A;
+        return C+=B;
+    }
+
+    template<ring R ,ToVector<R> O>
+    vector<R> operator-(const vector<R> &A,const O &B)
+    {
+        auto C=A;
+        return C-=B;
+    }
+
+    template<ring R ,ToVectorProper<R> O>
+    vector<R> operator-(const O & A,const vector<R> & B)
+    {
+        vector<R> C=A;
+        return C-=B;
+    }
+
+    template<ring R ,std::convertible_to<R> O>
+    vector<R> operator*(const O &k,const vector<R> &A)
+    {
+        auto C=A;
+        return C*=k;
+    }
+
+    template<ring R ,std::convertible_to<R> O>
+    vector<R> operator*(const vector<R> &A,const O &k)
+    {
+        auto C=A;
+        return C*=k;
+    }
+
+    template<ring R ,std::convertible_to<R> O>
+    vector<R> operator/(const vector<R> &A,const O &k)
+    {
+        auto C=A;
+        return C/=k;
     }
 
 /**

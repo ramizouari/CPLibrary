@@ -27,7 +27,7 @@ namespace cp
             {
                 if(!visited[i])
                 {
-                    R.push_back({});
+                    R.emplace_back();
                     int j=i;
                     do
                     {
@@ -92,6 +92,16 @@ namespace cp
         permutation& operator*= (const permutation &Q)
         {
             return *this=*this*Q;
+        }
+
+        permutation operator/(const permutation &Q) const
+        {
+            return *this*Q.inv();
+        }
+
+        permutation& operator/= (const permutation &Q)
+        {
+            return *this=*this*Q.inv();
         }
 
         permutation inv() const

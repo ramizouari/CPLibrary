@@ -14,31 +14,18 @@ namespace cp
     {
         integer n;
         inline static bool assume_prime=true;
-        inline static constexpr integer m = mod;
-        constexpr cyclic(integer o=0):n((o+m)%m){}
-        bool operator==(int O) const
+        static constexpr integer m = mod;
+        constexpr cyclic(integer o=0):n((o%m+m)%m){}
+        bool operator==(integer O) const
         {
-            return n==(m+O)%m;
+            return n==(m+O%m)%m;
         }
 
-        bool operator!=(int O) const
-        {
-            return n!=(m+O)%m;
-        }
-
-        bool operator==(cyclic O) const
-        {
-            return n==O.n;
-        }
-
-        bool operator!=(cyclic O) const
-        {
-            return n!=O.n;
-        }
+        bool operator==(const cyclic &O) const = default;
 
         cyclic operator-() const
         {
-            return cyclic(-n);
+            return cyclic(m-n);
         }
 
         auto& operator+=(const cyclic &O)
@@ -63,29 +50,6 @@ namespace cp
             return (*this)*=O.inv();
         }
 
-        auto operator*(const cyclic &O) const
-        {
-            auto w=*this;
-            return w*=O;
-        }
-
-        auto operator+(const cyclic &O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
-        auto operator-(const cyclic &O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        auto operator/(const cyclic &O) const
-        {
-            return (*this)*O.inv();
-        }
-
         cyclic pinv() const
         {
             return egcd(n,m).a;
@@ -93,33 +57,8 @@ namespace cp
 
         auto inv() const
         {
-            if(assume_prime)
-                return pow(*this,m-2);
-            else return pinv();
-        }
-
-        auto& operator++()
-        {
-            return *this+=1;
-        }
-
-        auto& operator--()
-        {
-            return *this-=1;
-        }
-
-        auto operator++(int)
-        {
-            cyclic r(n);
-            *this += 1;
-            return r;
-        }
-
-        auto operator--(int)
-        {
-            cyclic r(n);
-            *this -= 1;
-            return r;
+            if(assume_prime) return pow(*this,m-2);
+            return pinv();
         }
 
         explicit operator integer&()
@@ -139,21 +78,111 @@ namespace cp
     };
 
     template<integer m>
-    auto operator*(integer k,cyclic<m> s)
+    using cyc=cyclic<m>;
+
+    template<typename Cyc,integer m>
+    concept ToCyclic=std::convertible_to<Cyc,cyc<m>>;
+
+    template<typename Cyc,integer m>
+    concept ToCyclicProper=std::convertible_to<Cyc,cyc<m>> && !std::same_as<Cyc,cyc<m>>;
+
+    template<integer m,ToCyclic<m> O>
+    cyc<m> operator*(const cyc<m> &A,const O &B)
     {
-        return s*k;
+        auto C=A;
+        return C*=B;
+    }
+
+    template<integer m,ToCyclicProper<m> O>
+    cyc<m> operator*(const O & A,const cyc<m> & B)
+    {
+        cyc<m> C=A;
+        return C*=B;
+    }
+
+    template<integer m,ToCyclic<m> O>
+    cyc<m> operator+(const cyc<m> &A,const O &B)
+    {
+        cyc<m> C=A;
+        return C+=B;
+    }
+
+    template<integer m,ToCyclicProper<m> O>
+    cyc<m> operator+(const O &A,const cyc<m> &B)
+    {
+        cyc<m> C=A;
+        return C+=B;
+    }
+
+    template<integer m,ToCyclic<m> O>
+    cyc<m> operator-(const cyc<m>& A,const O &B)
+    {
+        cyc<m> C=A;
+        return C-=B;
+    }
+
+    template<integer m,ToCyclicProper<m> O>
+    cyc<m> operator-(const O& A,const cyc<m> &B)
+    {
+        cyc<m> C=A;
+        return C-=B;
+    }
+
+
+    template<integer m,ToCyclic<m> O>
+    cyc<m> operator/(const cyclic<m> &A,const O &B)
+    {
+        cyc<m> C=A;
+        return C/=B;
+    }
+
+    template<integer m,ToCyclicProper<m> O>
+    cyc<m> operator/(const O &A,const cyc<m> &B)
+    {
+        cyc<m> C=A;
+        return C/=B;
     }
 
     template<integer m>
-    auto operator+(integer k,cyclic<m> s)
+    cyc<m>& operator++(cyc<m> & x)
     {
-        return s+k;
+        return x+=1;
+    }
+
+
+    template<integer m>
+    cyc<m>& operator--(cyc<m> & x)
+    {
+        return x-=1;
     }
 
     template<integer m>
-    auto operator-(integer k,cyclic<m> s)
+    cyc<m> operator++(cyc<m>&x,int)
     {
-        return (-s)+k;
+        auto y=x;
+        x += 1;
+        return y;
+    }
+
+    template<integer m>
+    cyc<m> operator--(cyc<m>&x,int)
+    {
+        auto y=x;
+        x -= 1;
+        return y;
+    }
+
+    template<integer m>
+    std::ostream& operator<<(std::ostream & H,const cyc<m> &x) {
+        return H << x.n;
+    }
+
+    template<integer m>
+    std::istream& operator>>(std::istream & H, cyc<m> &x) {
+        integer n;
+        H >> n;
+        x=n;
+        return H;
     }
 }
 

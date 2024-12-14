@@ -10,62 +10,12 @@
 #include <utility>
 #include "fft.h"
 #include "linear_algebra/tensor.h"
+#include "linear_algebra/utils.h"
 
 namespace cp::signals
 {
-    template<typename R,size_t Rank>
-    std::array<R,Rank> & increment(std::array<R,Rank> &X, const std::array<R,Rank> &shape)
-    {
-        for(int i=0;i<Rank;i++)
-        {
-            X[i]++;
-            if(X[i]<shape[i])
-                break;
-            X[i]=0;
-        }
-        return X;
-    }
-
-    template<typename R>
-    std::vector<R>& increment(std::vector<R> &X, const std::vector<R> &shape)
-    {
-        for(int i=0;i<X.size();i++)
-        {
-            X[i]++;
-            if(X[i]<shape[i])
-                break;
-            X[i]=0;
-        }
-        return X;
-    }
-
-    template<typename R,size_t Rank>
-    std::array<R,Rank> & decrement(std::array<R,Rank> &X, const std::array<R,Rank> &shape)
-    {
-        for(int i=0;i<Rank;i++)
-        {
-            X[i]--;
-            if(X[i]>=0)
-                break;
-            X[i]=shape[i]-1;
-        }
-        return X;
-    }
-    template<typename R>
-    std::vector<R>& decrement(std::vector<R> &X, const std::vector<R> &shape)
-    {
-        for(int i=0;i<X.size();i++)
-        {
-            X[i]--;
-            if(X[i]>=0)
-                break;
-            X[i]=shape[i]-1;
-        }
-        return X;
-    }
-
     template<typename R, size_t Rank>
-    struct tensor_projection_view : public cp::linalg::tensor_view<R,1>
+    struct tensor_projection_view : linalg::tensor_view<R,1>
     {
         size_t k;
         linalg::tensor_view<R,Rank>& src;

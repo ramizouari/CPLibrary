@@ -13,25 +13,20 @@ namespace cp
     {
         integer m,n;
         bool assume_prime=true;
-    public:
         cyclic(integer o=0,integer q=0):m(q),n(m?(o+m)%m:o){}
         bool operator==(integer O) const
         {
             if(!m) return n==O;
-            else return n==(m+O)%m;
+            return n==(m+O%m)%m;
         }
 
-        bool operator==(cyclic O) const
-        {
-            return n==O.n;
-        }
+        bool operator==(const cyclic &O) const = default;
 
         cyclic& operator+=(const cyclic &O)
         {
             if(!m) m=O.m;
             n+=O.n;
-            if(m)
-                n%=m;
+            if(m) n%=m;
             return *this;
         }
 
@@ -100,78 +95,14 @@ namespace cp
             return (*this)*=cyclic(O,m).inv();
         }
 
-        cyclic operator*(const cyclic &O) const
-        {
-            auto w=*this;
-            return w*=O;
-        }
-
-        cyclic operator+(const cyclic &O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
-        cyclic operator+(integer O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
         cyclic operator-() const
         {
             return {m-n,m};
         }
 
-        cyclic operator-(const cyclic &O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        cyclic operator-(integer O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        cyclic operator/(const cyclic &O) const
-        {
-            return (*this)*O.inv();
-        }
-
-        cyclic operator/(integer O) const
-        {
-            return (*this)*cyclic(O,m).inv();
-        }
-
         cyclic pinv() const
         {
             return {egcd(n,m).a,m};
-        }
-
-        cyclic& operator++()
-        {
-            return *this+=1;
-        }
-
-        cyclic& operator--()
-        {
-            return *this-=1;
-        }
-
-        cyclic operator++(int)
-        {
-            cyclic r(n,m);
-            *this += 1;
-            return r;
-        }
-
-        cyclic operator--(int)
-        {
-            cyclic r(n,m);
-            *this -= 1;
-            return r;
         }
 
         explicit operator integer&()

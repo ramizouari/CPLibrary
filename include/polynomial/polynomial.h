@@ -23,8 +23,6 @@ namespace cp
     {
         std::vector<R> p;
 
-    public:
-
         const std::vector<R>& data() const
         {
             return p;
@@ -41,7 +39,7 @@ namespace cp
             else return degree() == 0 && p.front() == a;
         }
 
-        bool operator==(const polynomial<R> &) const = default;
+        bool operator==(const polynomial &) const = default;
 
         polynomial& reduce()
         {
@@ -49,13 +47,9 @@ namespace cp
                 p.pop_back();
             return *this;
         }
-        polynomial(R k):p(1,k)
-        {
-            reduce();
-        }
 
-        template<std::integral T>
-        polynomial(T k):p(1,k)
+        template<std::convertible_to<R> O>
+        polynomial(O k):p(1,k)
         {
             reduce();
         }
@@ -137,7 +131,8 @@ namespace cp
             return r;
         }
 
-        auto operator*=(R a)
+        template<std::convertible_to<R> O>
+        auto operator*=(const O& a)
         {
             if(is_zero(a))
                 p.clear();
@@ -327,15 +322,15 @@ namespace cp
         }
     };
 
-    template<typename R>
-    polynomial<R> operator*(R a,const polynomial<R> &p)
+    template<typename R,std::convertible_to<R> O>
+    polynomial<R> operator*(const O& a,const polynomial<R> &p)
     {
         auto q=p;
         return q*=a;
     }
 
-    template<typename R>
-    polynomial<R> operator-(R a,const polynomial<R> &p)
+    template<typename R,std::convertible_to<R> O>
+    polynomial<R> operator-(O a,const polynomial<R> &p)
     {
         auto q=-p;
         return q+=a;

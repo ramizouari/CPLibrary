@@ -12,29 +12,15 @@ namespace cp
     struct cyclic<static_modulus>
     {
         integer n;
-    public:
         inline static integer m=1;
         inline static bool assume_prime=true;
-        cyclic(integer o=0):n((o+m)%m){}
+        constexpr cyclic(integer o=0):n((o+m)%m){}
         bool operator==(integer O) const
         {
             return n==(m+O)%m;
         }
 
-        bool operator!=(integer O) const
-        {
-            return n!=(m+O)%m;
-        }
-
-        bool operator==(cyclic O) const
-        {
-            return n==O.n;
-        }
-
-        bool operator!=(cyclic O) const
-        {
-            return n!=O.n;
-        }
+        bool operator==(const cyclic &O) const = default;
 
         cyclic& operator+=(const cyclic &O)
         {
@@ -65,61 +51,9 @@ namespace cp
             return (*this)*=O.inv();
         }
 
-        cyclic operator*(const cyclic &O) const
-        {
-            auto w=*this;
-            return w*=O;
-        }
-
-        cyclic operator+(const cyclic &O) const
-        {
-            auto w=*this;
-            return w+=O;
-        }
-
-        cyclic operator-() const
-        {
-            return cyclic(m-n);
-        }
-
-        cyclic operator-(const cyclic &O) const
-        {
-            auto w=*this;
-            return w-=O;
-        }
-
-        cyclic operator/(const cyclic &O) const
-        {
-            return (*this)*O.inv();
-        }
-
         cyclic pinv() const
         {
             return egcd(n,m).a;
-        }
-
-        cyclic& operator++()
-        {
-            return *this+=1;
-        }
-
-        cyclic& operator--()
-        {
-            return *this-=1;
-        }
-
-        cyclic operator++(int)
-        {
-            cyclic r(n);
-            *this += 1;
-            return r;
-        }
-
-        cyclic operator--(int)
-        {
-            cyclic r(n);
-            *this -= 1;
-            return r;
         }
 
         explicit operator integer&()

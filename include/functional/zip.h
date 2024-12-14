@@ -15,7 +15,7 @@ namespace cp
     struct zip_t;
 
     template<typename A, typename B>
-    struct zip_t<A,B> :public std::pair<A, B>
+    struct zip_t<A,B> : std::pair<A, B>
     {
         using std::pair<A, B>::pair;
         using iterator_type_1 = decltype(std::pair<A, B>::first.begin());
@@ -31,9 +31,15 @@ namespace cp
                 return *this;
             }
             bool operator==(const zip_iterator& O) const = default;
+
+            std::pair<decltype(*u)&, decltype(*v)&> operator*()
+            {
+                return std::tie(*u,*v);
+            }
+
             std::pair<decltype(*u)&, decltype(*v)&> operator*() const
             {
-                return { *u,*v };
+                return std::tie(*u,*v);
             }
         };
         zip_iterator begin()
@@ -47,7 +53,7 @@ namespace cp
     };
 
     template<typename A, typename B,typename C>
-    struct zip_t<A, B,C> :public std::tuple < A, B,C >
+    struct zip_t<A, B,C> : std::tuple < A, B,C >
     {
         using std::tuple < A, B,C >::tuple;
         using iterator_type_1 = decltype(std::pair<A, B>::first.begin());
@@ -67,9 +73,15 @@ namespace cp
                 return *this;
             }
             bool operator==(const zip_iterator& O) const = default;
+
+            std::tuple<decltype(*u)&, decltype(*v)&,decltype(*w)& > operator*()
+            {
+                return std::tie(*u,*v,*w);
+            }
+
             std::tuple<decltype(*u)&, decltype(*v)&,decltype(*w)& > operator*() const
             {
-                return { *u,*v,*w };
+                return std::tie(*u,*v,*w);
             }
         };
         zip_iterator begin()
@@ -84,7 +96,7 @@ namespace cp
 
 
     template<typename ...A>
-    struct zip_t :public std::tuple < A... >
+    struct zip_t : std::tuple < A... >
     {
         using std::tuple < A... >::tuple;
 
@@ -97,18 +109,24 @@ namespace cp
                 return *this;
             }
             bool operator==(const zip_iterator& O) const = default;
+
+            std::tuple<decltype(*std::begin(std::declval<A&>()))... > operator*()
+            {
+                return std::apply([](auto& ...x)->std::tuple<decltype(*std::begin(std::declval<A&>()))... >
+                                  { return std::tie(*x... ); }, U);
+            }
+
             std::tuple<decltype(*std::begin(std::declval<A&>()))... > operator*() const
             {
                 return std::apply([](auto& ...x)->std::tuple<decltype(*std::begin(std::declval<A&>()))... >
-                                  { return { *x... }; }, U);
+                                  { return std::tie(*x... ); }, U);
             }
         };
         zip_iterator begin()
         {
             return std::apply([](auto& ...x)->zip_iterator
                               {
-                                  zip_iterator R;
-                                  R.U={ x.begin()...};
+                                  zip_iterator R={ std::make_tuple(x.begin()...)};
                                   return R;
                               }, (std::tuple<A...>&) *this);
         }
@@ -116,8 +134,7 @@ namespace cp
         {
             return std::apply([](auto& ...x)->zip_iterator
                               {
-                                  zip_iterator R;
-                                  R.U = { x.end()... };
+                                  zip_iterator R= { std::make_tuple(x.end()...) };
                                   return R;
                               }, (std::tuple<A...>&) *this);
         }

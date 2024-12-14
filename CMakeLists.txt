@@ -33,6 +33,12 @@ set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h
         include/nt/dirichelet.h
         include/data_structures/li_chao.h
         include/topology/simplex.h
+        include/linear_algebra/views/vector.h
+        include/linear_algebra/views/matrix.h
+        include/linear_algebra/views/flat_tensor.h
+        include/linear_algebra/views/operations.h
+        include/linear_algebra/views/matrix_operations.h
+        include/linear_algebra/utils.h
 )
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp

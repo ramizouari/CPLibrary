@@ -8,6 +8,8 @@
 #include <complex>
 #include "algebra/bits.h"
 #include <cstdint>
+
+#include "linear_algebra/views/vector.h"
 #include "nt/number_theory.h"
 namespace cp::signals
 {
@@ -20,7 +22,7 @@ namespace cp::signals
         Auto
     };
 
-    using cp::linalg::dynamic_extent;
+    using linalg::dynamic_extent;
 
     template<typename R>
     struct abstract_fft
@@ -78,7 +80,7 @@ namespace cp::signals
     }
 
     template<typename R>
-    void inplace_fft2(cp::linalg::tensor_view<std::complex<R>,1> & a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
+    void inplace_fft2(linalg::tensor_view<std::complex<R>,1> & a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
     {
         if(normalized==FFTNormalization::Auto)
             normalized=FFTNormalization::Sqrt;
@@ -112,13 +114,13 @@ namespace cp::signals
     }
 
     template<typename R>
-    void inplace_fft2(cp::linalg::tensor_view<std::complex<R>,1> && a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
+    void inplace_fft2(linalg::tensor_view<std::complex<R>,1> && a, bool inverse, FFTNormalization normalized = FFTNormalization::Sqrt)
     {
         inplace_fft2(a,inverse,normalized);
     }
 
     template<typename R>
-    struct radix2_fft: public abstract_fft<R>
+    struct radix2_fft: abstract_fft<R>
     {
         using abstract_fft<R>::transform;
         void transform(linalg::tensor_view<R,1> &v,bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const override
@@ -134,13 +136,13 @@ namespace cp::signals
 
 
     template<std::floating_point Real>
-    struct mixed_radix_fft<std::complex<Real>> : public cp::signals::abstract_fft<std::complex<Real>>, protected cp::default_factoriser_t
+    struct mixed_radix_fft<std::complex<Real>> : abstract_fft<std::complex<Real>>, protected default_factoriser_t
     {
         using R=std::complex<Real>;
-        using cp::signals::abstract_fft<R>::transform;
-        std::shared_ptr<cp::abstract_factoriser> F;
-        mixed_radix_fft(std::shared_ptr<cp::abstract_factoriser> _F=default_factoriser):F(_F){}
-        void transform_rec(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const
+        using abstract_fft<R>::transform;
+        std::shared_ptr<abstract_factoriser> F;
+        mixed_radix_fft(std::shared_ptr<abstract_factoriser> _F=default_factoriser):F(_F){}
+        void transform_rec(linalg::tensor_view<R,1> &v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const
         {
             auto n=v.size();
             if(n==1)

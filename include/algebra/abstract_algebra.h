@@ -8,14 +8,11 @@
 #include <functional>
 #include <cstdint>
 #include <concepts>
+#include "types.h"
+
 
 namespace cp
 {
-    using natural = std::uint64_t;
-    using integer = std::int64_t;
-    using real = long double;
-    using IR=real;
-    using IC= std::complex<IR>;
     real epsilon=1e-6;
 
     template<typename R>

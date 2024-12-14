@@ -3,6 +3,7 @@
 #include "abstract_algebra.h"
 #include <compare>
 #include <variant>
+#include "structures.h"
 
 namespace cp
 {
@@ -69,41 +70,41 @@ namespace cp
 * on almost all elements of S'.
 * However, S' does not have the algebraic structure of S
 */
-    template<typename S>
+    template<group S>
     order_closure<S> operator-(const order_closure<S>& A)
     {
         return std::visit([](const auto& B)->order_closure<S> {return -B; }, A);
     }
 
-    template<typename S>
+    template<monoid S>
     order_closure<S> operator+(const order_closure<S>& A, const order_closure<S>& B)
     {
         if (A.index() == 1 && B.index() != 1)
             return B;
-        else if (A.index() != 1 && B.index() == 1)
+        if (A.index() != 1 && B.index() == 1)
             return A;
-        else if (A.index() == 1 && B.index() == 1)
+        if (A.index() == 1 && B.index() == 1)
             return std::get<S>(A) + std::get<S>(B);
-        else if (A.index() == B.index())
+        if (A.index() == B.index())
             return A;
-        else return S{};
+        return S{};
     }
 
-    template<typename S>
+    template<group S>
     order_closure<S> operator-(const order_closure<S>& A, const order_closure<S>& B)
     {
         if (A.index() == 1 && B.index() != 1)
             return -B;
-        else if (A.index() != 1 && B.index() == 1)
+        if (A.index() != 1 && B.index() == 1)
             return A;
-        else if (A.index() == 1 && B.index() == 1)
+        if (A.index() == 1 && B.index() == 1)
             return std::get<S>(A) - std::get<S>(B);
-        else if (A.index() == B.index())
+        if (A.index() == B.index())
             return S{};
-        else return A;
+        return A;
     }
 
-    template<typename S>
+    template<group S>
     order_closure<S> operator-(const order_closure<S>& A, const S& k)
     {
         if (A.index() == 1)
@@ -111,29 +112,29 @@ namespace cp
         else return A;
     }
 
-    template<typename S>
+    template<group S>
     order_closure<S> operator-(const S& k,const order_closure<S>& A)
     {
         if (A.index() == 1)
             return std::get<S>(A) - k;
-        else return -A;
+        return -A;
     }
 
-    template<typename S>
+    template<monoid S>
     order_closure<S> operator+(const order_closure<S>& A, const S& k)
     {
         if (A.index() == 1)
             return std::get<S>(A) + k;
-        else return A;
+        return A;
     }
 
-    template<typename S>
+    template<monoid S>
     order_closure<S> operator+(const S& k, const order_closure<S>& A)
     {
         return A + k;
     }
 
-    template<typename S>
+    template<multiplicative_monoid S>
     order_closure<S> operator*(const order_closure<S>& A, const order_closure<S>& B)
     {
         if (A.index() == 1 && B.index() != 1)
@@ -157,8 +158,8 @@ namespace cp
         return A.index() == B.index() ? order_closure<S>(inf) : order_closure<S>(-inf);
     }
 
-    template<typename S>
-    order_closure<S> operator*(const order_closure<S>& A, const S& k)
+    template<multiplicative_monoid S,std::convertible_to<S> O>
+    order_closure<S> operator*(const order_closure<S>& A, const O& k)
     {
         if (A.index() == 1)
             return std::get<S>(A) * k;
@@ -169,13 +170,13 @@ namespace cp
         else return -A;
     }
 
-    template<typename S>
+    template<multiplicative_monoid S>
     order_closure<S> operator*(const S& k, const order_closure<S>& A)
     {
         return operator*(A, k);
     }
 
-    template<typename S>
+    template<multiplicative_group S>
     order_closure<S> operator/(const order_closure<S>& A, const order_closure<S>& B)
     {
         if (A.index() == 1 && B.index() != 1)
@@ -191,7 +192,7 @@ namespace cp
         return A.index() == B.index() ? 1 : -1;
     }
 
-    template<typename S>
+    template<multiplicative_group S>
     order_closure<S> operator/(const order_closure<S>& A, const S& k)
     {
         if (A.index() == 1)
@@ -201,7 +202,7 @@ namespace cp
         else return -A;
     }
 
-    template<typename S>
+    template<multiplicative_group S>
     order_closure<S> operator/(const S& k, const order_closure<S>& A)
     {
         if (A.index() != 1)
@@ -209,49 +210,49 @@ namespace cp
         else return k / std::get<S>(A);
     }
 
-    template<typename S>
+    template<monoid S>
     order_closure<S>& operator+=(order_closure<S>& A, const order_closure<S>& B)
     {
         return A = A + B;
     }
 
-    template<typename S>
+    template<group S>
     order_closure<S>& operator-=(order_closure<S>& A, const order_closure<S>& B)
     {
         return A = A - B;
     }
 
-    template<typename S>
+    template<multiplicative_monoid S>
     order_closure<S>& operator*=(order_closure<S>& A, const order_closure<S>& B)
     {
         return A = A * B;
     }
 
-    template<typename S>
+    template<multiplicative_group S>
     order_closure<S>& operator/=(order_closure<S>& A, const order_closure<S>& B)
     {
         return A = A / B;
     }
 
-    template<typename S>
+    template<monoid S>
     order_closure<S>& operator+=(order_closure<S>& A, const S& B)
     {
         return A = A + B;
     }
 
-    template<typename S>
+    template<group S>
     order_closure<S>& operator-=(order_closure<S>& A, const S& B)
     {
         return A = A - B;
     }
 
-    template<typename S>
+    template<multiplicative_monoid S>
     order_closure<S>& operator*=(order_closure<S>& A, const S& B)
     {
         return A = A * B;
     }
 
-    template<typename S>
+    template<multiplicative_group S>
     order_closure<S>& operator/=(order_closure<S>& A, const S& B)
     {
         return A = A / B;
@@ -266,9 +267,9 @@ namespace cp
         using order_type=base_order_type<S>;
         if (A.index() == 1)
             return std::get<S>(A) <=> B;
-        else if (A.index() == 0)
+        if (A.index() == 0)
             return order_type::less;
-        else return order_type::greater;
+        return order_type::greater;
     }
 
     template<typename S>
