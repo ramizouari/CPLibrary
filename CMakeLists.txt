@@ -39,6 +39,10 @@ set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h
         include/linear_algebra/views/operations.h
         include/linear_algebra/views/matrix_operations.h
         include/linear_algebra/utils.h
+        include/rings/identities.h
+        include/graph/divisibility.h
+        include/groups/product.h
+        include/groups/dihedral.h
 )
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp

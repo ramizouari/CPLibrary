@@ -10,41 +10,36 @@ namespace cp::graph
 {
     using char_deque=std::deque<char>;
 
-    std::shared_ptr<char_deque> string_encode(const graph::Tree & T, int u)
+    char_deque string_encode(const Tree & T, int u)
     {
-        std::vector<std::shared_ptr<char_deque>> X;
+        std::vector<char_deque> X;
         const auto &C=T.children(u);
         if(C.empty())
-            return std::make_shared<char_deque>(char_deque{'(', ')'});
+            return char_deque{'(', ')'};
         X.reserve(C.size());
         for(auto v:C) X.push_back(string_encode(T,v));
-        std::sort(X.begin(),X.end(),[](const auto &x,const auto &y)
-        {
-            return *x < *y;
-        });
-        auto it=std::max_element(X.begin(),X.end(),[](const auto &x,const auto &y) {
-            return x->size() < y->size();
-        });
+        std::ranges::sort(X);
+        auto it=std::ranges::max_element(X,{},[](auto & x) { return x.size(); });
         auto r=std::distance(X.begin(),it);
-        std::shared_ptr<char_deque> Z=X[r];
+        char_deque Z=std::move(X[r]);
         for(int i=r-1;i>=0;i--)
-            std::copy(X[i]->rbegin(),X[i]->rend(),std::front_inserter(*Z));
+            std::ranges::copy(X[i],std::front_inserter(Z));
         for(int i=r+1;i<X.size();i++)
-            std::copy(X[i]->begin(),X[i]->end(),std::back_inserter(*Z));
-        Z->push_back(')');
-        Z->push_front('(');
+            std::ranges::copy(X[i],std::back_inserter(Z));
+        Z.push_back(')');
+        Z.push_front('(');
         return Z;
     }
 
 
-    std::string string_encode(const graph::Tree &T)
+    std::string string_encode(const Tree &T)
     {
         auto E=string_encode(T,T.root);
-        return std::string(E->begin(),E->end());
+        return {E.begin(),E.end()};
     }
 
     template<typename Container>
-    int int_encode(const graph::Tree &T,int u, Container &M)
+    int int_encode(const Tree &T,int u, Container &M)
     {
         const auto &C=T.children(u);
         typename Container::key_type X;
@@ -54,13 +49,13 @@ namespace cp::graph
     }
 
     template<typename Container>
-    int int_encode(const graph::Tree &T, Container &M)
+    int int_encode(const Tree &T, Container &M)
     {
         return int_encode(T,T.root,M);
     }
 
     template<typename Container>
-    void build_children(const graph::Tree &T,int u, std::vector<int> &X, Container &M)
+    void build_children(const Tree &T,int u, std::vector<int> &X, Container &M)
     {
         const auto &C=T.children(u);
         X.reserve(C.size());
@@ -70,13 +65,13 @@ namespace cp::graph
 
 
     template<typename Container>
-    void build_children(const graph::Tree &T,int u, std::set<int> &X, Container &M)
+    void build_children(const Tree &T,int u, std::set<int> &X, Container &M)
     {
         const auto &C=T.children(u);
         for(auto v:C) X.emplace(int_encode(T,v,M));
     }
 
-    std::optional<int> second_centroid(graph::Tree & T)
+    std::optional<int> second_centroid(Tree & T)
     {
         auto u=T.root;
         auto X=T.children(u);
@@ -93,17 +88,17 @@ namespace cp::graph
         return std::nullopt;
     }
 
-    std::vector<std::string> full_string_encoding(graph::Tree &T)
+    std::vector<std::string> full_string_encoding(Tree &T)
     {
         T.centroid();
-        T.buildStatistics(graph::TreeStats::SIZE);
+        T.buildStatistics(TreeStats::SIZE);
         std::vector<std::string> A;
         A.push_back(string_encode(T));
         auto p= second_centroid(T);
         if(p.has_value())
         {
             T.reRoot(*p);
-            T.buildStatistics(graph::TreeStats::SIZE);
+            T.buildStatistics(TreeStats::SIZE);
             A.push_back(string_encode(T));
             if(A[0] > A[1])
                 std::swap(A[0],A[1]);
@@ -114,14 +109,14 @@ namespace cp::graph
     std::pair<int,int> full_int_encoding(graph::Tree &T,std::map<std::vector<int>,int> &M)
     {
         T.centroid();
-        T.buildStatistics(graph::TreeStats::SIZE);
+        T.buildStatistics(TreeStats::SIZE);
         auto x=int_encode(T,T.root,M);
         auto p= second_centroid(T);
         int y=x;
         if(p.has_value())
         {
             T.reRoot(*p);
-            T.buildStatistics(graph::TreeStats::SIZE);
+            T.buildStatistics(TreeStats::SIZE);
             y=int_encode(T,T.root,M);
             if(x>y) std::swap(x,y);
         }
@@ -193,7 +188,7 @@ namespace cp::graph
             if(c.has_value())
             {
                 a.reRoot(*c);
-                a.buildStatistics(graph::TreeStats::SIZE);
+                a.buildStatistics(TreeStats::SIZE);
                 auto e3= int_encode(a,encoding);
                 return e3==e2;
             }

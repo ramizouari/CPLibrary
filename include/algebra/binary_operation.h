@@ -9,10 +9,12 @@
 namespace cp
 {
     template<typename T>
-    struct binary_operation : public std::enable_shared_from_this<binary_operation<T>>
+    struct binary_operation : std::enable_shared_from_this<binary_operation<T>>
     {
+        virtual ~binary_operation() = default;
+
         using type=T;
-        template<typename H0,typename ...H>
+        template<std::convertible_to<T> H0,std::convertible_to<T> ...H>
         T operator()(const H0&a,const H&... b) const
         {
             if constexpr (sizeof...(b) == 0)
@@ -27,13 +29,15 @@ namespace cp
     };
 
     template<typename T>
-    struct invertible_operation : public std::enable_shared_from_this<invertible_operation<T>>
+    struct invertible_operation : std::enable_shared_from_this<invertible_operation<T>>
     {
+        virtual ~invertible_operation() = default;
+
         virtual T inv(const T& a) const = 0;
     };
 
     template<typename T>
-    struct involution_inverse_t : public invertible_operation<T>
+    struct involution_inverse_t : invertible_operation<T>
     {
         virtual T inv(const T& a) const
         {
@@ -43,7 +47,7 @@ namespace cp
 
 
     template<typename T>
-    struct multiplicative_inverse_t : public invertible_operation<T>
+    struct multiplicative_inverse_t : invertible_operation<T>
     {
         T inv(const T& a) const override
         {
@@ -52,7 +56,7 @@ namespace cp
     };
 
     template<std::floating_point T>
-    struct multiplicative_inverse_t<T> : public invertible_operation<T>
+    struct multiplicative_inverse_t<T> : invertible_operation<T>
     {
         T inv(const T& a) const override
         {
@@ -61,7 +65,7 @@ namespace cp
     };
 
     template<typename T>
-    struct multiplicative_inverse_t<std::complex<T>> : public invertible_operation<std::complex<T>>
+    struct multiplicative_inverse_t<std::complex<T>> : invertible_operation<std::complex<T>>
     {
         std::complex<T> inv(const std::complex<T>& a) const override
         {
@@ -70,7 +74,7 @@ namespace cp
     };
 
     template<typename T>
-    struct additive_inverse_t : public invertible_operation<T>
+    struct additive_inverse_t : invertible_operation<T>
     {
         T inv(const T& a) const override
         {
@@ -79,7 +83,7 @@ namespace cp
     };
 
     template<typename T>
-    struct bitwise_inverse_t : public invertible_operation<T>
+    struct bitwise_inverse_t : invertible_operation<T>
     {
         T inv(const T& a) const override
         {
@@ -88,7 +92,7 @@ namespace cp
     };
 
     template<typename T>
-    struct monoid_plus_t:public binary_operation<T> {
+    struct monoid_plus_t: binary_operation<T> {
         T reduce(const T &a, const T &b) const override {
             return a + b;
         }
@@ -96,12 +100,12 @@ namespace cp
     };
 
     template<typename T>
-    struct plus_t:public monoid_plus_t<T>,public additive_inverse_t<T>
+    struct plus_t: monoid_plus_t<T>, additive_inverse_t<T>
     {
     };
 
     template<typename T>
-    struct multiplies_t:public binary_operation<T>
+    struct multiplies_t: binary_operation<T>
     {
         T reduce(const T&a,const T&b) const override
         {
@@ -116,12 +120,12 @@ namespace cp
     };
 
     template<typename T>
-    struct field_multiplies_t:public multiplies_t<T>,public invertible_operation<T>
+    struct field_multiplies_t: multiplies_t<T>, invertible_operation<T>
     {
     };
 
     template<typename T>
-    struct max_t:public binary_operation<T>
+    struct max_t: binary_operation<T>
     {
         T e;
         explicit max_t(T _e):e(_e){}
@@ -139,7 +143,7 @@ namespace cp
     };
 
     template<typename T>
-    struct min_t:public binary_operation<T>
+    struct min_t: binary_operation<T>
     {
         T e;
         explicit min_t(T _e):e(_e){}
@@ -159,7 +163,7 @@ namespace cp
     };
 
     template<typename T>
-    struct gcd_t:public binary_operation<T>
+    struct gcd_t: binary_operation<T>
     {
         T reduce(const T&a,const T&b) const override
         {
@@ -170,7 +174,7 @@ namespace cp
     };
 
     template<typename T>
-    struct lcm_t:public binary_operation<T>
+    struct lcm_t: binary_operation<T>
     {
         T reduce(const T&a,const T&b) const override
         {
@@ -185,7 +189,7 @@ namespace cp
     };
 
     template<typename T>
-    struct xor_t:public binary_operation<T>,public invertible_operation<T>
+    struct xor_t: binary_operation<T>, invertible_operation<T>
     {
         T reduce(const T&a,const T&b) const
         {
@@ -201,7 +205,7 @@ namespace cp
     };
 
     template<typename T>
-    struct and_t:public binary_operation<T>
+    struct and_t: binary_operation<T>
     {
         T reduce(const T&a,const T&b) const override
         {
@@ -216,7 +220,7 @@ namespace cp
     };
 
     template<typename T>
-    struct or_t:public binary_operation<T>
+    struct or_t: binary_operation<T>
     {
         T reduce(const T&a,const T&b) const override
         {
@@ -227,7 +231,7 @@ namespace cp
     };
 
     template<typename T>
-    struct logical_and_t :public binary_operation<T>
+    struct logical_and_t : binary_operation<T>
     {
         T reduce(const T& a, const T& b) const override
         {
@@ -242,7 +246,7 @@ namespace cp
     };
 
     template<typename T>
-    struct logical_or_t :public binary_operation<T>
+    struct logical_or_t : binary_operation<T>
     {
         T reduce(const T& a, const T& b) const override
         {
@@ -257,7 +261,7 @@ namespace cp
     };
 
     template<typename T>
-    struct logical_xor_t :public binary_operation<T>,public invertible_operation<T>
+    struct logical_xor_t : binary_operation<T>, invertible_operation<T>
     {
         T reduce(const T& a, const T& b) const override
         {

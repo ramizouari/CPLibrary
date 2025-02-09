@@ -1,8 +1,8 @@
 //
 // Created by ramizouari on 30/11/2021.
 //
-#ifndef __LINEAR__ALGEBRA__
-#define __LINEAR__ALGEBRA__
+#ifndef CPLIBRARY_LINEAR_ALGEBRA
+#define CPLIBRARY_LINEAR_ALGEBRA
 #include <vector>
 #include <array>
 #include "algebra/abstract_algebra.h"
@@ -12,10 +12,6 @@
 
 namespace cp::linalg
 {
-    struct m_shape
-    {
-        int n,m;
-    };
 
 /**
  * @brief Matrix:
@@ -25,10 +21,13 @@ namespace cp::linalg
 * @formal it is the set of matrices over the commutative ring <strong>R</strong> <br>
  * In fact, It is the union of L(R^a,R^b) over all a and b where L(E,F) is the set of matrices acting on E with values over F
 */
-    template<ring R>
+
+    template<ring R,std::size_t ext1 = dynamic_extent,std::size_t ext2 = ext1>
     struct matrix : tensor_view<R,2>
     {
-        std::vector<vector<R>> M;
+        using vector=vector<R,ext2>;
+        using container = std::conditional_t<ext1 == dynamic_extent, std::vector<vector>,std::array<vector,ext1>>;
+        container M{};
 
         using base_field=R;
         using base_ring=R;
@@ -37,6 +36,7 @@ namespace cp::linalg
         {
             return M;
         }
+
         auto &data()
         {
             return M;
@@ -44,23 +44,40 @@ namespace cp::linalg
 
         matrix() = default;
 
+        matrix(std::size_t rows,std::size_t cols,size_tag_t tag) requires all_dynamic<ext1,ext2> : M(rows,vector(cols,tag)) {}
 
-        matrix(std::size_t rows,std::size_t cols,size_tag_t tag) : M(rows,vector<R>(cols,tag)) {}
+        matrix(std::size_t rows,std::size_t cols,size_tag_t) requires none_dynamic<ext1,ext2> {
+            [[unlikely]]
+            if (rows != ext1 || cols != ext2) throw std::runtime_error("Matrix size not consistent with its template");
+        }
 
-
-        template<std::convertible_to<R> O>
+        template<std::convertible_to<R> O> requires all_dynamic<ext1,ext2>
         matrix(const O &k):matrix(1,1,size_tag)
         {
             M[0][0] = k;
         }
-        matrix(std::vector<vector<R>> &&_M):M(std::move(_M)){}
+
+        template<std::convertible_to<R> O> requires ( none_dynamic<ext1,ext2> && ext1 == ext2 )
+        matrix(const O &k)
+        {
+            for (int i=0;i<ext1;i++) M[i][i]=k;
+        }
+
+        matrix(container &&_M):M(std::move(_M)){}
         matrix(const std::vector<std::vector<R>> &_M) :M(_M.begin(),_M.end())
         {
         }
 
-        static matrix eye(std::size_t n) {
+        static matrix eye(std::size_t n) requires all_dynamic<ext1,ext2> {
             matrix I(n,n,size_tag);
             for (int i=0;i<n;i++)
+                I[i][i]=1;
+            return I;
+        }
+
+        static matrix eye() requires none_dynamic<ext1,ext2> {
+            matrix I;
+            for (int i=0;i<std::min(ext1,ext2);i++)
                 I[i][i]=1;
             return I;
         }
@@ -94,7 +111,12 @@ namespace cp::linalg
             return M.empty()?0:M[0].size();
         }
 
-        vector<R>& operator[](int k)
+        vector& operator[](int k)
+        {
+            return M[k];
+        }
+
+        const vector& operator[](int k) const
         {
             return M[k];
         }
@@ -123,11 +145,6 @@ namespace cp::linalg
             for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
                     P.M[j][i] = conj<R,R>(M[i][j]);
             return P;
-        }
-
-        const auto& operator[](int k) const
-        {
-            return M[k];
         }
 
         matrix &operator+=(const matrix &O)
@@ -165,12 +182,22 @@ namespace cp::linalg
         auto & operator*=(R k)
         {
             for(auto &row:M) for(auto &u:row)
-                    u*=k;
+                u*=k;
             return *this;
         }
 
+        template<std::size_t ext3>
+        matrix<R,ext1,ext3> operator*(const matrix<R,ext2,ext3> &B) const requires none_dynamic<ext1,ext2,ext3>
+        {
+            auto n=rows(),p=cols(),m=B.cols();
+            matrix<R,ext1,ext3> C;
+            for (int i=0;i<n;i++) for (int k=0;k<p;k++) for (int j=0;j<m;j++)
+                C.M[i][j] += M[i][k] * B.M[k][j];
+            return C;
+        }
 
-        matrix operator*(const matrix &B) const
+
+        matrix operator*(const matrix &B) const requires all_dynamic<ext1,ext2>
         {
             if (std::min({rows(),B.rows(),cols(),B.cols()}) == 0) return matrix(rows(),B.cols(),size_tag);
             if (cols() == B.rows()) {
@@ -187,15 +214,16 @@ namespace cp::linalg
             throw std::runtime_error("matrix::operator*(): matrix does not have same size");
         }
 
+
         matrix& operator*=(const matrix &B)
         {
             return *this = *this * B;
         }
 
-        vector<R> operator*(const vector<R> &u) const
+        linalg::vector<R,ext1> operator*(const vector &u) const
         {
             int n=rows(),m=cols();
-            vector<R> v(n,size_tag);
+            linalg::vector<R,ext1> v(n,size_tag);
             for(int j=0;j<m;j++) for(int i=0;i<n;i++)
                 v[i]+=M[i][j]*u[j];
             return v;
@@ -204,7 +232,7 @@ namespace cp::linalg
         matrix &operator/=(R k)
         {
             for(auto &row:M) for(auto &u:row)
-                    u/=k;
+                u/=k;
             return *this;
         }
 
@@ -224,7 +252,7 @@ namespace cp::linalg
             return (*this) * O.inv();
         }
 
-        bool operator==(const matrix &O) const {
+        bool operator==(const matrix &O) const requires all_dynamic<ext1,ext2>{
             if (O.rows() == 0 && O.cols() == 0) {
                 if (rows() != cols())
                     return false;
@@ -240,6 +268,12 @@ namespace cp::linalg
             }
             if (rows()!= O.rows() || cols()!= O.cols())
                 return false;
+            for (int i=0;i<rows();i++) for (int j=0;j<cols();j++)
+                if (!is_zero(M[i][j]-O.M[i][j])) return false;
+            return true;
+        }
+
+        bool operator==(const matrix &O) const requires none_dynamic<ext1,ext2> {
             for (int i=0;i<rows();i++) for (int j=0;j<cols();j++)
                 if (!is_zero(M[i][j]-O.M[i][j])) return false;
             return true;
@@ -265,17 +299,24 @@ namespace cp::linalg
             return M.cend();
         }
 
+        template<std::size_t ext3 = dynamic_extent>
         struct MatSolve
         {
-            matrix E,Y;
-            std::optional<matrix> X; // Results of the row echelon form
+            using out_matrix = matrix<R,ext1,ext3>;
+            using in_matrix = matrix<R,ext2,ext3>;
+            matrix E;
+            out_matrix Y;
+            std::optional<in_matrix> X; // Results of the row echelon form
             size_t rank; // Rank of E
             bool dir; // Number of swaps modulo 2 in row_echelon is 0. Denotes that E and the original matrix have the same direction
             std::vector<std::pair<int,int>> mapper; // Mapping denoting the pivot cells
 
-            MatSolve(matrix E_,matrix Y_,size_t rank,bool dir,std::vector<std::pair<int,int>> mapper):
-                E(std::move(E_)),Y(std::move(Y_)),rank(rank),mapper(std::move(mapper)),dir(dir),X(std::make_optional<matrix>(E.cols(),Y.cols(),size_tag))
+            MatSolve(matrix E_,out_matrix Y_,size_t rank,bool dir,std::vector<std::pair<int,int>> mapper):
+                E(std::move(E_)),Y(std::move(Y_)),rank(rank),mapper(std::move(mapper)),dir(dir)
             {
+                if constexpr(ext2 == dynamic_extent && ext3 == dynamic_extent)
+                    X.emplace(E.cols(),Y.cols(),size_tag);
+                else X.emplace();
             }
 
             // Solve the system, in general
@@ -327,7 +368,8 @@ namespace cp::linalg
             return r;
         };
 
-        MatSolve row_echelon(matrix Y) const
+        template<std::size_t ext3>
+        MatSolve<ext3> row_echelon(matrix<R,ext2,ext3> Y) const
         {
             size_t rnk=0;
             auto E=*this;
@@ -358,7 +400,8 @@ namespace cp::linalg
         }
 
         // Solve AX = Y, where A and Y are known
-        std::optional<matrix> solve(const matrix& O, bool invertible=false) const {
+        template<std::size_t ext3>
+        std::optional<matrix<R,ext2,ext3>> solve(const matrix<R,ext1,ext3>& O, bool invertible=false) const {
             invertible = invertible && rows() == cols();
             auto dec=row_echelon(O);
             if (invertible)
@@ -369,29 +412,30 @@ namespace cp::linalg
 
         // Solve Ax = Y, where A and b are known
         // 1. If A is known to be invertible, set
-        std::optional<vector<R>> solve(const vector<R> &V , bool invertible =false) const {
+        std::optional<vector> solve(const vector &V , bool invertible =false) const {
             matrix Y(V.size(),1,size_tag);
             for (int i=0;i<V.size();i++) Y[i][0]=V[i];
             auto X=solve(Y,invertible);
             if (!X.has_value()) return std::nullopt; // If no solutions, return the empty vector
-            vector<R> U(cols(),size_tag);
+            vector U(cols(),size_tag);
             for (int i=0;i<cols();i++) U[i]=(*X)[i][0];
             return U;
         }
 
         // Basis of vectors (e_1,..,e_r) such that Ae_k=0 for all k
-        matrix null_basis() const {
+        matrix<R> null_basis() const {
             int n=rows(),m=cols();
             matrix Z(*this);
             for (int i=0;i<m;i++) {
                 Z.M.emplace_back(m,size_tag);
                 Z[rows()+i][i]=1;
             }
-            auto C = Z.T().row_echelon(matrix(m,0,size_tag)).E;
-            matrix B;
+            constexpr std::size_t ext3 = all_dynamic<ext1,ext2>?dynamic_extent:0;
+            auto C = Z.T().row_echelon(matrix<R,ext1,ext3>(m,0,size_tag)).E;
+            matrix<R> B; // Dynamic extent required
             for (int i=0;i<m;i++) if (all_of(C[i].begin(),C[i].begin()+n,[](auto x) {return is_zero(x);}))
             {
-                vector<R> u(m,size_tag);
+                vector u(m,size_tag);
                 for (int j=0;j<m;j++) u[j] = C[i][n+j];
                 B.M.push_back(u);
             }
@@ -414,7 +458,8 @@ namespace cp::linalg
         // Determinant of a square matrix
         R det() const
         {
-            auto dec = row_echelon(matrix(rows(),0,size_tag));
+            constexpr std::size_t ext3 = all_dynamic<ext1,ext2>?dynamic_extent:0;
+            auto dec = row_echelon(matrix<R,ext1,ext3>(rows(),0,size_tag));
             R w=dec.dir?1:-1;
             for (int i=0;i<rows();i++) w*=dec.E[i][i];
             return w;
@@ -425,7 +470,8 @@ namespace cp::linalg
         // 2. The dimension of vector space induced by the matrix
         // 3. Size of the basis generated by the matrix
         size_t rank() const {
-            return row_echelon(matrix(rows(),0,size_tag)).rank;
+            constexpr std::size_t ext3 = all_dynamic<ext1,ext2>?dynamic_extent:0;
+            return row_echelon(matrix<R,ext1,ext3>(rows(),0,size_tag)).rank;
         }
 
         // Nullity of the matrix:
@@ -437,412 +483,62 @@ namespace cp::linalg
 
     };
 
-    template<typename Mat,typename R>
-    concept ToMatrix=std::convertible_to<Mat,matrix<R>>;
+    template<typename Mat,typename R,std::size_t ext1,std::size_t ext2>
+    concept ToMatrix=std::convertible_to<Mat,matrix<R,ext1,ext2>>;
 
-    template<typename Mat,typename R>
-    concept ToMatrixProper=std::convertible_to<Mat,matrix<R>> && !std::same_as<Mat,matrix<R>>;
+    template<typename Mat,typename R,std::size_t ext1,std::size_t ext2>
+    concept ToMatrixProper=std::convertible_to<Mat,matrix<R,ext1,ext2>> && !std::same_as<Mat,matrix<R,ext1,ext2>>;
 
 
-    template<ring R ,ToMatrix<R> O>
-    matrix<R> operator+(const matrix<R> &A,const O &B)
+    template<ring R,std::size_t ext1,std::size_t ext2 ,ToMatrix<R,ext1,ext2> O>
+    matrix<R,ext1,ext2> operator+(const matrix<R,ext1,ext2> &A,const O &B)
     {
         auto C=A;
         return C+=B;
     }
 
-    template<ring R ,ToMatrixProper<R> O>
-    matrix<R> operator+(const O & A,const matrix<R> & B)
+    template<ring R, std::size_t ext1, std::size_t ext2 ,ToMatrixProper<R,ext1,ext2> O>
+    matrix<R,ext1,ext2> operator+(const O & A,const matrix<R,ext1,ext2> & B)
     {
-        matrix<R> C=A;
+        matrix<R,ext1,ext2> C=A;
         return C+=B;
     }
 
-    template<ring R ,ToMatrix<R> O>
-    matrix<R> operator-(const matrix<R> &A,const O &B)
+    template<ring R, std::size_t ext1, std::size_t ext2 ,ToMatrix<R,ext1,ext2> O>
+    matrix<R,ext1,ext2> operator-(const matrix<R,ext1,ext2> &A,const O &B)
     {
         auto C=A;
         return C-=B;
     }
 
-    template<ring R ,ToMatrixProper<R> O>
-    matrix<R> operator-(const O & A,const matrix<R> & B)
+    template<ring R, std::size_t ext1, std::size_t ext2 ,ToMatrixProper<R,ext1,ext2> O>
+    matrix<R,ext1,ext2> operator-(const O & A,const matrix<R,ext1,ext2> & B)
     {
-        matrix<R> C=A;
+        matrix<R,ext1,ext2> C=A;
         return C-=B;
     }
 
-    template<ring R ,std::convertible_to<R> O>
-    matrix<R> operator*(const O &k,const matrix<R> &A)
+    template<ring R, std::size_t ext1, std::size_t ext2 ,std::convertible_to<R> O>
+    matrix<R,ext1,ext2> operator*(const O &k,const matrix<R,ext1,ext2> &A)
     {
         auto C=A;
         return C*=k;
     }
 
-    template<ring R ,std::convertible_to<R> O>
-    matrix<R> operator*(const matrix<R> &A,const O &k)
+    template<ring R, std::size_t ext1, std::size_t ext2 ,std::convertible_to<R> O>
+    matrix<R,ext1,ext2> operator*(const matrix<R,ext1,ext2> &A,const O &k)
     {
         auto C=A;
         return C*=k;
     }
 
 
-    template<ring R ,std::convertible_to<R> O>
-    matrix<R> operator/(const matrix<R> &A,const O &k)
+    template<ring R, std::size_t ext1, std::size_t ext2 ,std::convertible_to<R> O>
+    matrix<R,ext1,ext2> operator/(const matrix<R,ext1,ext2> &A,const O &k)
     {
         auto C=A;
         return C/=k;
     }
 
-/**
- * @details Static Matrix
- * It is an element of the vector space L(R^n,R^m)
- * @tparam R the base commutative ring
- * @tparam n the number of rows
- * @tparam m the number of columns
- * @Requirements R is a commutative ring
- * @Requirements n>=0
- * @Requirements m>=0
- * @Formal
- * <ul>
- * <li> Multiplication between 2 matrices is defined if the shapes are compatible
- * <li> Multiplication between a matrix and a vector is defined if the shapes are compatible
- * <li> It is an associative algebra if n=m
- * </ul>
- * */
-
-    template<typename R,int n,int m>
-    class s_matrix
-    {
-        std::array<std::array<R,m>,n> M;
-    public:
-        using base_field=R;
-        using base_ring=R;
-        bool operator==(const s_matrix&) const = default;
-        s_matrix(R k=0)
-        {
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]=i==j?k:0;
-        }
-        s_matrix(std::array<std::array<R,m>,n> _M):M(std::move(_M)){}
-
-        inline static constexpr int row_dim()
-        {
-            return n;
-        }
-
-        s_matrix(const std::vector<std::array<R,m>> &_M)
-        {
-            int counter=0;
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]=_M[i][j];
-        }
-
-        inline static constexpr int col_dim()
-        {
-            return m;
-        };
-
-        auto& operator[](int k)
-        {
-            return M[k];
-        }
-
-        const auto& operator[](int k) const
-        {
-            return M[k];
-        }
-
-        R tr() const
-        {
-            R r=0;
-            for(int i=0;i<std::min(n,m);i++)
-                r+=M[i][i];
-            return r;
-        }
-
-        s_matrix<R,m,n> T() const
-        {
-            s_matrix<R,m,n> P;
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    P.M[j][i]=M[i][j];
-            return P;
-        }
-
-        s_matrix<R, m, n> H() const
-        {
-            s_matrix<R, m, n> P;
-            for (int i = 0; i < n; i++) for (int j = 0; j < m; j++)
-                    P.M[j][i] = conj(M[i][j]);
-            return P;
-        }
-
-        auto &operator+=(const s_matrix &O)
-        {
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]+=O.M[i][j];
-            return *this;
-        }
-
-        auto &operator-=(const s_matrix &O)
-        {
-            for(int i=0;i<n;i++) for(int j=0;j<m;j++)
-                    M[i][j]-=O.M[i][j];
-            return *this;
-        }
-
-        auto operator+(const s_matrix &O) const
-        {
-            auto N=*this;
-            return N+=O;
-        }
-
-        auto operator-(const s_matrix &O) const
-        {
-            auto N=*this;
-            return N-=O;
-        }
-
-        auto operator-() const
-        {
-            auto N=*this;
-            for(auto &row:N.M) for(auto &s:row)
-                    s=-s;
-            return N;
-        }
-
-        template<int p>
-        s_matrix<R,n,p> operator*(const s_matrix<R,m,p> &O) const
-        {
-            s_matrix<R,n,p> N(0);
-            for(int i=0;i<n;i++) for(int k=0;k<m;k++) for(int j=0;j<p;j++)
-                        N[i][j]+=M[i][k]*O[k][j];
-            return N;
-        }
-
-        auto &operator*=(const s_matrix &O)
-        {
-            static_assert(n==m);
-            auto N=(*this)*O;
-            M.swap(N.M);
-            return *this;
-        }
-
-        auto & operator*=(R k) {
-            for (auto &row: M)
-                for (auto &u: row)
-                    u *= k;
-            return *this;
-        }
-        s_vector<R,n> operator*(const s_vector<R,m> &u) const
-        {
-            s_vector<R,n> v;
-            for(int j=0;j<m;j++) for(int i=0;i<n;i++)
-                    v[i]+=M[i][j]*u[j];
-            return v;
-        }
-
-        auto &operator/=(R k)
-        {
-            for(auto &row:M) for(auto &u:row)
-                    u/=k;
-            return *this;
-        }
-
-        auto operator/(R k) const
-        {
-            auto N=*this;
-            return N/=k;
-        }
-
-        auto& operator/=(const s_matrix &O)
-        {
-            return *this*=O.inv();
-        }
-
-        auto operator/(const s_matrix &O) const
-        {
-            return (*this) * O.inv();
-        }
-
-        auto begin()
-        {
-            return M.begin();
-        }
-
-        auto begin() const
-        {
-            return M.cbegin();
-        }
-
-        auto end()
-        {
-            return M.end();
-        }
-
-        auto end() const
-        {
-            return M.cend();
-        }
-
-        auto row_echelon_form() const
-        {
-            auto P=*this;
-            int s=0;
-            for(int i=0;i<n;i++)
-            {
-                int p=s;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                P.M[p].swap(P.M[s]);
-                R w=P.M[s][i];
-                for(int j=s+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = i; k < m; k++)
-                        P.M[j][k]-=r*P.M[i][k];
-                }
-                s++;
-            }
-            return P;
-        }
-
-        int rank() const
-        {
-            auto E=row_echelon_form();
-            int r=0;
-            for(int i=0,j=0;i<n&&j<m;j++)
-                if(! is_zero(E.M[i][j]))
-                {
-                    r++;
-                    i++;
-                }
-            return r;
-        }
-
-        int nullity() const
-        {
-            return row_dim()-rank();
-        }
-
-        R det() const
-        {
-            static_assert(n==m);
-            auto P=*this;
-            bool invert=false;
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                if(p!=i)
-                {
-                    std::swap(P.M[p], P.M[i]);
-                    invert=!invert;
-                }
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = i; k < m; k++)
-                        P.M[j][k]-=r*P.M[i][k];
-                }
-            }
-            R d=1;
-            for(int i=0;i<n;i++)
-                d*=P.M[i][i];
-            return invert?-d:d;
-        }
-
-        s_matrix inv() const
-        {
-            static_assert(n==m);
-            s_matrix P=*this,Q(1);
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && is_zero(P.M[p][i]))
-                    p++;
-                if(p==n)
-                    continue;
-                std::swap(P.M[p], P.M[i]);
-                std::swap(Q.M[p],Q.M[i]);
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    R r=P.M[j][i]/w;
-                    for (int k = 0; k < m; k++)
-                    {
-                        P.M[j][k] -= r*P.M[i][k];
-                        Q.M[j][k] -= r*Q.M[i][k];
-                    }
-                }
-            }
-            for(int i=n-1;i>=0;i--)
-            {
-                R w=P.M[i][i];
-                for(int j=0;j<n;j++)
-                    Q.M[i][j]/=w;
-                for(int k=i-1;k>=0;k--)
-                {
-                    R r=P.M[k][i];
-                    for (int j = 0; j < n; j++)
-                        Q.M[k][j] -= r*Q.M[i][j];
-                }
-            }
-            return Q;
-        }
-
-        s_vector<R,m> solve(s_vector<R,n> A) const
-        {
-            static_assert(n==m);
-            s_matrix P=*this;
-            for(int i=0;i<n;i++)
-            {
-                int p=i;
-                while(p<n && P.M[p][i]==R(0))
-                    p++;
-                if(p==n)
-                    continue;
-                std::swap(P.M[p], P.M[i]);
-                std::swap(A[p],A[i]);
-                R w=P.M[i][i];
-                for(int j=i+1;j<n;j++)
-                {
-                    if(is_zero(w))
-                        continue;
-                    R r=P.M[j][i]/w;
-                    for (int k = 0; k < m; k++)
-                        P.M[j][k] -= r*P.M[i][k];
-                    A[j]-=r*A[i];
-                }
-            }
-            for(int i=n-1;i>=0;i--)
-            {
-                R w=P.M[i][i];
-                if(w==R(0))
-                    continue;
-                A[i]/=w;
-                for(int k=i-1;k>=0;k--)
-                {
-                    R r=P.M[k][i];
-                    A[k] -= r*A[i];
-                }
-            }
-            return A;
-        }
-
-    };
-
-    template<typename R,int n,int m>
-    s_matrix<R,n,m> operator*(const R&a,const s_matrix<R,n,m> &M)
-    {
-        auto N=M;
-        return N*=a;
-    }
 }
-#endif // __LINEAR__ALGEBRA__
+#endif // CPLIBRARY_LINEAR_ALGEBRA

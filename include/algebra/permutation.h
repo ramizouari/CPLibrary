@@ -121,7 +121,6 @@ namespace cp
         {
             return P[i];
         }
-
     };
 }
 

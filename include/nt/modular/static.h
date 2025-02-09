@@ -51,6 +51,11 @@ namespace cp
             return (*this)*=O.inv();
         }
 
+        cyclic operator-() const
+        {
+            return m-n;
+        }
+
         cyclic pinv() const
         {
             return egcd(n,m).a;

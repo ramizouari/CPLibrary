@@ -4,12 +4,13 @@
 
 #ifndef CPLIBRARY_DIRICHELET_H
 #define CPLIBRARY_DIRICHELET_H
+#include "algebra/structures.h"
 #include "number_theory.h"
 
 namespace cp
 {
 
-    template<typename I>
+    template<ring I>
     std::vector<I> conv(std::span<const I> X,std::span<const I> Y)
     {
         auto a=X.size(),b=Y.size(), c =std::max(X.size(),Y.size());
@@ -19,7 +20,7 @@ namespace cp
         return Z;
     }
 
-    template<typename I>
+    template<ring I>
     std::vector<I> conv_pow(std::span<I> X,unsigned long long n)
     {
         return functional_pow<std::vector<I>>(X,n,[](const auto &x,const auto &y)
@@ -29,7 +30,7 @@ namespace cp
     }
 
 
-    template<typename I>
+    template<ring I>
     std::vector<I> conv_inverse(std::span<const I> X)
     {
         auto r=X.size();
@@ -46,7 +47,7 @@ namespace cp
     }
 
 
-    template<typename I>
+    template<ring I>
     class convolution_t
     {
         std::span<const I> A,B;
@@ -76,22 +77,22 @@ namespace cp
     convolution_t(std::array<I, N> & ,std::array<I,N> &) -> convolution_t<I>;
 
 
-    template<typename I>
+    template<ring I>
     std::vector<I> convolve(const std::vector<I> & A, const std::vector<I> &B)
     {
         if(A == std::vector<I>{1} )
             return B;
         if(B==  std::vector<I>{1})
             return A;
-        auto r= std::min(A.size(),B.size());
+        auto r= std::max(A.size(),B.size());
         std::vector<I> C(r);
-        for(int i=0;i<r;i++) for(int j=0;i+j < r ;j++)
+        for(int i=0;i<A.size();i++) for(int j=0;i+j < r && j<B.size() ;j++)
             C[i+j] += A[i]*B[j];
         return C;
     }
 
 
-    template<typename I>
+    template<ring I>
     class convolution_pow_t
     {
         std::span<const I> X;
@@ -112,13 +113,13 @@ namespace cp
 
     };
 
-    template<typename I>
+    template<ring I>
     convolution_pow_t(std::vector<I> & , unsigned long long) -> convolution_pow_t<I>;
-    template<typename I,std::size_t N>
+    template<ring I,std::size_t N>
     convolution_pow_t(std::array<I, N> &, unsigned long long) -> convolution_pow_t<I>;
 
 
-    template<typename I>
+    template<ring I>
     class convolution_inverse_t
     {
         std::span<const I> X;
@@ -144,9 +145,9 @@ namespace cp
         }
     };
 
-    template<typename I>
+    template<ring I>
     convolution_inverse_t(std::vector<I> &) -> convolution_inverse_t<I>;
-    template<typename I,std::size_t N>
+    template<ring I,std::size_t N>
     convolution_inverse_t(std::array<I, N> &) -> convolution_inverse_t<I>;
 }
 

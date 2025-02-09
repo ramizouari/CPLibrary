@@ -42,7 +42,7 @@ namespace cp::sat
     }
 
 
-    struct Sat2 : cp::graph::Graph
+    struct Sat2 : graph::Graph
     {
         int d;
         using Graph=cp::graph::Graph;

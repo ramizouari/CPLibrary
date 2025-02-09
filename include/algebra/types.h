@@ -5,7 +5,6 @@
 #ifndef ALGEBRAIC_TYPES_H
 #define ALGEBRAIC_TYPES_H
 #include <cstdint>
-#include <stdfloat>
 
 namespace cp
 {

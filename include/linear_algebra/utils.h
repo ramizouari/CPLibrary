@@ -12,6 +12,13 @@ namespace cp
 
     inline constexpr struct size_tag_t {} size_tag;
     inline constexpr std::size_t dynamic_extent = -1;
+
+    template<std::size_t... ext>
+    concept all_dynamic = ((ext == dynamic_extent) && ... );
+
+    template<std::size_t... ext>
+    concept none_dynamic = ((ext != dynamic_extent) && ... );
+
     template<typename Range>
     concept sized_random_access = std::ranges::random_access_range<Range> && std::ranges::sized_range<Range>;
 

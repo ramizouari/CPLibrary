@@ -1,52 +1,19 @@
-﻿#include "graph/tree/range_queries.h"
-#include "data_structures/fixed/segment_tree.h"
+﻿#include <chrono>
 #include <iostream>
-using namespace cp::data_structures::fixed;
-using namespace cp::graph;
+#include "graph/tree/isomorphism.h"
+#include "nt/dirichelet.h"
+#include <cstdint>
+
+
 int main()
 {
-    using namespace cp;
-    std::ios::sync_with_stdio(false);
-    std::cin.tie(nullptr);
-    int n,q;
-    std::cin >> n >> q;
-    CommutativeHeavyLightNodeTree<max_t<integer>,segment_tree<max_t<integer>>> H(n);
-    std::vector<integer> A(n);
-    for(auto &a:A)
-        std::cin >> a;
-    for(int i=0;i<n;i++)
-        H.setWeight(i,A[i]);
-    for(int i=0;i<n-1;i++)
-    {
-        int u,v;
-        std::cin >> u >> v;
-        u--;
-        v--;
-        H.connect(u,v);
-    }
-    H.build(0);
-    auto t3=std::chrono::high_resolution_clock::now();
-    for(int i=0;i<q;i++)
-    {
-        int b;
-        std::cin >> b;
-        if(b==1)
-        {
-            int s;
-            integer x;
-            std::cin >> s >> x;
-            s--;
-            H.update(s,x);
-        }
-        else
-        {
-            int u,v;
-            std::cin >> u >> v;
-            u--;
-            v--;
-            std::cout << H.query(u,v) << '\n';
-        }
-    }
-    auto t4=std::chrono::high_resolution_clock::now();
-    //std::cerr << "dt: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1).count() << std::endl;
+    using cp::integer;
+    integer n;
+    std::cin >> n;
+    std::vector<integer> H(5);
+    for (integer i = 0; i < 5; i++)
+        H[i] = cp::pow(3LL, i*n);
+    std::vector<integer> µ = {1,-1};
+    auto J = cp::convolve(H,µ);
+    for (auto j:J) std::cout << j << ' ';
 }
