@@ -4,13 +4,13 @@
 
 #ifndef FLAT_TENSOR_VIEW_H
 #define FLAT_TENSOR_VIEW_H
-#include "../view.h"
+#include "../../tensors/view.h"
 
-namespace cp::linalg {
+namespace cp::tensors {
     template<typename R,std::size_t Rank>
     struct flat_tensor_view : tensor_view<R,Rank>
     {
-        using index_array = typename tensor_view<R,Rank>::index_array;
+        using index_array = tensor_view<R,Rank>::index_array;
         R* m_data;
         index_array m_shape;
 
@@ -45,12 +45,12 @@ namespace cp::linalg {
 
         const R* data() const
         {
-            return m_data.data();
+            return m_data;
         }
 
         R* data()
         {
-            return m_data.data();
+            return m_data;
         }
 
         index_array shape() const override

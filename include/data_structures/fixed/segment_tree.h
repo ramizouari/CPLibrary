@@ -10,11 +10,14 @@ namespace cp::data_structures::fixed
     template<typename O>
     struct segment_tree
     {
-        using R=typename O::type;
+        using R= O::type;
         using type=R;
+        using value_type = type;
+        using key_type = int;
+        using binary_operation = O;
         std::vector<std::vector<R>> S;
         std::vector<R> A;
-        int n,h;
+        int n=0,h=0;
         segment_tree(const std::vector<R> &_A):A(_A)
         {
             n=bit_ceil(A.size());
@@ -50,8 +53,23 @@ namespace cp::data_structures::fixed
         {
             return query(std::max(l,0),std::min(r,n),0,n,0);
         }
+
+        std::vector<R> data() const
+        {
+            return S[h-1];
+        }
+
+        std::span<const R> span() const
+        {
+            return S[h-1];
+        }
+
+    protected:
+        segment_tree() = default;
+
     private:
         inline static O F=O();
+
         void build()
         {
             for(int i=0;i<n;i++)
@@ -73,6 +91,7 @@ namespace cp::data_structures::fixed
             else
                 return F(query(l,mid,a,mid,depth+1),query(mid,r,mid,b,depth+1));
         }
+
     };
 }
 

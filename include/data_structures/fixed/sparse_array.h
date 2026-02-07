@@ -11,12 +11,15 @@ namespace cp::data_structures::fixed
     template<typename O>
     struct sparse_array
     {
-        using T=typename O::type;
+        using T= O::type;
         using type = T;
+        using value_type = T;
+        using key_type = int;
+        using binary_operation = O;
         inline static O F=O();
         int n,h;
         std::vector<std::vector<T>> S;
-    public:
+
         sparse_array(const std::vector<T>&A):n(bit_ceil(A.size())),h(bit_log(n)),S(h+1)
         {
             int r=1;
@@ -37,6 +40,16 @@ namespace cp::data_structures::fixed
             auto s=bit_floor(d);
             auto b=bit_log(s);
             return F(S[h-b][l],S[h-b][r-s]);
+        }
+
+        std::vector<T> data() const
+        {
+            return S[h];
+        }
+
+        std::span<const T> span() const
+        {
+            return S[h];
         }
     };
 

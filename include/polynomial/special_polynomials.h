@@ -58,7 +58,7 @@ namespace cp
     }
 
 
-    polynomial<cp::integer> integer_cyclotomic_polynomial(int n,abstract_factoriser &F)
+    inline polynomial<cp::integer> integer_cyclotomic_polynomial(int n,abstract_factoriser &F)
     {
         constexpr cp::integer M=998244353;
         using IK=cp::cyclic<M>;
@@ -143,4 +143,4 @@ namespace cp
 }
 
 
-#endif //CPLIBRARY_SPECIAL_POLYNOMIALS_H
+#endif //CPLIBRARY_POLY_SPECIAL_POLYNOMIALS_H

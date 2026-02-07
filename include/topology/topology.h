@@ -1,7 +1,7 @@
 #ifndef __TOPOLOGY_H__
 #define __TOPOLOGY_H__
 #include "../algebra/abstract_algebra.h"
-#include "linear_algebra/matrix.h"
+#include "linalg/matrix.h"
 #include <functional>
 
 namespace cp::topology
@@ -23,6 +23,7 @@ namespace cp::topology
     template<typename E>
     struct metric_t
     {
+        virtual ~metric_t() = default;
         virtual real metric(const E&u,const E&v)const =0;
         real distance(const E& u, const E& v) const
         {

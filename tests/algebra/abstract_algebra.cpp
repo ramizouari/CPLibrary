@@ -9,6 +9,7 @@
 #include <boost/test/data/test_case.hpp>
 #include "algebra/abstract_algebra.h"
 
+using namespace cp;
 
 constexpr std::int64_t M = 1000000007;
 constexpr int N = 100;

@@ -10,7 +10,12 @@ namespace cp::data_structures::fixed
     template<typename O>
     struct fenwick_tree {
         int n;
-        using T=typename O::type;
+        using T= O::type;
+        using R=T;
+        using type=R;
+        using value_type = type;
+        using key_type = int;
+        using binary_operation = O;
         std::vector<T> bit;
         inline static O F = O();
 
@@ -46,6 +51,18 @@ namespace cp::data_structures::fixed
 
         void update(int x, T delta) {
             add(x,F(F.inv(sum(x,x)),delta));
+        }
+
+        std::vector<T> data() const
+        {
+            std::vector<T> ret = bit;
+            for (int i = n - 1; i >= 0; --i) {
+                int next_i = (i & (i + 1)) - 1;
+                if (next_i >= 0) {
+                    ret[i] = F(F.inv(ret[next_i]), ret[i]);
+                }
+            }
+            return ret;
         }
     };
 }

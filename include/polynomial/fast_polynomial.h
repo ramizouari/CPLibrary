@@ -10,7 +10,7 @@
 #include "data_structures/range_queries.h"
 #include "data_structures/fixed/segment_tree.h"
 #include "signals/fft.h"
-#include "linear_algebra/view.h"
+#include "../tensors/view.h"
 #include "data_structures/dynamic/segment_tree.h"
 
 namespace cp

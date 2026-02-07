@@ -6,7 +6,7 @@
 #define CPLIBRARY_POINT_H
 #include <complex>
 #include "algebra/abstract_algebra.h"
-#include "linear_algebra/vector.h"
+#include "linalg/vector.h"
 
 namespace cp::geometry
 {

@@ -13,7 +13,7 @@
 
 namespace cp
 {
-    real epsilon=1e-6;
+    inline real epsilon=1e-6;
 
     template<typename R>
     R commutator(R a,R b)

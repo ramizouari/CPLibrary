@@ -10,21 +10,21 @@ find_package(Boost COMPONENTS unit_test_framework)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h include/nt/number_theory.h
+set(HEADER_FILES include/linalg/matrix.h include/nt/modular_arithmetic.h include/nt/number_theory.h
         include/arithmetic/fast_arithmetic.h include/algebra/permutation.h include/combinatorics/factorial.h
         include/combinatorics/numbers.h include/combinatorics/binomial.h include/combinatorics/partitions.h
         include/combinatorics/stirling.h include/combinatorics/ogf.h include/polynomial/formal_series.h include/combinatorics/egf.h
         include/signals/quadratic/ntt.h include/rings/tower.h include/polynomial/special_polynomials.h include/polynomial/fast_general_polynomial_multiplication.h
         include/rings/quadratic/fixed.h include/rings/quadratic/static.h include/rings/quadratic/dynamic.h
-        include/linear_algebra/view.h include/linear_algebra/tensor.h include/signals/fft.h include/signals/multi_fft.h
-        include/signals/ntt.h include/polynomial/fast_polynomial.h include/linear_algebra/wrappers.h
+        include/tensors/view.h include/tensors/tensor.h include/signals/fft.h include/signals/multi_fft.h
+        include/signals/ntt.h include/polynomial/fast_polynomial.h include/linalg/wrappers.h
         include/arithmetic/bigint.h include/arithmetic/varint.h include/arithmetic/utils.h include/arithmetic/operations.h
         include/parser/StatefulParser.h include/graph/tree/tree.h include/data_structures/dynamic_range_queries.h
         include/graph/tree/range_queries.h include/graph/tree/isomorphism.h
         include/polynomial/ring_extension.h include/polynomial/polynomial.h include/polynomial/fft.h include/topology/optimisation.h include/string/string.h include/data_structures/range_queries.h include/algebra/binary_operation.h
         include/topology/topology.h include/data_structures/statistic_tree.h include/nt/primality.h include/formal_verification/node.h include/formal_verification/abstract_decision_tree.h
         include/formal_verification/dynamic_decision_tree.h include/formal_verification/abstract_printer.h
-        include/formal_verification/decision_tree.h include/graph/graph.h include/graph/union_find.h include/graph/2sat.h include/linear_algebra/decomposition.h include/linear_algebra/special_matrices.h include/linear_algebra/special_polynomials.h include/linear_algebra/vector.h include/linear_algebra/hilbert_geometry.h
+        include/formal_verification/decision_tree.h include/graph/graph.h include/graph/union_find.h include/graph/2sat.h include/linalg/decomposition.h include/linalg/special_matrices.h include/linalg/special_polynomials.h include/linalg/vector.h include/linalg/hilbert_geometry.h
         include/geometry/point.h
         include/geometry/shapes.h
         include/geometry/transformation.h
@@ -33,16 +33,19 @@ set(HEADER_FILES include/linear_algebra/matrix.h include/nt/modular_arithmetic.h
         include/nt/dirichelet.h
         include/data_structures/li_chao.h
         include/topology/simplex.h
-        include/linear_algebra/views/vector.h
-        include/linear_algebra/views/matrix.h
-        include/linear_algebra/views/flat_tensor.h
-        include/linear_algebra/views/operations.h
-        include/linear_algebra/views/matrix_operations.h
-        include/linear_algebra/utils.h
+        include/linalg/views/vector.h
+        include/linalg/views/matrix.h
+        include/tensors/views/flat_tensor.h
+        include/tensors/views/operations.h
+        include/linalg/views/matrix_operations.h
+        include/tensors/utils.h
         include/rings/identities.h
         include/graph/divisibility.h
         include/groups/product.h
         include/groups/dihedral.h
+        include/data_structures/fixed/multi_dimensional.h
+        include/tensors/indexing.h
+        include/data_structures/fixed/recursive.h
 )
 
 set(SOURCE_FILES src/parser/Grammar.cpp src/parser/LRParserBuilder.cpp src/parser/LLParser.cpp src/parser/SLRParserBuilder.cpp src/parser/LALRParserBuilder.cpp

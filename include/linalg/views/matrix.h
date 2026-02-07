@@ -8,7 +8,7 @@
 
 #include <memory>
 
-#include "../view.h"
+#include "../../tensors/view.h"
 namespace cp::linalg
 {
     template<typename R>

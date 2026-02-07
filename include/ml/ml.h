@@ -6,7 +6,7 @@
 #define __ML_H__
 #include "algebra/abstract_algebra.h"
 #include "topology/optimisation.h"
-#include "linear_algebra/matrix.h"
+#include "linalg/matrix.h"
 #include "functional/zip.h"
 #include "functional/functional.h"
 #include <algorithm>
@@ -22,12 +22,12 @@ namespace cp::ml
     class ml_model
     {
     public:
-        virtual ml_model& fit(const d_matrix<real> &X, const d_vector<real> &y)=0;
-        virtual d_vector<real> predict(const d_matrix<real>& X) const=0;
-        virtual real score(const d_matrix<real>& X, const d_vector<real>& y) const = 0;
+        virtual ml_model& fit(const matrix<real> &X, const vector<real> &y)=0;
+        virtual vector<real> predict(const matrix<real>& X) const=0;
+        virtual real score(const matrix<real>& X, const vector<real>& y) const = 0;
     };
 
-/**
+    /**
 * @brief Linear Regression
 * @refitem Linear Regression,
 * @Input
@@ -41,19 +41,19 @@ namespace cp::ml
 */
     class linear_regression :public ml_model
     {
-        d_vector<real> w;
+        vector<real> w;
     public:
-        ml_model& fit(const d_matrix<real>& X, const d_vector<real>& y) override
+        ml_model& fit(const matrix<real>& X, const vector<real>& y) override
         {
-            w = (X.T() * X).solve(X.T() * y);
+            w = *(X.T() * X).solve(X.T() * y);
             return *this;
         }
-        d_vector<real> predict(const d_matrix<real>& X) const override
+        vector<real> predict(const matrix<real>& X) const override
         {
             return X * w;
         }
 
-        real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+        real score(const matrix<real>& X, const vector<real>& y) const override
         {
             auto y_pred = X * w;
             real err = 0;
@@ -78,40 +78,40 @@ namespace cp::ml
 */
     class logistic_regression :public ml_model
     {
-        d_vector<real> w;
+        vector<real> w;
     public:
         int limit=2000;
-        ml_model& fit(const d_matrix<real>& X, const d_vector<real>& y) override
+        ml_model& fit(const matrix<real>& X, const vector<real>& y) override
         {
-            derivator<d_vector<real>, real, d_vector<real>> D;
-            barzilai_borwein_gradient_descent<d_vector<real>,real, L2_inner_product<real, d_vector<real>>>
-            GD(D,1e-3);
+            topology::derivator<vector<real>, real, vector<real>> D;
+            topology::barzilai_borwein_gradient_descent GD(D,1e-3);
             int k = 0;
-            w = GD.argmin([&X,&y,&k](const d_vector<real>& u)->std::pair<real,d_vector<real>>
-                          {
-                              k++;
-                              d_vector<real> y_pred = pointwise_function([](auto s)
-                                                                         {
-                                                                             return 1 / (1 + std::exp(-s));
-                                                                         }, X * u),residual=y-y_pred,df{v_shape{(int)X.col_dim()}};
-                              real err = 0;
-                              for (auto [p, q] : zip(y, y_pred))
-                                  err += p == 0 ? -std::log(1-q):-std::log(q);
-                              err /= X.row_dim();
-                              for (auto [R, r] : zip(X, residual))
-                                  for (auto [g, s] : zip(df, R))
-                                      g -= s * r/X.row_dim();
-                              return std::make_pair(std::move(err),std::move(df));
-                          },d_vector<real>{v_shape{(int)X.col_dim()}},limit);
+            w = GD.argmin(
+                [&X,&y,&k](const vector<real>& u)->std::pair<real,vector<real>>
+                    {
+                        k++;
+                        vector<real> y_pred = pointwise_function([](auto s) -> real
+                        {
+                            return 1 / (1 + std::exp(-s));
+                        }, X * u),
+                        residual=y-y_pred, df(X.cols(),size_tag);
+                        real err = 0;
+                        for (auto [p, q] : zip(y, y_pred))
+                            err += p == 0 ? -std::log(1-q):-std::log(q);
+                        err /= X.rows();
+                        return std::make_pair(err,std::move(df));
+                    },
+                    vector<real>(X.cols(),size_tag),limit
+                );
             return *this;
         }
 
-        d_vector<real> boundary_function(const d_matrix<real>& X) const
+        vector<real> boundary_function(const matrix<real>& X) const
         {
             return X * w;
         }
 
-        d_vector<real> decision_function(const d_matrix<real>& X) const
+        vector<real> decision_function(const matrix<real>& X) const
         {
             return pointwise_function([](auto s)
                                       {
@@ -119,7 +119,7 @@ namespace cp::ml
                                       }, boundary_function(X));
         }
 
-        d_vector<real> predict(const d_matrix<real>& X) const
+        vector<real> predict(const matrix<real>& X) const
         {
             auto y = decision_function(X);
             for (auto& s : y)
@@ -127,7 +127,7 @@ namespace cp::ml
             return y;
         }
 
-        real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+        real score(const matrix<real>& X, const vector<real>& y) const override
         {
             auto y_pred = predict(X);
             int a = 0;
@@ -137,7 +137,7 @@ namespace cp::ml
             return a / (real)y.dim();
         }
 
-        real error(const d_matrix<real>& X, const d_vector<real>& y) const
+        real error(const matrix<real>& X, const vector<real>& y) const
         {
             auto y_pred = decision_function(X);
             real err = 0;
@@ -172,33 +172,32 @@ namespace cp::ml
 */
     class multilogistic_regression :public ml_model
     {
-        d_matrix<real> W;
+        cp::linalg::matrix<real> W;
     public:
         int limit = 2000;
         int C;
         real lambda = 0.1;
         multilogistic_regression(real lambda) :lambda(lambda){}
-        ml_model& fit(const d_matrix<real>& X, const d_vector<real>& y) override
+        ml_model& fit(const matrix<real>& X, const vector<real>& y) override
         {
-            d_vector<real> w;
+            vector<real> w;
             C = 0;
             for (auto s : y)
                 C = std::max(C, (int)s);
             C++;
-            d_matrix<real> Y(0,m_shape{(int)y.dim(),C});
+            matrix<real> Y(y.dim(),C,size_tag);
             for (auto [s,R] : zip(y,Y))
                 R[(int)s] = 1;
-            derivator<d_vector<real>, real, d_vector<real>> D;
-            barzilai_borwein_gradient_descent<d_vector<real>,IR, L2_inner_product<real, d_vector<real>>>
-            GD(D, 1e-3);
+            topology::derivator<vector<real>, real, vector<real>> D;
+            topology::barzilai_borwein_gradient_descent GD(D, 1e-3);
             int k = 0;
-            w = GD.argmin([&X, &y, &k,C=this->C,lambda=this->lambda](const d_vector<real>& u)->std::pair<real,d_vector<real>>
+            w = GD.argmin([&X, &y, &k,C=this->C,lambda=this->lambda](const vector<real>& u)->std::pair<real,vector<real>>
                           {
                               k++;
-                              d_matrix<real> U(0, m_shape{ (int)X.col_dim(),C});
-                              for (int i = 0; i < X.col_dim(); i++) for (int j = 0; j < C; j++)
+                              matrix<real> U(X.cols(),C,size_tag);
+                              for (int i = 0; i < X.cols(); i++) for (int j = 0; j < C; j++)
                                       U[i][j] = u[i * C + j];
-                              d_matrix<real> Y_pred=X*U;
+                              matrix<real> Y_pred=X*U;
                               for (auto& y_pred : Y_pred)
                               {
                                   for (auto& s : y_pred)
@@ -208,38 +207,38 @@ namespace cp::ml
                                       s /= r;
                               }
                               real err = 0;
-                              d_vector<real> du(v_shape{ (int)u.dim() });
+                              vector<real> du(u.dim(),size_tag);
                               int i = 0;
                               for (auto [p, Q,x] : zip(y, Y_pred,X))
                               {
                                   int k = (int)p;
                                   err -= std::log(Q[k]);
-                                  for (int h = 0; h < X.col_dim(); h++) for (int r = 0; r < C; r++)
+                                  for (int h = 0; h < X.cols(); h++) for (int r = 0; r < C; r++)
                                           du[h * C + r] += x[h]*Q[r];
-                                  for (int h = 0; h < X.col_dim(); h++)
+                                  for (int h = 0; h < X.cols(); h++)
                                       du[h * C + k] -= x[h];
                                   i++;
                               }
                               du+=lambda*u;
-                              du /= X.row_dim()*C;
+                              du /= X.rows()*C;
                               for(auto &s:u)
                                   err+=lambda*s*s/2;
-                              err /= X.row_dim()*C;
+                              err /= X.rows()*C;
                               return std::make_pair(err,du);
-                          }, d_vector<real>{v_shape{ (int)X.col_dim()*C }}, limit);
-            W = d_matrix<real>(0,m_shape{ (int)X.col_dim(),C });
-            for (int i = 0; i < X.col_dim(); i++)
+                          }, cp::linalg::vector<real>(X.cols()*C ,size_tag), limit);
+            W = cp::linalg::matrix<real>(X.cols(),C,size_tag);
+            for (int i = 0; i < X.cols(); i++)
                 for (int j = 0; j < C; j++)
                     W[i][j] = w[i * C + j];
             return *this;
         }
 
-        d_matrix<real> boundary_function(const d_matrix<real>& X) const
+        matrix<real> boundary_function(const matrix<real>& X) const
         {
             return X * W;
         }
 
-        d_matrix<real> decision_function(const d_matrix<real>& X) const
+        matrix<real> decision_function(const matrix<real>& X) const
         {
             auto Y_pred = boundary_function(X);
             for (auto& y_pred : Y_pred)
@@ -253,10 +252,10 @@ namespace cp::ml
             return Y_pred;
         }
 
-        d_vector<real> predict(const d_matrix<real>& X) const
+        vector<real> predict(const cp::linalg::matrix<real>& X) const
         {
             auto Y = decision_function(X);
-            d_vector<real> y_pred(v_shape{(int)X.row_dim()});
+            vector<real> y_pred(X.rows(),size_tag);
             for (auto [y,s] : zip(Y,y_pred))
             {
                 int k = 0;
@@ -272,7 +271,7 @@ namespace cp::ml
             return y_pred;
         }
 
-        real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+        real score(const matrix<real>& X, const vector<real>& y) const override
         {
             auto y_pred = predict(X);
             int a = 0;
@@ -282,13 +281,13 @@ namespace cp::ml
             return a / static_cast<real>(y.dim());
         }
 
-        real error(const d_matrix<real>& X, const d_vector<real>& y) const
+        real error(const matrix<real>& X, const vector<real>& y) const
         {
             auto Y_pred = decision_function(X);
             real err = 0;
             for (auto [p, Q] : zip(y, Y_pred))
                 err -= std::log(Q[(int)p]);
-            err /= X.row_dim();
+            err /= X.rows();
             return err;
         }
     };
@@ -308,25 +307,25 @@ namespace cp::ml
 * n samples. each representing the correspending class
 */
 
-    template<typename metric=L2_inner_product<real,d_vector<real>>>
+    template<typename metric=topology::L2_inner_product<real,vector<real>>>
     class k_nearest_neighbour_classifier : public ml_model
     {
-        d_matrix<real> X;
-        d_vector<real> y;
-        inline static constexpr metric d=metric{};
+        matrix<real> X;
+        vector<real> y;
+        static constexpr metric d=metric{};
     public:
         int k;
         k_nearest_neighbour_classifier(int k=5) : k(k) {}
-        ml_model& fit(const d_matrix<real>& _X,const d_vector<real>& _y) override
+        ml_model& fit(const matrix<real>& _X,const vector<real>& _y) override
         {
             X = _X;
             y = _y;
             return *this;
         }
 
-        d_vector<real> predict(const d_matrix<real>& _X) const override
+        vector<real> predict(const matrix<real>& _X) const override
         {
-            d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+            vector<real> _y(_X.rows(),size_tag);
             for (auto [_x,_s] : zip(_X,_y))
             {
                 std::priority_queue<std::pair<real, real>> P;
@@ -354,7 +353,7 @@ namespace cp::ml
             return _y;
         }
 
-        real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+        real score(const matrix<real>& X, const vector<real>& y) const override
         {
             auto y_pred = predict(X);
             int a = 0;
@@ -365,24 +364,24 @@ namespace cp::ml
         }
     };
 
-    template<typename metric = L2_inner_product<real, d_vector<real>>>
+    template<typename metric = topology::L2_inner_product<real, vector<real>>>
     class k_nearest_neighbour_regression : public ml_model
     {
-        d_matrix<real> X;
-        d_vector<real> y;
-        inline static constexpr metric d=metric{};
+        matrix<real> X;
+        vector<real> y;
+        static constexpr metric d=metric{};
     public:
         int k = 5;
-        ml_model& fit(const d_matrix<real>& _X, const d_vector<real>& _y) override
+        ml_model& fit(const cp::linalg::matrix<real>& _X, const vector<real>& _y) override
         {
             X = _X;
             y = _y;
             return *this;
         }
 
-        d_vector<real> predict(const d_matrix<real>& _X) const override
+        vector<real> predict(const matrix<real>& _X) const override
         {
-            d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+            vector<real> _y(_X.rows(), size_tag);
             for (auto [_x, _s] : zip(_X, _y))
             {
                 std::priority_queue<std::pair<real, real>> P;
@@ -404,7 +403,7 @@ namespace cp::ml
             return _y;
         }
 
-        real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+        real score(const cp::linalg::matrix<real>& X, const cp::linalg::vector<real>& y) const override
         {
             auto y_pred = predict(X);
             int a = 0;
@@ -420,14 +419,14 @@ namespace cp::ml
         std::unordered_map<int,real> class_probability;
         std::vector<std::map<std::pair<int,int>,real>> attribute_conditional_probability;
     public:
-        ml_model& fit(const d_matrix<real>& _X, const d_vector<real>& _y) override
+        ml_model& fit(const matrix<real>& _X, const vector<real>& _y) override
         {
             for (auto s : _y)
                 class_probability[s]++;
             auto totalWeight=std::accumulate(class_probability.begin(),class_probability.end(),0,[](real a,const auto& b){return a+b.second;});
             for (auto& [s,p] : class_probability)
                 p/=totalWeight;
-            attribute_conditional_probability.resize(_X.col_dim());
+            attribute_conditional_probability.resize(_X.cols());
             for(auto [x,y]: zip(_X,_y)) for(auto [counter,c]:zip(attribute_conditional_probability,x))
                     counter[{c,y}]++;
             for(auto& conditional:attribute_conditional_probability)
@@ -441,9 +440,9 @@ namespace cp::ml
             return *this;
         }
 
-        d_vector<real> predict(const d_matrix<real>& _X) const override
+        vector<real> predict(const matrix<real>& _X) const override
         {
-            d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+            vector<real> _y(_X.rows(), size_tag);
             for (auto [_x, _s] : zip(_X, _y))
             {
                 real max_probability=0;
@@ -460,15 +459,19 @@ namespace cp::ml
             return _y;
         }
 
-        real probability(const d_vector<real> &x,int C) const
+        real probability(const vector<real> &x,int C) const
         {
             real P_class = class_probability.at(C);
             for (auto [c, p] : zip(x, attribute_conditional_probability))
-                P_class *= p.at({c, C});
+            {
+                auto it = p.find({c, C});
+                if (it != p.end())
+                    P_class *= it->second;
+            }
             return P_class;
         }
 
-        real score(const d_matrix<real>& X, const d_vector<real>& y) const override
+        real score(const matrix<real>& X, const vector<real>& y) const override
         {
             auto y_pred = predict(X);
             int a = 0;
@@ -479,14 +482,14 @@ namespace cp::ml
         }
     };
 
-    template<typename metric = L2_inner_product<real, d_vector<real>>>
+    template<typename metric = topology::L2_inner_product<real, vector<real>>>
     class k_means
     {
         int k;
-        inline static constexpr metric d{};
-        std::vector<d_vector<real>> centroids;
-        d_matrix<real> X;
-        d_vector<real> y;
+        static constexpr metric d{};
+        std::vector<vector<real>> centroids;
+        matrix<real> X;
+        vector<real> y;
         int steps;
         void divide_points()
         {
@@ -509,17 +512,17 @@ namespace cp::ml
         }
     public:
         k_means(int k=3,int steps=100): k(k),centroids(k),steps(steps){}
-        ml_model& fit(const d_matrix<real>& _X)
+        ml_model& fit(const matrix<real>& _X)
         {
             X=_X;
-            y=d_vector<real>(v_shape{(int)_X.row_dim()});
-            d_vector<int> counter(v_shape{k});
+            y=cp::linalg::vector<real>(_X.rows(),size_tag);
+            vector<int> counter(k,size_tag);
             for(auto &centroid:centroids)
-                centroid=d_vector<real>(v_shape{(int)_X.col_dim()});
+                centroid=cp::linalg::vector<real>(_X.cols(),size_tag);
             for(int i=0;i<steps;i++)
             {
                 divide_points();
-                std::fill(centroids.begin(),centroids.end(),v_shape{(int)_X.col_dim()});
+                std::ranges::fill(centroids,vector<real>(_X.cols(),size_tag));
                 for(auto [x,s]:zip(_X,y)) {
                     centroids[s] += x;
                     counter[s]++;
@@ -530,9 +533,9 @@ namespace cp::ml
             return *this;
         }
 
-        [[nodiscard]] d_vector<real> predict(const d_matrix<real>& _X) const
+        [[nodiscard]] vector<real> predict(const matrix<real>& _X) const
         {
-            d_vector<real> _y(v_shape{ (int)_X.row_dim() });
+            vector<real> _y(_X.rows(),size_tag);
             for (auto [_x, _s] : zip(_X, _y))
             {
                 real min_distance = std::numeric_limits<real>::max();
@@ -551,7 +554,7 @@ namespace cp::ml
             return _y;
         }
 
-        [[nodiscard]] d_vector<real> predict() const
+        [[nodiscard]] vector<real> predict() const
         {
             return y;
         }

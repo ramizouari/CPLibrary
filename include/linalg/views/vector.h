@@ -4,12 +4,13 @@
 
 #ifndef CPLIBRARY_VECTOR_VIEW_H
 #define CPLIBRARY_VECTOR_VIEW_H
-#include "../view.h"
+#include "../../tensors/view.h"
 namespace cp::linalg
 {
     template<typename R>
     struct vector_view : tensor_view<R,1>
     {
+        using index_array=tensor_view<R,1>::index_array;
         R* m_data;
         std::size_t m_size;
         vector_view(R* _data,std::size_t _size):m_data(_data),m_size(_size){}
@@ -30,24 +31,24 @@ namespace cp::linalg
         {
             return m_data[i];
         }
-        R& at(std::array<std::size_t,1> indexes) override
+        R& at(index_array indexes) override
         {
             return at(indexes[0]);
         }
-        const R& at(std::array<std::size_t,1> indexes) const override
+        const R& at(index_array indexes) const override
         {
             return at(indexes[0]);
         }
-        std::array<std::size_t,1> shape() const override
+        index_array shape() const override
         {
             return {size()};
         }
-        tensor_subview<R,1> slice(std::array<std::size_t,1> start,std::array<std::size_t,1> end) override
+        tensor_subview<R,1> slice(index_array start,index_array end) override
         {
             return tensor_subview<R,1>(*this,start,end);
         }
 
-        tensor_subview<R,1> slice(std::array<std::size_t,1> start,std::array<std::size_t,1> end, std::array<std::size_t,1> step) override
+        tensor_subview<R,1> slice(index_array start,index_array end, index_array step) override
         {
             return tensor_subview<R,1>(*this,start,end,step);
         }

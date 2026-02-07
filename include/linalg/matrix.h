@@ -14,7 +14,7 @@ namespace cp::linalg
 {
 
 /**
- * @brief Matrix:
+* @brief Matrix:
 * @details This is the union of R^(n*m) for all n and m
 * @Requirements
 * <strong>R</strong> is a commutative ring.
@@ -25,6 +25,7 @@ namespace cp::linalg
     template<ring R,std::size_t ext1 = dynamic_extent,std::size_t ext2 = ext1>
     struct matrix : tensor_view<R,2>
     {
+        using typename tensor_view<R,2>::index_array;
         using vector=vector<R,ext2>;
         using container = std::conditional_t<ext1 == dynamic_extent, std::vector<vector>,std::array<vector,ext1>>;
         container M{};
@@ -82,7 +83,7 @@ namespace cp::linalg
             return I;
         }
 
-        std::array<std::size_t,2> shape() const override {
+        index_array shape() const override {
             return {rows(),cols()};
         }
 
@@ -91,12 +92,12 @@ namespace cp::linalg
             return rows()*cols();
         }
 
-        R& at(std::array<std::size_t,2> I) override
+        R& at(index_array I) override
         {
             return M[I[0]][I[1]];
         }
 
-        const R& at(std::array<std::size_t,2> I) const override
+        const R& at(index_array I) const override
         {
             return M[I[0]][I[1]];
         }
@@ -132,7 +133,7 @@ namespace cp::linalg
         matrix T() const
         {
             int m=cols(),n=rows();
-            matrix P(m,n);
+            matrix P(m,n,size_tag);
             for(int i=0;i<n;i++) for(int j=0;j<m;j++)
                 P.M[j][i]=M[i][j];
             return P;
@@ -147,20 +148,67 @@ namespace cp::linalg
             return P;
         }
 
-        matrix &operator+=(const matrix &O)
+        matrix &operator+=(const matrix &O) requires all_dynamic<ext1,ext2>
         {
-            if (O.rows() == 1 && O.cols() == 1) for (int i=0;i<std::min(rows(),cols());i++)
-                M[i][i]+=O.M[0][0];
-            else for(int i=0;i<std::min(rows(),O.rows());i++) for(int j=0;j<std::min(cols(),O.cols());j++)
+            if (rows() > 0 )
+            {
+                if (O.rows() == 1 && O.cols() == 1) {
+                    for (int i=0;i<std::min(rows(),cols());i++)
+                        M[i][i]+=O.M[0][0];
+                }
+                else
+                {
+                    if (rows() == 1 & cols() == 1) {
+                        M.resize(O.rows());
+                        for (auto &v : M)
+                            v.u.resize(O.cols());
+                        for (int i=1;i<std::min(rows(),cols());i++)
+                            M[i][i] = M[0][0];
+                    }
+                    for(int i=0;i<std::min(rows(),O.rows());i++) for(int j=0;j<std::min(cols(),O.cols());j++)
+                        M[i][j]+=O.M[i][j];
+                }
+            }
+            else *this=O;
+            return *this;
+        }
+
+        matrix &operator+=(const matrix &O) requires none_dynamic<ext1,ext2>
+        {
+            for(int i=0;i<std::min(rows(),O.rows());i++) for(int j=0;j<std::min(cols(),O.cols());j++)
                 M[i][j]+=O.M[i][j];
             return *this;
         }
 
-        matrix &operator-=(const matrix &O)
+
+        matrix &operator-=(const matrix &O) requires all_dynamic<ext1,ext2>
         {
-            if (O.rows() == 1 && O.cols() == 1) for (int i=0;i<std::min(rows(),cols());i++)
-                M[i][i]-=O.M[0][0];
-            else for(int i=0;i<std::min(rows(),O.rows());i++) for(int j=0;j<std::min(cols(),O.cols());j++)
+            if (rows() > 0 )
+            {
+                if (O.rows() == 1 && O.cols() == 1) {
+                    for (int i=0;i<std::min(rows(),cols());i++)
+                        M[i][i]-=O.M[0][0];
+                }
+                else
+                {
+                    if (rows() == 1 & cols() == 1) {
+                        M.resize(O.rows());
+                        for (auto &v : M)
+                            v.u.resize(O.cols());
+                        for (int i=1;i<std::min(rows(),cols());i++)
+                            M[i][i] = M[0][0];
+                    }
+                    for(int i=0;i<std::min(rows(),O.rows());i++) for(int j=0;j<std::min(cols(),O.cols());j++)
+                        M[i][j]-=O.M[i][j];
+                }
+            }
+            else *this=-O;
+            return *this;
+        }
+
+        matrix &operator-=(const matrix &O) requires none_dynamic<ext1,ext2>
+        {
+            for(int i=0;i<std::min(rows(),O.rows());i++) for(int j=0;j<std::min(cols(),O.cols());j++)
                 M[i][j]-=O.M[i][j];
             return *this;
         }

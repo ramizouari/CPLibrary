@@ -5,10 +5,10 @@
 #ifndef CPLIBRARY_PRINT_H
 #define CPLIBRARY_PRINT_H
 #include <ostream>
-#include "linear_algebra/matrix.h"
+#include "../include/linalg/matrix.h"
 
 template<typename T,int n>
-std::ostream & operator<<(std::ostream & os,const s_vector<T,n> & v)
+std::ostream & operator<<(std::ostream & os,const cp::linalg::vector<T,n> & v)
 {
     os << '[';
     for(auto &s:v)
@@ -18,7 +18,7 @@ std::ostream & operator<<(std::ostream & os,const s_vector<T,n> & v)
 }
 
 template<typename T,int n,int m>
-std::ostream & operator<<(std::ostream & os,const s_matrix<T,n,m> & v)
+std::ostream & operator<<(std::ostream & os,const cp::linalg::matrix<T,n,m> & v)
 {
     os << '[';
     for(auto &R:v) {

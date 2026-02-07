@@ -12,6 +12,7 @@
 #include "fft.h"
 #include "nt/modular_arithmetic.h"
 #include "nt/modular_functions.h"
+#include "nt/number_theory.h"
 
 namespace cp::signals
 {
@@ -237,13 +238,12 @@ namespace cp::signals
     }
 
     template<integer n>
-    struct radix2_fft<cyclic<n>> : public abstract_ntt<n>
+    struct radix2_fft<cyclic<n>> : public abstract_ntt<n>, protected default_factoriser_t
     {
         using R=cyclic<n>;
         using abstract_fft<cyclic<n>>::transform;
         using abstract_ntt<n>::root_of_unity;
         using abstract_ntt<n>::build;
-        using default_factoriser_t::default_factoriser;
         radix2_fft(std::shared_ptr<abstract_factoriser> _F=default_factoriser):abstract_ntt<n>(_F)
         {
         }
@@ -260,11 +260,11 @@ namespace cp::signals
     struct radix2_fft<cyclic<dynamic_modulus>> : public abstract_ntt<dynamic_modulus>
     {
         using R=cyclic<dynamic_modulus>;
-        using abstract_fft<cyclic<dynamic_modulus>>::transform;
-        using abstract_ntt<dynamic_modulus>::root_of_unity;
-        using abstract_ntt<dynamic_modulus>::build;
+        using abstract_fft::transform;
+        using abstract_ntt::root_of_unity;
+        using abstract_ntt::build;
         using default_factoriser_t::default_factoriser;
-        radix2_fft(std::shared_ptr<abstract_factoriser> _F=default_factoriser):abstract_ntt<dynamic_modulus>(_F)
+        radix2_fft(std::shared_ptr<abstract_factoriser> _F=default_factoriser):abstract_ntt(_F)
         {
         }
         void transform(linalg::tensor_view<R,1> &v, bool inverse=false, FFTNormalization normalization = FFTNormalization::None) const override
@@ -343,13 +343,13 @@ namespace cp::signals
     };
 
     template<integer m>
-    struct mixed_radix_fft<cyclic<m>> : public abstract_ntt<m>
+    struct mixed_radix_fft<cyclic<m>> : public abstract_ntt<m>, private default_factoriser_t
     {
         using R=cyclic<m>;
         using cp::signals::abstract_fft<R>::transform;
         using default_factoriser_t::default_factoriser;
         mixed_radix_fft(std::shared_ptr<cp::abstract_factoriser> _F=default_factoriser):abstract_ntt<m>(_F){}
-        void transform_rec(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const
+        void transform_rec(cp::linalg::tensor_view<R,1> &v, bool inverse=false, FFTNormalization normalization = cp::signals::FFTNormalization::None) const
         {
             auto n=v.size();
             if(n==1)
@@ -379,7 +379,7 @@ namespace cp::signals
                 v(i)=result[i];
         }
 
-        void transform(cp::linalg::tensor_view<R,1> &v, bool inverse=false, cp::signals::FFTNormalization normalization = cp::signals::FFTNormalization::None) const override
+        void transform(cp::linalg::tensor_view<R,1> &v, bool inverse=false, FFTNormalization normalization = cp::signals::FFTNormalization::None) const override
         {
             transform_rec(v,inverse,normalization);
             cyclic_normalize(v,normalization);

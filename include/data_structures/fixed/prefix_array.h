@@ -10,8 +10,11 @@ namespace cp::data_structures::fixed
     template<typename O>
     struct prefix_array
     {
-        using R=typename O::type;
-        using type=typename O::type;
+        using R= O::type;
+        using type=R;
+        using value_type = type;
+        using key_type = int;
+        using binary_operation = O;
         std::vector<R> A;
         std::vector<R> P;
         inline static O F=O();

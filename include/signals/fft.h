@@ -4,12 +4,13 @@
 
 #ifndef CPLIBRARY_FFT_H
 #define CPLIBRARY_FFT_H
-#include "linear_algebra/view.h"
+#include "../tensors/view.h"
+#include "../tensors/utils.h"
 #include <complex>
 #include "algebra/bits.h"
 #include <cstdint>
 
-#include "linear_algebra/views/vector.h"
+#include "linalg/views/vector.h"
 #include "nt/number_theory.h"
 namespace cp::signals
 {

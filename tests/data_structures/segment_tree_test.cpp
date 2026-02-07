@@ -11,19 +11,22 @@
 #include <boost/test/data/monomorphic.hpp>
 #include <random>
 #include <chrono>
+
+#include "algebra/binary_operation.h"
 #include "data_structures/range_queries.h"
 #include "nt/modular_arithmetic.h"
-#include "linear_algebra/matrix.h"
+#include "linalg/matrix.h"
 constexpr std::int64_t M = 1000000007;
 constexpr int N = 100;
-using IF=cyclic<M>;
-using IM=s_matrix<IF,3,3>;
-using test_types=boost::mp11::mp_list<long long,IF,cyclic<17>,IM> ;
+using IF= cp::cyclic<M>;
+using IM= cp::linalg::matrix<IF,3,3>;
+using test_types=boost::mp11::mp_list<long long,IF, cp::cyclic<17>,IM> ;
 using comparable_test_types=boost::mp11::mp_list<long long,int>;
 
 
 #include "../print.h"
 
+using namespace cp;
 
 template<typename T>
 concept is_iterable = requires(const T&a)
@@ -33,7 +36,7 @@ concept is_iterable = requires(const T&a)
 };
 
 template<typename T,typename O>
-concept is_invertible = std::is_base_of<invertible_operation<T>,O>::value;
+concept is_invertible = std::is_base_of<cp::invertible_operation<T>,O>::value;
 
 template<integer n>
 std::ostream & operator<<(std::ostream & os,const cyclic<n>& v)
@@ -86,14 +89,15 @@ std::vector<T> generate_random_vector(int n,auto &distribution,auto &rng)
     return v;
 }
 
-template<typename A,typename O>
+template<typename O>
 struct segment_tree_fixture
 {
-    inline static constexpr O F{};
+    using A =  O::type;
+    inline static O F{};
     inline static constexpr int N=1e6;
     inline static constexpr int Q=1e6;
     std::vector<A> data;
-    segment_tree<A,O> S;
+    data_structures::fixed::segment_tree<O> S;
 
     static segment_tree_fixture&  get_instance()
     {
@@ -183,7 +187,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
     BOOST_AUTO_TEST_SUITE(query)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_query_plus,T,test_types)
         {
-            auto& fixture=segment_tree_fixture<T,plus_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<plus_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation();
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -191,7 +195,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_query_max,T,comparable_test_types)
         {
             constexpr int W=1000;
-            auto& fixture=segment_tree_fixture<T,max_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<max_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation(W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -200,7 +204,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
         {
             min_t<T>::neutral=std::numeric_limits<T>::max();
             constexpr int W=1000;
-            auto& fixture=segment_tree_fixture<T,min_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<min_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation(W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -208,7 +212,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_query_times,T,test_types)
         {
             constexpr int W=1000;
-            auto& fixture=segment_tree_fixture<T,multiplies_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<multiplies_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation(W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -224,7 +228,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
             double p=K::value;
             p/=100;
             constexpr int W=1000;
-            auto& fixture=segment_tree_fixture<T,plus_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<plus_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation_with_update(p,W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -236,7 +240,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
             double p=K::value;
             p/=100;
             constexpr int W=1000;
-            auto& fixture=segment_tree_fixture<T,max_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<max_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation_with_update(p,W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -249,7 +253,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
             p/=100;
             min_t<T>::neutral=std::numeric_limits<T>::max();
             constexpr int W=1000;
-            auto& fixture=segment_tree_fixture<T,min_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<min_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation_with_update(p,W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -261,7 +265,7 @@ BOOST_AUTO_TEST_SUITE(test_segment_tree)
             double p=K::value;
             p/=100;
             constexpr int W=1000;
-            auto& fixture=segment_tree_fixture<T,multiplies_t<T>>::get_instance();
+            auto& fixture=segment_tree_fixture<multiplies_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation_with_update(p,W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }

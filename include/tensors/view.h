@@ -10,8 +10,10 @@
 #include <numeric>
 
 #include "utils.h"
+#include "indexing.h"
 
-namespace cp::linalg
+
+namespace cp::tensors
 {
     template<typename R,std::size_t Rank>
     struct tensor_subview;
@@ -143,7 +145,7 @@ namespace cp::linalg
     template <typename R,std::size_t Rank>
     struct tensor_subview final: tensor_view<R,Rank>
     {
-        using index_array = std::array<std::size_t,Rank>;
+        using typename tensor_view<R,Rank>::index_array;
 
         tensor_view<R,Rank> &src;
         index_array m_start,m_end,m_step;
@@ -340,7 +342,7 @@ namespace cp::linalg
     template<typename R>
     struct tensor_subview<R,dynamic_extent>:tensor_view<R,dynamic_extent>
     {
-        using index_array = std::vector<std::size_t>;
+        using typename tensor_view<R,dynamic_extent>::index_array;
         tensor_view<R,dynamic_extent> &src;
         index_array m_start,m_end,m_step;
         tensor_subview(tensor_view<R,dynamic_extent> &src,index_array start,index_array end):src(src),m_start(std::move(start)),m_end(std::move(end)),m_step(src.rank())
@@ -406,7 +408,7 @@ namespace cp::linalg
         using index_original = std::array<std::size_t,Rank>;
 
         tensor_view<R,Rank> &src;
-        to_dynamic_view_t(tensor_view<R,Rank> &src):src(src){}
+        explicit to_dynamic_view_t(tensor_view<R,Rank> &src):src(src){}
         R& at(index_array indexes) override
         {
             index_original new_indexes;
@@ -461,7 +463,7 @@ namespace cp::linalg
         tensor_view<R,dynamic_extent> &src;
         std::array<std::size_t,Rank> _shape;
         to_static_view_t(tensor_view<R,dynamic_extent> &src,index_array _shape):src(src),_shape(_shape){}
-        to_static_view_t(tensor_view<R,dynamic_extent> &src):src(src)
+        explicit to_static_view_t(tensor_view<R,dynamic_extent> &src):src(src)
         {
             auto s=src.shape();
             for(int i=0;i<std::min(Rank,src.rank());i++)
@@ -517,6 +519,10 @@ namespace cp::linalg
     {
         return to_static_view_t<R,Rank>(src);
     }
+}
+
+namespace cp::linalg {
+    using namespace tensors;
 }
 
 #endif //CPLIBRARY_VIEW_H

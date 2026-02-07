@@ -7,6 +7,8 @@
 #include <vector>
 #include <algorithm>
 #include <concepts>
+#include <span>
+#include <stdexcept>
 
 namespace cp::topology
 {
@@ -320,7 +322,7 @@ namespace cp::topology
             {
                 Float W=0,t=0;
                 SimplexTable<Float> table{A,b,Z,W};
-                table.n++;
+                ++table.n;
                 for(auto &a:table.A)
                     a.push_back(-1);
                 std::fill(table.Z.begin(),table.Z.end(),0);

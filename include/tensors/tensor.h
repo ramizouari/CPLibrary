@@ -8,16 +8,22 @@
 #include <vector>
 #include <numeric>
 #include "view.h"
-namespace cp::linalg
+namespace cp::tensors
 {
     template<typename R,std::size_t Rank>
     struct flat_tensor : tensor_view<R,Rank>
     {
+        using index_array = tensor_view<R,Rank>::index_array;
         std::vector<R> m_data;
         std::array<std::size_t,Rank> m_shape;
         explicit flat_tensor(std::array<std::size_t,Rank> shape): m_shape(shape)
         {
             m_data.resize(std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>()));
+        }
+
+        explicit flat_tensor(std::array<std::size_t,Rank> shape,const R& v): m_shape(shape)
+        {
+            m_data.resize(std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>()), v);
         }
 
         explicit flat_tensor(const tensor_view<R,Rank> & other): m_data(other.begin(),other.end()),m_shape(other.shape())
@@ -66,7 +72,7 @@ namespace cp::linalg
             return m_data.data();
         }
 
-        std::array<std::size_t,Rank> shape() const override
+        index_array shape() const override
         {
             return m_shape;
         }
@@ -77,9 +83,15 @@ namespace cp::linalg
     {
         std::vector<R> m_data;
         std::vector<std::size_t> m_shape;
+        using index_array = tensor_view<R,dynamic_extent>::index_array;
         explicit flat_tensor(std::vector<std::size_t> shape):m_shape(shape)
         {
             m_data.resize(std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>()));
+        }
+
+        explicit flat_tensor(std::vector<std::size_t> shape,const R& v): m_shape(shape)
+        {
+            m_data.resize(std::accumulate(shape.begin(), shape.end(), 1, std::multiplies<>()), v);
         }
 
         explicit flat_tensor(const tensor_view<R,dynamic_extent> & other): m_shape(other.shape()),m_data(other.begin(),other.end())
@@ -127,7 +139,7 @@ namespace cp::linalg
             return m_data.data();
         }
 
-        std::vector<std::size_t> shape() const override
+        index_array shape() const override
         {
             return m_shape;
         }

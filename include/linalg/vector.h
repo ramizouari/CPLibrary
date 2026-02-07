@@ -8,8 +8,8 @@
 #include <vector>
 #include <cstddef>
 #include <array>
-#include "utils.h"
-#include "view.h"
+#include "../tensors/utils.h"
+#include "../tensors/view.h"
 #include "algebra/structures.h"
 
 namespace cp::linalg

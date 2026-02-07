@@ -9,8 +9,9 @@
 #include <algorithm>
 #include <utility>
 #include "fft.h"
-#include "linear_algebra/tensor.h"
-#include "linear_algebra/utils.h"
+#include "../tensors/tensor.h"
+#include "../tensors/utils.h"
+#include "../tensors/indexing.h"
 
 namespace cp::signals
 {
@@ -53,7 +54,7 @@ namespace cp::signals
     };
 
     template<typename R>
-    struct tensor_projection_view<R,dynamic_extent> : public cp::linalg::tensor_view<R,1>
+    struct tensor_projection_view<R,dynamic_extent> : linalg::tensor_view<R,1>
     {
         size_t k;
         linalg::tensor_view<R,dynamic_extent>& src;
@@ -134,7 +135,7 @@ namespace cp::signals
                 S[k]=1;
                 do {
                     tensor_projection_view<R,dynamic_extent> B(A,k,I);
-                    linalg::flat_tensor<R,1> P({shape[k]}); // It is faster to use a new tensor due to cache
+                    linalg::flat_tensor<R,1> P({shape[k]}); // It is faster to use a new tensor due to cache-locality
                     for(int i=0;i < shape[k];i++)
                         P(i)=B(i);
                     F->transform(P,inverse,normalized);

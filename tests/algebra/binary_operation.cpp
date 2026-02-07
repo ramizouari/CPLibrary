@@ -7,6 +7,7 @@
 #include "boost/mp11.hpp"
 #include "algebra/binary_operation.h"
 
+using namespace cp;
 constexpr real err=1e-6;
 
 static std::vector<integer> A={5,8,9,15,13,17,19,25,66,100},B={3,4,27,30,-13,-1,18,-500,99,102};

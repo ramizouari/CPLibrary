@@ -27,7 +27,7 @@ double rel_error(double a, double b)
 }
 
 template<typename T,int n,int m>
-bool approx(const s_matrix<T,n,m>&A,const s_matrix<T,n,m>&B,double err)
+bool approx(const cp::linalg::matrix<T,n,m>&A,const cp::linalg::matrix<T,n,m>&B,double err)
 {
     for(auto&& [R1,R2]:zip(A,B)) for(auto &&[a,b]:zip(R1,R2))
             if(rel_error(a,b)>err)
@@ -36,7 +36,7 @@ bool approx(const s_matrix<T,n,m>&A,const s_matrix<T,n,m>&B,double err)
 }
 
 template<typename T,int n,int m>
-double l2_distance(const s_matrix<T,n,m>&A,const s_matrix<T,n,m>&B)
+double l2_distance(const cp::linalg::matrix<T,n,m>&A,const cp::linalg::matrix<T,n,m>&B)
 {
     double res=0;
     for(auto&& [R1,R2]:zip(A,B)) for(auto &&[a,b]:zip(R1,R2))
@@ -54,14 +54,14 @@ double l2_distance(const d_matrix<T>&A,const d_matrix<T>&B)
 }
 
 template<int n,int m>
-s_matrix<real,n,m> random_matrix()
+matrix<real,n,m> random_matrix()
 {
     std::random_device dev;
     std::mt19937_64 rng(dev());
     using T = real;
     constexpr double std = .175;
     std::normal_distribution<double> d(0, std);
-    s_matrix<T, n, m> U;
+    matrix<T, n, m> U;
     for (auto &R: U)
         for (auto &c: R)
             c = d(rng);
@@ -79,8 +79,8 @@ bool test_solver() {
     constexpr double std = .175;
     constexpr double singularity = 1;
     std::normal_distribution<double> d(0, std), h(0, singularity);
-    s_matrix<T, dimension, rank> U;
-    s_matrix<T, rank, dimension> V;
+    matrix<T, dimension, rank> U;
+    matrix<T, rank, dimension> V;
     s_vector<T, dimension> v;
     for (auto &R: U)
         for (auto &c: R)
@@ -161,8 +161,8 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(test_matrix_real)
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_create,T,test_types){
-        s_matrix<T,2,2> m1({{1,2},{3,4}});
-        s_matrix<T,2,2> m2({{1,2},{3,4}});
+        matrix<T,2,2> m1({{1,2},{3,4}});
+        matrix<T,2,2> m2({{1,2},{3,4}});
 
         BOOST_CHECK_EQUAL(m1[0][0],T(1));
         BOOST_CHECK_EQUAL(m1[0][1],T(2));
@@ -170,46 +170,46 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
         BOOST_CHECK_EQUAL(m1[1][1],T(4));
     }
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_add,T,test_types) {
-        s_matrix<T,2,2> M1({{1,2},{3,4}});
-        s_matrix<T,2,2> M2({{3,7},{-1,-2}});
-        s_matrix<T,2,2> M3({{4,9},{2,2}});
+        matrix<T,2,2> M1({{1,2},{3,4}});
+        matrix<T,2,2> M2({{3,7},{-1,-2}});
+        matrix<T,2,2> M3({{4,9},{2,2}});
         BOOST_CHECK_EQUAL(M1+M2, M3);
     }
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_diff,T,test_types) {
-        s_matrix<T,2,2> M1({{1,2},{3,4}});
-        s_matrix<T,2,2> M2({{3,7},{-1,-2}});
-        s_matrix<T,2,2> M3({{-2,-5},{4,6}});
+        matrix<T,2,2> M1({{1,2},{3,4}});
+        matrix<T,2,2> M2({{3,7},{-1,-2}});
+        matrix<T,2,2> M3({{-2,-5},{4,6}});
         BOOST_CHECK_EQUAL(M1-M2, M3);
     }
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_scalar,T,test_types)
     {
-        s_matrix<T,2,2> M1({{1,2},{3,4}});        s_matrix<int,2,2> m1({{1,2},{3,4}});
+        matrix<T,2,2> M1({{1,2},{3,4}});        matrix<int,2,2> m1({{1,2},{3,4}});
 
-        s_matrix<T,2,2> M2({{3,6},{9,12}});
+        matrix<T,2,2> M2({{3,6},{9,12}});
         BOOST_CHECK_EQUAL(T(3)*M1,M2);
     }
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_negate,T,test_types)
     {
-        s_matrix<T,2,2> M1({{1,2},{3,4}});
-        s_matrix<T,2,2> M2({{-1,-2},{-3,-4}});
+        matrix<T,2,2> M1({{1,2},{3,4}});
+        matrix<T,2,2> M2({{-1,-2},{-3,-4}});
         BOOST_CHECK_EQUAL(-M1,M2);
     }
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_mult,T,test_types)
     {
-        s_matrix<T,2,2> M1({{1,2},{3,4}});
-        s_matrix<T,2,2> M2({{1,2},{3,4}});
-        s_matrix<T,2,2> M3({{7,10},{15,22}});
+        matrix<T,2,2> M1({{1,2},{3,4}});
+        matrix<T,2,2> M2({{1,2},{3,4}});
+        matrix<T,2,2> M3({{7,10},{15,22}});
         BOOST_CHECK_EQUAL(M1*M2,M3);
     }
 
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_self_mult,T,test_types)
     {
-        s_matrix<T,2,2> M1({{1,2},{3,4}});
-        s_matrix<T,2,2> M2({{1,2},{3,4}});
-        s_matrix<T,2,2> &M3=M1*=M2;
+        matrix<T,2,2> M1({{1,2},{3,4}});
+        matrix<T,2,2> M2({{1,2},{3,4}});
+        matrix<T,2,2> &M3=M1*=M2;
         BOOST_CHECK_EQUAL(std::addressof(M3),std::addressof(M1));
         BOOST_CHECK_EQUAL(M1,M2*M2);
     }
@@ -217,8 +217,8 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
     BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_pow,T,real_types)
     {
 
-        s_matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
-        s_matrix<T,4,4> B({{T(271373769), T(257707107), T(229627054), T(291157093)},
+        matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
+        matrix<T,4,4> B({{T(271373769), T(257707107), T(229627054), T(291157093)},
                            {T(274537505), T(260711810), T(232288922), T(294525263)},
                            {T(236529470), T(224618247), T(200110798), T(253716959)},
                            {T(299967605), T(284862168), T(253759121), T(321726562)}});
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
     BOOST_AUTO_TEST_SUITE(test_matrix_linalg)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_vector,T,test_types)
         {
-            s_matrix<T,3,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1}});
+            matrix<T,3,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1}});
             s_vector<T,4> u({2,1,3,1});
             s_vector<T,3> v({17,17,16});
             BOOST_CHECK_EQUAL(A*u,v);
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_det,T,real_types)
         {
             // given
-            s_matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
+            matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
             T expected_result = 35 ;
 
             // when
@@ -251,13 +251,13 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
 
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_trace,T,real_types)
         {
-            s_matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
+            matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
             BOOST_CHECK_CLOSE(A.tr(),7,err);
         }
 
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_matrix_inv,T,real_types)
         {
-            s_matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
+            matrix<T,4,4> A({{1,2,3,4},{3,1,2,4},{1,4,3,1},{5,3,1,2}});
             BOOST_CHECK(std::abs(l2_distance(A * A.inv(), decltype(A)((T)1)))<err);
         }
 
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
             constexpr int N=10;
             std::normal_distribution<double> d(0,std);
             for(int i=0;i<N;i++) {
-                s_matrix<T, dimension, dimension> A;
+                matrix<T, dimension, dimension> A;
                 for (auto &R: A)
                     for (auto &c: R)
                         c = d(rng);
@@ -287,8 +287,8 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
 
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_dmatrix_inv_rand,U,d_inv_test_types)
         {
-            using T = typename std::tuple_element<0,U>::type;
-            using I = typename std::tuple_element<1,U>::type;
+            using T = std::tuple_element<0,U>::type;
+            using I = std::tuple_element<1,U>::type;
             std::random_device dev;
             std::mt19937_64 rng(dev());
             constexpr int dimension=I::value;
@@ -296,12 +296,12 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
             constexpr int N=10;
             std::normal_distribution<double> d(0,std);
             for(int i=0;i<N;i++) {
-                d_matrix<T> A(0,m_shape{dimension,dimension});
+                cp::linalg::matrix<T> A(dimension,dimension, cp::size_tag);
                 for (auto &R: A)
                     for (auto &c: R)
                         c = d(rng);
                 if(A.det()!=0)
-                    BOOST_CHECK(std::abs(l2_distance(A * A.inv(), decltype(A)((T)1,m_shape{dimension,dimension})))<err);
+                    BOOST_CHECK(std::abs(l2_distance(A * A.inv(), cp::linalg::matrix<T>::eye(dimension)))<err);
             }
         }
         BOOST_AUTO_TEST_SUITE(test_solve)
@@ -315,7 +315,7 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
                 constexpr double std=.175;
                 std::normal_distribution<double> d(0,std);
                 for(int i=0;i<N;i++) {
-                    s_matrix<T, dimension, dimension> A;
+                    matrix<T, dimension, dimension> A;
                     s_vector<T,dimension> v;
                     for (auto &R: A)
                         for (auto &c: R)
@@ -335,7 +335,7 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
                 constexpr double std=.175;
                 std::normal_distribution<double> d(0,std);
                 for(int i=0;i<N;i++) {
-                    s_matrix<T, dimension, dimension> A;
+                    matrix<T, dimension, dimension> A;
                     s_vector<T,dimension> v;
                     for (auto &R: A)
                         for (auto &c: R)
@@ -355,7 +355,7 @@ BOOST_AUTO_TEST_SUITE(test_matrix_real)
                 constexpr double std=.175;
                 std::normal_distribution<double> d(0,std);
                 for(int i=0;i<N;i++) {
-                    s_matrix<T, dimension, dimension> A;
+                    matrix<T, dimension, dimension> A;
                     s_vector<T,dimension> v;
                     for (auto &R: A)
                         for (auto &c: R)

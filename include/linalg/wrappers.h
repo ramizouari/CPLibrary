@@ -5,7 +5,7 @@
 #ifndef CPLIBRARY_WRAPPERS_H
 #define CPLIBRARY_WRAPPERS_H
 
-#include "view.h"
+#include "../tensors/view.h"
 
 namespace cp::linalg
 {

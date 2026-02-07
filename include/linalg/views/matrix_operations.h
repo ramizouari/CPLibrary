@@ -4,9 +4,9 @@
 
 #ifndef CP_LIBRARY_MATRIX_OPERATIONS_H
 #define CP_LIBRARY_MATRIX_OPERATIONS_H
-#include "../view.h"
+#include "../../tensors/view.h"
 #include "algebra/structures.h"
-#include "linear_algebra/tensor.h"
+#include "../../tensors/tensor.h"
 
 namespace cp::linalg {
     constexpr std::size_t matrix_output_rank(std::size_t rnk1,std::size_t rnk2) {

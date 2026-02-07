@@ -4,12 +4,12 @@
 
 #ifndef CPLIBRARY_VIEW_OPERATIONS_H
 #define CPLIBRARY_VIEW_OPERATIONS_H
-#include "../view.h"
+#include "../../tensors/view.h"
 #include "algebra/structures.h"
 #include "functional/zip.h"
-#include "linear_algebra/tensor.h"
+#include "../../tensors/tensor.h"
 
-namespace cp::linalg {
+namespace cp::tensors {
     template<additive_monoid M,std::size_t Rank>
     void add(tensor_view<M,Rank> &c,const tensor_view<M,Rank> &a,const tensor_view<M,Rank> &b) {
         for (auto && [z,x,y] : zip(c,a,b))
@@ -100,7 +100,7 @@ namespace cp::linalg {
         return b;
     }
 
-    namespace tensor_algebra
+    namespace algebra
     {
         template<additive_monoid M,std::size_t Rank>
         tensor_view<M,Rank>& operator+=(tensor_view<M,Rank>&x,const tensor_view<M,Rank>&y)

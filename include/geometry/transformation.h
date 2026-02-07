@@ -5,7 +5,7 @@
 #ifndef CPLIBRARY_TRANSFORMATION_H
 #define CPLIBRARY_TRANSFORMATION_H
 #include "point.h"
-#include "linear_algebra/matrix.h"
+#include "linalg/matrix.h"
 #include "shapes.h"
 
 namespace cp::geometry

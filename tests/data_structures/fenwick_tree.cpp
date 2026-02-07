@@ -10,19 +10,21 @@
 #include <boost/test/data/monomorphic.hpp>
 #include <random>
 #include <chrono>
+
+#include "algebra/binary_operation.h"
 #include "data_structures/range_queries.h"
 #include "nt/modular_arithmetic.h"
-#include "linear_algebra/matrix.h"
+#include "linalg/matrix.h"
 constexpr std::int64_t M = 1000000007;
 constexpr int N = 100;
-using IF=cyclic<M>;
-using IM=s_matrix<IF,3,3>;
-using test_types=boost::mp11::mp_list<long long,IF,cyclic<17>,IM> ;
+using IF= cp::cyclic<M>;
+using IM=cp::linalg::matrix<IF,3,3>;
+using test_types=boost::mp11::mp_list<long long,IF, cp::cyclic<17>,IM> ;
 using comparable_test_types=boost::mp11::mp_list<long long,int>;
 
 
 #include "../print.h"
-
+using namespace cp;
 
 template<typename T>
 concept is_iterable = requires(const T&a)
@@ -85,14 +87,15 @@ std::vector<T> generate_random_vector(int n,auto &distribution,auto &rng)
     return v;
 }
 
-template<typename A,typename O>
+template<typename O>
 struct fenwick_tree_fixture
 {
-    inline static constexpr O F{};
-    inline static constexpr int N=1e6;
-    inline static constexpr int Q=1e6;
-    std::vector<A> data;
-    fenwick_tree<A,O> S;
+    using value_type = O::type;
+    inline static O F{};
+    static constexpr int N=1e6;
+    static constexpr int Q=1e6;
+    std::vector<value_type> data;
+    data_structures::fixed::fenwick_tree<O> S;
 
     static fenwick_tree_fixture&  get_instance()
     {
@@ -146,7 +149,7 @@ struct fenwick_tree_fixture
             else
             {
                 int idx = distribution(rng);
-                data[idx] = generate_random<A>(distribution, rng);
+                data[idx] = generate_random<value_type>(distribution, rng);
                 S.update(idx, data[idx]);
                 auto expected=data[idx];
                 auto actual=S.query(idx,idx);
@@ -163,9 +166,10 @@ private:
             S.update(i,data[i]);
     }
     inline static std::unique_ptr<fenwick_tree_fixture> instance;
-    inline static std::vector<A> random_vector(int n,auto &&distribution,auto &&rng)
+
+    static std::vector<value_type> random_vector(int n,auto &&distribution,auto &&rng)
     {
-        return generate_random_vector<A>(n,distribution,rng);
+        return generate_random_vector<value_type>(n,distribution,rng);
     }
 };
 
@@ -173,7 +177,7 @@ BOOST_AUTO_TEST_SUITE(test_fenwick_tree)
     BOOST_AUTO_TEST_SUITE(query)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_query_plus,T,test_types)
         {
-            auto& fixture=fenwick_tree_fixture<T,plus_t<T>>::get_instance();
+            auto& fixture=fenwick_tree_fixture<plus_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation();
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -182,7 +186,7 @@ BOOST_AUTO_TEST_SUITE(test_fenwick_tree)
         BOOST_AUTO_TEST_CASE_TEMPLATE(test_query_xor,T,comparable_test_types)
         {
             constexpr int W=1000;
-            auto& fixture=fenwick_tree_fixture<T,xor_t<T>>::get_instance();
+            auto& fixture=fenwick_tree_fixture<xor_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation(W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -198,7 +202,7 @@ BOOST_AUTO_TEST_SUITE(test_fenwick_tree)
             double p=K::value;
             p/=100;
             constexpr int W=1000;
-            auto& fixture=fenwick_tree_fixture<T,plus_t<T>>::get_instance();
+            auto& fixture=fenwick_tree_fixture<plus_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation_with_update(p,W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }
@@ -210,7 +214,7 @@ BOOST_AUTO_TEST_SUITE(test_fenwick_tree)
             double p=K::value;
             p/=100;
             constexpr int W=1000;
-            auto& fixture=fenwick_tree_fixture<T,xor_t<T>>::get_instance();
+            auto& fixture=fenwick_tree_fixture<xor_t<T>>::get_instance();
             auto wrong_counter=fixture.test_implementation_with_update(p,W);
             BOOST_CHECK_EQUAL(wrong_counter,0);
         }

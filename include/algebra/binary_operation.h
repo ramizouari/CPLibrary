@@ -14,6 +14,7 @@ namespace cp
         virtual ~binary_operation() = default;
 
         using type=T;
+        using value_type=T;
         template<std::convertible_to<T> H0,std::convertible_to<T> ...H>
         T operator()(const H0&a,const H&... b) const
         {
